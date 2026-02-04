@@ -1,2 +1,6 @@
 .venv/
+.other/
+figures/
+.RData
+.Rhistory
 __pycache__/
