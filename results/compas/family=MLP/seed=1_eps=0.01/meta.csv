@@ -1,0 +1,24 @@
+model_name,hp,seed,val_loss
+MLP,"{'max_iter': 1000, 'learning_rate_init': 0.0001, 'hidden_layer_sizes': (50,), 'alpha': 0.001, 'activation': 'tanh'}",1,0.6044525914750856
+MLP,"{'max_iter': 1000, 'learning_rate_init': 0.0001, 'hidden_layer_sizes': (100,), 'alpha': 0.01, 'activation': 'relu'}",1,0.603387989566148
+MLP,"{'max_iter': 1000, 'learning_rate_init': 0.001, 'hidden_layer_sizes': (50,), 'alpha': 0.001, 'activation': 'tanh'}",1,0.6025430725688439
+MLP,"{'max_iter': 1000, 'learning_rate_init': 0.0001, 'hidden_layer_sizes': (100,), 'alpha': 0.001, 'activation': 'relu'}",1,0.6034766132089243
+MLP,"{'max_iter': 1000, 'learning_rate_init': 0.0001, 'hidden_layer_sizes': (100, 50), 'alpha': 0.001, 'activation': 'relu'}",1,0.6039371518079445
+MLP,"{'max_iter': 1000, 'learning_rate_init': 0.001, 'hidden_layer_sizes': (50,), 'alpha': 0.01, 'activation': 'tanh'}",1,0.6023505282686217
+MLP,"{'max_iter': 1000, 'learning_rate_init': 0.001, 'hidden_layer_sizes': (100,), 'alpha': 0.01, 'activation': 'relu'}",1,0.6048938551240292
+MLP,"{'max_iter': 1000, 'learning_rate_init': 0.001, 'hidden_layer_sizes': (100, 50), 'alpha': 0.001, 'activation': 'tanh'}",1,0.6034849525401791
+MLP,"{'max_iter': 1000, 'learning_rate_init': 0.0001, 'hidden_layer_sizes': (50,), 'alpha': 1e-05, 'activation': 'tanh'}",1,0.6044519823699064
+MLP,"{'max_iter': 1000, 'learning_rate_init': 0.0001, 'hidden_layer_sizes': (50,), 'alpha': 0.0001, 'activation': 'relu'}",1,0.604458331861366
+MLP,"{'max_iter': 1000, 'learning_rate_init': 0.0001, 'hidden_layer_sizes': (100, 50), 'alpha': 0.0001, 'activation': 'relu'}",1,0.6038897277622495
+MLP,"{'max_iter': 1000, 'learning_rate_init': 0.001, 'hidden_layer_sizes': (50,), 'alpha': 1e-05, 'activation': 'tanh'}",1,0.6025538088707935
+MLP,"{'max_iter': 1000, 'learning_rate_init': 0.01, 'hidden_layer_sizes': (50,), 'alpha': 1e-05, 'activation': 'tanh'}",1,0.6086949820174925
+MLP,"{'max_iter': 1000, 'learning_rate_init': 0.01, 'hidden_layer_sizes': (200,), 'alpha': 1e-05, 'activation': 'tanh'}",1,0.6093442067555971
+MLP,"{'max_iter': 1000, 'learning_rate_init': 0.0001, 'hidden_layer_sizes': (100,), 'alpha': 1e-05, 'activation': 'relu'}",1,0.603525428351674
+MLP,"{'max_iter': 1000, 'learning_rate_init': 0.001, 'hidden_layer_sizes': (100,), 'alpha': 0.0001, 'activation': 'tanh'}",1,0.6005025913082515
+MLP,"{'max_iter': 1000, 'learning_rate_init': 0.0001, 'hidden_layer_sizes': (50,), 'alpha': 0.01, 'activation': 'relu'}",1,0.6044529493903508
+MLP,"{'max_iter': 1000, 'learning_rate_init': 0.0001, 'hidden_layer_sizes': (100,), 'alpha': 0.01, 'activation': 'tanh'}",1,0.6052668385954878
+MLP,"{'max_iter': 1000, 'learning_rate_init': 0.001, 'hidden_layer_sizes': (100, 50), 'alpha': 0.01, 'activation': 'tanh'}",1,0.6029005011485664
+MLP,"{'max_iter': 1000, 'learning_rate_init': 0.001, 'hidden_layer_sizes': (50,), 'alpha': 1e-05, 'activation': 'relu'}",1,0.6034358037693626
+MLP,"{'max_iter': 1000, 'learning_rate_init': 0.001, 'hidden_layer_sizes': (50,), 'alpha': 0.01, 'activation': 'relu'}",1,0.6033723429193519
+MLP,"{'max_iter': 1000, 'learning_rate_init': 0.01, 'hidden_layer_sizes': (100,), 'alpha': 0.0001, 'activation': 'tanh'}",1,0.6086882570173433
+MLP,"{'max_iter': 1000, 'learning_rate_init': 0.0001, 'hidden_layer_sizes': (50,), 'alpha': 0.01, 'activation': 'tanh'}",1,0.6044576819955404

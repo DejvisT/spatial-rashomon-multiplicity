@@ -1,0 +1,11 @@
+model_name,hp,seed,val_loss
+LogReg,"{'solver': 'lbfgs', 'penalty': 'l2', 'max_iter': 2000, 'C': 0.01}",2,0.6088877825304286
+LogReg,"{'solver': 'liblinear', 'penalty': 'l2', 'max_iter': 2000, 'C': 0.01}",3,0.609253151783028
+LogReg,"{'solver': 'lbfgs', 'penalty': 'l2', 'max_iter': 2000, 'C': 0.1}",4,0.6063867712553034
+LogReg,"{'solver': 'liblinear', 'penalty': 'l2', 'max_iter': 2000, 'C': 0.1}",5,0.6063503650685079
+LogReg,"{'solver': 'lbfgs', 'penalty': 'l2', 'max_iter': 2000, 'C': 1.0}",6,0.6066468036677337
+LogReg,"{'solver': 'liblinear', 'penalty': 'l2', 'max_iter': 2000, 'C': 1.0}",7,0.6065984155844287
+LogReg,"{'solver': 'lbfgs', 'penalty': 'l2', 'max_iter': 2000, 'C': 10.0}",8,0.606948509731833
+LogReg,"{'solver': 'liblinear', 'penalty': 'l2', 'max_iter': 2000, 'C': 10.0}",9,0.606938734989559
+LogReg,"{'solver': 'lbfgs', 'penalty': 'l2', 'max_iter': 2000, 'C': 100.0}",0,0.6070157476473058
+LogReg,"{'solver': 'liblinear', 'penalty': 'l2', 'max_iter': 2000, 'C': 100.0}",1,0.6069972755244641

@@ -1,0 +1,4 @@
+model_name,hp,seed,val_loss
+RF,"{'n_jobs': -1, 'n_estimators': 200, 'min_samples_split': 5, 'min_samples_leaf': 1, 'max_features': None, 'max_depth': 5, 'bootstrap': True}",0,0.5990469981454477
+RF,"{'n_jobs': -1, 'n_estimators': 200, 'min_samples_split': 2, 'min_samples_leaf': 4, 'max_features': 'log2', 'max_depth': 10, 'bootstrap': True}",7,0.6073343501488377
+RF,"{'n_jobs': -1, 'n_estimators': 500, 'min_samples_split': 2, 'min_samples_leaf': 4, 'max_features': 'log2', 'max_depth': 10, 'bootstrap': True}",8,0.6083648256386932

@@ -1,7 +1,7 @@
 """
 Rashomon set construction and analysis.
 """
-from typing import Dict, List, Tuple, Any
+from typing import Dict, List, Optional, Tuple, Any
 import numpy as np
 import pandas as pd
 
@@ -129,9 +129,20 @@ def build_rashomon_set(
     model_configs: Dict[str, Dict[str, Any]] = DEFAULT_MODEL_CONFIGS,
     n_samples_per_model: int = 30,
     seed: int = 42,
+    selection_mode: str = "global",
+    family: str | None = None,
+    model_seeds: Optional[List[int]] = None,
 ) -> Tuple[np.ndarray, pd.DataFrame]:
     """
     Train many models and return Rashomon predictions on TEST.
+
+    selection_mode:
+        - "global": single threshold across all models
+        - "per_family": separate threshold per model family
+    family:
+        - if not None, restrict Rashomon set to a single family
+    model_seeds:
+        - if not None (and family is set), use these seeds for each model (cycling)
     """
 
     rng = np.random.RandomState(seed)
@@ -141,8 +152,17 @@ def build_rashomon_set(
     X_test = X.iloc[split["test"]]
 
     results = []
+    model_idx = 0
 
-    for model_name, cfg in model_configs.items():
+    # ------------------------------------------------------------
+    # Train all candidate models (or only the specified family)
+    # ------------------------------------------------------------
+    configs_to_train = (
+        [(family, model_configs[family])] if family is not None
+        else list(model_configs.items())
+    )
+
+    for model_name, cfg in configs_to_train:
         hp_samples = list(
             ParameterSampler(
                 cfg["params"],
@@ -152,6 +172,12 @@ def build_rashomon_set(
         )
 
         for hp in hp_samples:
+            if model_seeds is not None:
+                model_seed = model_seeds[model_idx % len(model_seeds)]
+            else:
+                model_seed = seed
+            model_idx += 1
+
             res = fit_and_eval_model(
                 model_name=model_name,
                 model_cfg=cfg,
@@ -161,20 +187,54 @@ def build_rashomon_set(
                 y_train=y_train,
                 X_val=X_val,
                 y_val=y_val,
-                seed=seed,
+                seed=model_seed,
             )
             results.append(res)
 
     results_df = pd.DataFrame(results)
 
-    best_loss = results_df["val_loss"].min()
-    rashomon_df = results_df[
-        results_df["val_loss"] <= best_loss + epsilon
-    ].reset_index(drop=True)
+    # ------------------------------------------------------------
+    # Rashomon selection logic
+    # ------------------------------------------------------------
+    if family is not None:
+        # Family-specific Rashomon
+        df_fam = results_df[results_df["model_name"] == family]
+        if len(df_fam) == 0:
+            raise ValueError(f"No models found for family={family}")
 
+        best_loss = df_fam["val_loss"].min()
+        rashomon_df = df_fam[
+            df_fam["val_loss"] <= best_loss + epsilon
+        ]
+
+    elif selection_mode == "global":
+        # Global Rashomon
+        best_loss = results_df["val_loss"].min()
+        rashomon_df = results_df[
+            results_df["val_loss"] <= best_loss + epsilon
+        ]
+
+    elif selection_mode == "per_family":
+        # One Rashomon threshold per family
+        parts = []
+        for model_name, group in results_df.groupby("model_name"):
+            best_loss_fam = group["val_loss"].min()
+            parts.append(
+                group[group["val_loss"] <= best_loss_fam + epsilon]
+            )
+        rashomon_df = pd.concat(parts, ignore_index=True)
+
+    else:
+        raise ValueError("selection_mode must be 'global' or 'per_family'")
+
+    rashomon_df = rashomon_df.reset_index(drop=True)
+
+    # ------------------------------------------------------------
     # Predict on TEST
+    # ------------------------------------------------------------
     P_test = np.vstack(
-        [row.pipeline.predict_proba(X_test)[:, 1] for row in rashomon_df.itertuples()]
+        [row.pipeline.predict_proba(X_test)[:, 1]
+         for row in rashomon_df.itertuples()]
     )
 
     meta = rashomon_df.drop(columns="pipeline")
