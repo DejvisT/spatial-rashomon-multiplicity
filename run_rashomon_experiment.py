@@ -1,13 +1,14 @@
-import json
+# run_rashomon_experiment.py
+# ---------------------------------------------------------------------
+# Run Rashomon experiments (global / per-family / single-family)
+# ---------------------------------------------------------------------
+
 import argparse
+import json
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from data import load_dataset, make_split, apply_split, make_preprocessor
 from rashomon import build_rashomon_set
@@ -15,19 +16,29 @@ from metrics import compute_multiplicity_metrics
 
 
 # ---------------------------------------------------------------------
-# Argument parsing
+# CLI
 # ---------------------------------------------------------------------
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Run Rashomon experiment")
+    parser = argparse.ArgumentParser()
 
     parser.add_argument("--dataset", type=str, required=True,
                         choices=["compas", "german", "breast_cancer"])
     parser.add_argument("--epsilon", type=float, required=True)
     parser.add_argument("--seed", type=int, default=42)
+
+    parser.add_argument("--selection_mode", type=str, default="global",
+                        choices=["global", "per_family"])
+
+    parser.add_argument("--family", type=str, default="all",
+                        help="Single family (LogReg, RF, GBM, MLP) or 'all'")
+    parser.add_argument("--seeds", type=str, default=None,
+                        help="Comma-separated model seeds for single-family (e.g. 42,1,2,3,100). Cycles over models.")
+
+    parser.add_argument("--n_models", type=int, default=30)
     parser.add_argument("--test_size", type=float, default=0.2)
     parser.add_argument("--val_size", type=float, default=0.2)
-    parser.add_argument("--n_models", type=int, default=30)
+
     parser.add_argument("--out_dir", type=str, default="results")
 
     return parser.parse_args()
@@ -41,19 +52,10 @@ def main():
     args = parse_args()
 
     # -------------------------------
-    # Output directory
-    # -------------------------------
-    out_dir = Path(args.out_dir) / args.dataset / f"seed={args.seed}_eps={args.epsilon}"
-    out_dir.mkdir(parents=True, exist_ok=True)
-
-    # -------------------------------
     # Load data
     # -------------------------------
     X, y, feature_info = load_dataset(args.dataset)
 
-    # -------------------------------
-    # Split
-    # -------------------------------
     split = make_split(
         n_samples=len(X),
         test_size=args.test_size,
@@ -62,16 +64,41 @@ def main():
         stratify=y.values,
     )
 
-    splits_applied = apply_split(X, y, split)
+    splits = apply_split(X, y, split)
+    X_test, y_test = splits["test"]
 
-    # -------------------------------
-    # Preprocessor (definition only)
-    # -------------------------------
     preprocessor = make_preprocessor(feature_info)
 
     # -------------------------------
-    # Rashomon training
+    # Determine run mode
     # -------------------------------
+    if args.family != "all":
+        run_label = f"family={args.family}"
+        selection_mode = "global"   # ignored when family is set
+        family = args.family
+    else:
+        run_label = args.selection_mode
+        selection_mode = args.selection_mode
+        family = None
+
+    # -------------------------------
+    # Output directory
+    # -------------------------------
+    out_dir = (
+        Path(args.out_dir)
+        / args.dataset
+        / run_label
+        / f"seed={args.seed}_eps={args.epsilon}"
+    )
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    # -------------------------------
+    # Run Rashomon
+    # -------------------------------
+    model_seeds = None
+    if family is not None and args.seeds:
+        model_seeds = [int(s) for s in args.seeds.split(",")]
+
     P_test, meta = build_rashomon_set(
         X=X,
         y=y,
@@ -80,27 +107,21 @@ def main():
         epsilon=args.epsilon,
         n_samples_per_model=args.n_models,
         seed=args.seed,
+        selection_mode=selection_mode,
+        family=family,
+        model_seeds=model_seeds,
     )
 
-    # -------------------------------
-    # Multiplicity metrics
-    # -------------------------------
     metrics = compute_multiplicity_metrics(P_test)
 
     # -------------------------------
     # Save artifacts
     # -------------------------------
-
-    # Core predictions
     np.save(out_dir / "P_test.npy", P_test)
-
-    # Metrics
     np.savez(out_dir / "metrics.npz", **metrics)
 
-    # Model metadata
     meta.to_csv(out_dir / "meta.csv", index=False)
 
-    # Split indices
     np.savez(
         out_dir / "split.npz",
         train=split["train"],
@@ -109,22 +130,22 @@ def main():
         seed=split["seed"],
     )
 
-    # Feature space + labels for test
-    X_test, y_test = splits_applied["test"]
     X_test.to_csv(out_dir / "X_test.csv", index=False)
     np.save(out_dir / "y_test.npy", y_test.values)
 
-    # Config for reproducibility
     config = vars(args)
-    config["n_obs_test"] = len(X_test)
-    config["n_models_rashomon"] = P_test.shape[0]
+    config["n_models_rashomon"] = int(P_test.shape[0])
 
     with open(out_dir / "config.json", "w") as f:
         json.dump(config, f, indent=2)
 
-    print(f"✔ Results saved to {out_dir}")
-    print(f"✔ Rashomon models: {P_test.shape[0]}")
-    print(f"✔ Test observations: {P_test.shape[1]}")
+    print("✔ Finished Rashomon run")
+    print("  Dataset:", args.dataset)
+    print("  Mode:", run_label)
+    print("  Seed:", args.seed)
+    print("  ε:", args.epsilon)
+    print("  Rashomon models:", P_test.shape[0])
+    print("  Saved to:", out_dir)
 
 
 if __name__ == "__main__":
