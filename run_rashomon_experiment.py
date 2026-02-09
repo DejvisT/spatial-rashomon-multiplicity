@@ -5,7 +5,12 @@
 
 import argparse
 import json
+import sys
 from pathlib import Path
+
+# Add src to path for imports
+ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT / "src"))
 
 import numpy as np
 import pandas as pd
@@ -81,8 +86,9 @@ def main():
             stratify=y.values,
         )
         split = None  # Not used in CV mode
-        splits = apply_split(X, y, {"test": test_split["test"]})
-        X_test, y_test = splits["test"]
+        # Directly get test data (no need for apply_split)
+        X_test = X.iloc[test_split["test"]]
+        y_test = y.iloc[test_split["test"]]
     else:
         split = make_split(
             n_samples=len(X),
@@ -124,6 +130,20 @@ def main():
     # -------------------------------
     # Run Rashomon
     # -------------------------------
+    print(f"\n{'='*60}")
+    print(f"Rashomon Experiment Configuration")
+    print(f"{'='*60}")
+    print(f"Dataset: {args.dataset}")
+    print(f"Mode: {run_label}")
+    print(f"Seed: {args.seed}")
+    print(f"ε: {args.epsilon}")
+    print(f"Models per family: {args.n_models}")
+    if args.use_cv:
+        print(f"CV: {args.cv_method} ({args.n_folds if args.cv_method == 'kfold' else args.n_repeats} folds/repeats)")
+    else:
+        print(f"Split: train/val/test (single split)")
+    print(f"{'='*60}\n")
+
     model_seeds = None
     if family is not None and args.seeds:
         model_seeds = [int(s) for s in args.seeds.split(",")]

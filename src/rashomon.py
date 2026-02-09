@@ -252,7 +252,14 @@ def build_rashomon_set(
         else list(model_configs.items())
     )
 
+    print(f"\n{'='*60}")
+    print(f"Training {len(configs_to_train)} model family/families")
+    if use_cv:
+        print(f"Using CV mode: {len(cv_splits)} folds/repeats")
+    print(f"{'='*60}\n")
+
     for model_name, cfg in configs_to_train:
+        print(f"[{model_name}] Starting training ({n_samples_per_model} models)...")
         hp_samples = list(
             ParameterSampler(
                 cfg["params"],
@@ -261,6 +268,7 @@ def build_rashomon_set(
             )
         )
 
+        family_model_idx = 0
         for hp in hp_samples:
             if model_seeds is not None:
                 model_seed = model_seeds[model_idx % len(model_seeds)]
@@ -299,8 +307,20 @@ def build_rashomon_set(
                     seed=model_seed,
                 )
                 results.append(res)
+            
+            family_model_idx += 1
+            # Print progress every 10 models or at the end
+            if family_model_idx % 10 == 0 or family_model_idx == len(hp_samples):
+                print(f"  [{model_name}] Progress: {family_model_idx}/{len(hp_samples)} models trained")
+        
+        print(f"[{model_name}] ✓ Finished training {len(hp_samples)} models\n")
 
     results_df = pd.DataFrame(results)
+    
+    print(f"{'='*60}")
+    print(f"Rashomon selection (ε = {epsilon})")
+    print(f"Total models trained: {len(results_df)}")
+    print(f"{'='*60}\n")
 
     # ------------------------------------------------------------
     # Rashomon selection logic
@@ -315,6 +335,8 @@ def build_rashomon_set(
         rashomon_df = df_fam[
             df_fam["val_loss"] <= best_loss + epsilon
         ]
+        print(f"[{family}] Best loss: {best_loss:.6f}, Rashomon threshold: {best_loss + epsilon:.6f}")
+        print(f"[{family}] Rashomon models: {len(rashomon_df)}/{len(df_fam)}")
 
     elif selection_mode == "global":
         # Global Rashomon
@@ -322,29 +344,38 @@ def build_rashomon_set(
         rashomon_df = results_df[
             results_df["val_loss"] <= best_loss + epsilon
         ]
+        print(f"[Global] Best loss: {best_loss:.6f}, Rashomon threshold: {best_loss + epsilon:.6f}")
+        print(f"[Global] Rashomon models: {len(rashomon_df)}/{len(results_df)}")
+        # Show breakdown by family
+        for model_name, group in rashomon_df.groupby("model_name"):
+            print(f"  - {model_name}: {len(group)} models")
 
     elif selection_mode == "per_family":
         # One Rashomon threshold per family
         parts = []
         for model_name, group in results_df.groupby("model_name"):
             best_loss_fam = group["val_loss"].min()
-            parts.append(
-                group[group["val_loss"] <= best_loss_fam + epsilon]
-            )
+            fam_rashomon = group[group["val_loss"] <= best_loss_fam + epsilon]
+            parts.append(fam_rashomon)
+            print(f"[{model_name}] Best loss: {best_loss_fam:.6f}, Rashomon threshold: {best_loss_fam + epsilon:.6f}")
+            print(f"[{model_name}] Rashomon models: {len(fam_rashomon)}/{len(group)}")
         rashomon_df = pd.concat(parts, ignore_index=True)
 
     else:
         raise ValueError("selection_mode must be 'global' or 'per_family'")
 
     rashomon_df = rashomon_df.reset_index(drop=True)
+    print()
 
     # ------------------------------------------------------------
     # Predict on TEST
     # ------------------------------------------------------------
+    print(f"Generating predictions on test set ({len(X_test)} samples)...")
     P_test = np.vstack(
         [row.pipeline.predict_proba(X_test)[:, 1]
          for row in rashomon_df.itertuples()]
     )
+    print(f"✓ Predictions shape: {P_test.shape} (n_models={P_test.shape[0]}, n_samples={P_test.shape[1]})\n")
 
     meta = rashomon_df.drop(columns="pipeline")
 
