@@ -10,7 +10,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from data import load_dataset, make_split, apply_split, make_preprocessor
+from data import load_dataset, make_split, make_cv_splits, apply_split, make_preprocessor
 from rashomon import build_rashomon_set
 from metrics import compute_multiplicity_metrics
 
@@ -39,6 +39,17 @@ def parse_args():
     parser.add_argument("--test_size", type=float, default=0.2)
     parser.add_argument("--val_size", type=float, default=0.2)
 
+    # Cross-validation options
+    parser.add_argument("--use_cv", action="store_true",
+                        help="Use cross-validation instead of single split")
+    parser.add_argument("--cv_method", type=str, default="kfold",
+                        choices=["kfold", "repeated_holdout"],
+                        help="CV method: 'kfold' or 'repeated_holdout'")
+    parser.add_argument("--n_folds", type=int, default=5,
+                        help="Number of folds for K-fold CV")
+    parser.add_argument("--n_repeats", type=int, default=5,
+                        help="Number of repeats for repeated holdout")
+
     parser.add_argument("--out_dir", type=str, default="results")
 
     return parser.parse_args()
@@ -56,16 +67,34 @@ def main():
     # -------------------------------
     X, y, feature_info = load_dataset(args.dataset)
 
-    split = make_split(
-        n_samples=len(X),
-        test_size=args.test_size,
-        val_size=args.val_size,
-        seed=args.seed,
-        stratify=y.values,
-    )
-
-    splits = apply_split(X, y, split)
-    X_test, y_test = splits["test"]
+    # -------------------------------
+    # Create splits (CV or single split)
+    # -------------------------------
+    if args.use_cv:
+        test_split, cv_splits = make_cv_splits(
+            n_samples=len(X),
+            cv_method=args.cv_method,
+            n_folds=args.n_folds,
+            n_repeats=args.n_repeats,
+            test_size=args.test_size,
+            seed=args.seed,
+            stratify=y.values,
+        )
+        split = None  # Not used in CV mode
+        splits = apply_split(X, y, {"test": test_split["test"]})
+        X_test, y_test = splits["test"]
+    else:
+        split = make_split(
+            n_samples=len(X),
+            test_size=args.test_size,
+            val_size=args.val_size,
+            seed=args.seed,
+            stratify=y.values,
+        )
+        test_split = None
+        cv_splits = None
+        splits = apply_split(X, y, split)
+        X_test, y_test = splits["test"]
 
     preprocessor = make_preprocessor(feature_info)
 
@@ -103,6 +132,8 @@ def main():
         X=X,
         y=y,
         split=split,
+        test_split=test_split,
+        cv_splits=cv_splits,
         base_preprocessor=preprocessor,
         epsilon=args.epsilon,
         n_samples_per_model=args.n_models,
@@ -122,19 +153,34 @@ def main():
 
     meta.to_csv(out_dir / "meta.csv", index=False)
 
-    np.savez(
-        out_dir / "split.npz",
-        train=split["train"],
-        val=split["val"],
-        test=split["test"],
-        seed=split["seed"],
-    )
+    # Save split information
+    if args.use_cv:
+        np.savez(
+            out_dir / "split.npz",
+            test=test_split["test"],
+            seed=test_split["seed"],
+            cv_method=args.cv_method,
+            n_folds=args.n_folds if args.cv_method == "kfold" else 0,
+            n_repeats=args.n_repeats if args.cv_method == "repeated_holdout" else 0,
+        )
+        # Also save CV splits for reference
+        cv_splits_dict = {f"fold_{i}": cv_split for i, cv_split in enumerate(cv_splits)}
+        np.savez(out_dir / "cv_splits.npz", **cv_splits_dict)
+    else:
+        np.savez(
+            out_dir / "split.npz",
+            train=split["train"],
+            val=split["val"],
+            test=split["test"],
+            seed=split["seed"],
+        )
 
     X_test.to_csv(out_dir / "X_test.csv", index=False)
     np.save(out_dir / "y_test.npy", y_test.values)
 
     config = vars(args)
     config["n_models_rashomon"] = int(P_test.shape[0])
+    config["use_cv"] = args.use_cv  # Ensure this is in config
 
     with open(out_dir / "config.json", "w") as f:
         json.dump(config, f, indent=2)
@@ -144,6 +190,8 @@ def main():
     print("  Mode:", run_label)
     print("  Seed:", args.seed)
     print("  ε:", args.epsilon)
+    if args.use_cv:
+        print(f"  CV: {args.cv_method} ({args.n_folds if args.cv_method == 'kfold' else args.n_repeats} folds/repeats)")
     print("  Rashomon models:", P_test.shape[0])
     print("  Saved to:", out_dir)
 

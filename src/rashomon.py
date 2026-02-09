@@ -115,6 +115,82 @@ def fit_and_eval_model(
     }
 
 
+def fit_and_eval_model_cv(
+    *,
+    model_name: str,
+    model_cfg: Dict[str, Any],
+    hp: Dict[str, Any],
+    preprocessor,
+    X: pd.DataFrame,
+    y: pd.Series,
+    cv_splits: List[Dict[str, np.ndarray]],
+    seed: int,
+) -> Tuple[float, Pipeline]:
+    """
+    Fit a model using cross-validation and return mean CV loss.
+    
+    cv_splits should contain train/val indices from the train+val portion (test excluded).
+    
+    Returns:
+        - mean_cv_loss: Mean log loss across all CV folds
+        - pipeline: Pipeline fit on all train+val data (for final predictions)
+    """
+    ModelClass = model_cfg["class"]
+    
+    cv_losses = []
+    
+    # Compute CV loss
+    for cv_split in cv_splits:
+        X_train_cv = X.iloc[cv_split["train"]]
+        y_train_cv = y.iloc[cv_split["train"]]
+        X_val_cv = X.iloc[cv_split["val"]]
+        y_val_cv = y.iloc[cv_split["val"]]
+        
+        model = ModelClass(**hp)
+        if "random_state" in model.get_params():
+            model.set_params(random_state=seed)
+        
+        pipeline_cv = Pipeline(
+            steps=[
+                ("preprocess", preprocessor),
+                ("model", model),
+            ]
+        )
+        
+        pipeline_cv.fit(X_train_cv, y_train_cv)
+        val_probs = pipeline_cv.predict_proba(X_val_cv)[:, 1]
+        cv_loss = log_loss(y_val_cv, val_probs)
+        cv_losses.append(cv_loss)
+    
+    mean_cv_loss = np.mean(cv_losses)
+    
+    # Fit final pipeline on all train+val data (for test predictions)
+    # Combine all train and val indices from CV splits
+    all_train_val_indices = []
+    for cv_split in cv_splits:
+        all_train_val_indices.extend(cv_split["train"].tolist())
+        all_train_val_indices.extend(cv_split["val"].tolist())
+    train_val_indices = np.unique(all_train_val_indices)
+    
+    X_train_val = X.iloc[train_val_indices]
+    y_train_val = y.iloc[train_val_indices]
+    
+    model_final = ModelClass(**hp)
+    if "random_state" in model_final.get_params():
+        model_final.set_params(random_state=seed)
+    
+    pipeline_final = Pipeline(
+        steps=[
+            ("preprocess", preprocessor),
+            ("model", model_final),
+        ]
+    )
+    
+    pipeline_final.fit(X_train_val, y_train_val)
+    
+    return mean_cv_loss, pipeline_final
+
+
 # ---------------------------------------------------------------------
 # Build Rashomon set
 # ---------------------------------------------------------------------
@@ -123,7 +199,9 @@ def build_rashomon_set(
     *,
     X,
     y,
-    split: Dict[str, np.ndarray],
+    split: Optional[Dict[str, np.ndarray]] = None,
+    test_split: Optional[Dict[str, np.ndarray]] = None,
+    cv_splits: Optional[List[Dict[str, np.ndarray]]] = None,
     base_preprocessor,
     epsilon: float,
     model_configs: Dict[str, Dict[str, Any]] = DEFAULT_MODEL_CONFIGS,
@@ -136,6 +214,9 @@ def build_rashomon_set(
     """
     Train many models and return Rashomon predictions on TEST.
 
+    Either `split` (single train/val/test) or (`test_split` + `cv_splits`) must be provided.
+    If `cv_splits` is provided, uses mean CV loss for Rashomon membership.
+
     selection_mode:
         - "global": single threshold across all models
         - "per_family": separate threshold per model family
@@ -145,11 +226,20 @@ def build_rashomon_set(
         - if not None (and family is set), use these seeds for each model (cycling)
     """
 
-    rng = np.random.RandomState(seed)
+    use_cv = cv_splits is not None
 
-    X_train, y_train = X.iloc[split["train"]], y.iloc[split["train"]]
-    X_val, y_val = X.iloc[split["val"]], y.iloc[split["val"]]
-    X_test = X.iloc[split["test"]]
+    if use_cv:
+        if test_split is None:
+            raise ValueError("When using CV, 'test_split' must be provided")
+        X_test = X.iloc[test_split["test"]]
+    else:
+        if split is None:
+            raise ValueError("When not using CV, 'split' must be provided")
+        X_train, y_train = X.iloc[split["train"]], y.iloc[split["train"]]
+        X_val, y_val = X.iloc[split["val"]], y.iloc[split["val"]]
+        X_test = X.iloc[split["test"]]
+
+    rng = np.random.RandomState(seed)
 
     results = []
     model_idx = 0
@@ -178,18 +268,37 @@ def build_rashomon_set(
                 model_seed = seed
             model_idx += 1
 
-            res = fit_and_eval_model(
-                model_name=model_name,
-                model_cfg=cfg,
-                hp=hp,
-                preprocessor=base_preprocessor,
-                X_train=X_train,
-                y_train=y_train,
-                X_val=X_val,
-                y_val=y_val,
-                seed=model_seed,
-            )
-            results.append(res)
+            if use_cv:
+                mean_cv_loss, pipeline = fit_and_eval_model_cv(
+                    model_name=model_name,
+                    model_cfg=cfg,
+                    hp=hp,
+                    preprocessor=base_preprocessor,
+                    X=X,
+                    y=y,
+                    cv_splits=cv_splits,
+                    seed=model_seed,
+                )
+                results.append({
+                    "model_name": model_name,
+                    "hp": hp,
+                    "seed": model_seed,
+                    "val_loss": mean_cv_loss,  # Using CV loss
+                    "pipeline": pipeline,
+                })
+            else:
+                res = fit_and_eval_model(
+                    model_name=model_name,
+                    model_cfg=cfg,
+                    hp=hp,
+                    preprocessor=base_preprocessor,
+                    X_train=X_train,
+                    y_train=y_train,
+                    X_val=X_val,
+                    y_val=y_val,
+                    seed=model_seed,
+                )
+                results.append(res)
 
     results_df = pd.DataFrame(results)
 
