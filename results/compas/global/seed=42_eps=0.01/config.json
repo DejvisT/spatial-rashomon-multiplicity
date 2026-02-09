@@ -1,0 +1,13 @@
+{
+  "dataset": "compas",
+  "epsilon": 0.01,
+  "seed": 42,
+  "selection_mode": "global",
+  "family": "all",
+  "seeds": null,
+  "n_models": 30,
+  "test_size": 0.2,
+  "val_size": 0.2,
+  "out_dir": "results",
+  "n_models_rashomon": 24
+}

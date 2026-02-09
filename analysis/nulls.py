@@ -115,3 +115,46 @@ def run_null_experiments(
         })
 
     return pd.DataFrame(records)
+
+
+# ---------------------------------------------------------------------
+# Null experiments with HH count (for comparison tables)
+# ---------------------------------------------------------------------
+
+def run_null_experiments_with_hh(
+    P: np.ndarray,
+    X_knn,
+    *,
+    n_runs: int = 50,
+    k: int = 10,
+    permutations: int = 999,
+    base_seed: int = 42,
+) -> pd.DataFrame:
+    """
+    Run multiple null experiments and collect Moran's I and HH count.
+
+    Returns
+    -------
+    DataFrame with columns: run, I, p_value, n_hh
+    """
+    records = []
+
+    for r in range(n_runs):
+        print(f"  Null run {r+1}/{n_runs}")
+        seed = base_seed + r
+        res = run_null_experiment(
+            P,
+            X_knn,
+            k=k,
+            permutations=permutations,
+            seed=seed,
+        )
+        n_hh = (res["lisa"]["cluster"] == "HH").sum()
+        records.append({
+            "run": r,
+            "I": res["moran"]["I"],
+            "p_value": res["moran"]["p_value"],
+            "n_hh": int(n_hh),
+        })
+
+    return pd.DataFrame(records)
