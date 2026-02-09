@@ -19,15 +19,56 @@ $env:PYTHONPATH = ".\src"
 
 Run these commands **in order**. Each produces results in `results/compas/`.
 
-### Global Rashomon (all families)
+### ⭐ Recommended: Cross-Validation Mode
+
+**Use CV mode for more stable, less split-dependent Rashomon sets.** This is the recommended approach as it makes results more comparable to multiplicity papers that emphasize stability.
+
+#### Global Rashomon with CV (all families)
 
 ```powershell
-python run_rashomon_experiment.py --dataset compas --epsilon 0.01 --seed 42
+python run_rashomon_experiment.py --dataset compas --epsilon 0.01 --seed 42 --use_cv --cv_method kfold --n_folds 5
 ```
 
-### Per-family Rashomon (LogReg, RF, GBM, MLP)
+#### Per-family Rashomon with CV
 
 ```powershell
+python run_rashomon_experiment.py --dataset compas --epsilon 0.01 --seed 42 --family LogReg --use_cv --n_folds 5
+python run_rashomon_experiment.py --dataset compas --epsilon 0.01 --seed 42 --family RF --use_cv --n_folds 5
+python run_rashomon_experiment.py --dataset compas --epsilon 0.01 --seed 42 --family GBM --use_cv --n_folds 5
+python run_rashomon_experiment.py --dataset compas --epsilon 0.01 --seed 42 --family MLP --use_cv --n_folds 5
+```
+
+**CV Options:**
+- `--use_cv`: Enable cross-validation mode
+- `--cv_method kfold`: Use K-fold CV (recommended)
+- `--cv_method repeated_holdout`: Use repeated random splits
+- `--n_folds 5`: Number of folds for K-fold (default: 5)
+- `--n_repeats 5`: Number of repeats for repeated holdout (default: 5)
+
+**How CV works:**
+- Test set (20%) is held out first
+- Remaining 80% is split into K folds (or repeated holdouts)
+- Each model's loss is averaged across all CV folds: `L(m) = mean(log_loss across folds)`
+- Rashomon membership: `L(m) ≤ L* + ε` where L* is the best mean CV loss
+- Final models are fit on all train+val data for test predictions
+
+**Benefits:**
+- Less dependent on a single lucky split
+- More stable Rashomon set composition
+- Comparable to practices in multiplicity literature
+- Reduces variance in results
+
+---
+
+### Alternative: Single Split Mode (backward compatible)
+
+For quick tests or comparison with old results, you can still use single train/val/test split:
+
+```powershell
+# Global Rashomon (single split)
+python run_rashomon_experiment.py --dataset compas --epsilon 0.01 --seed 42
+
+# Per-family Rashomon (single split)
 python run_rashomon_experiment.py --dataset compas --epsilon 0.01 --seed 42 --family LogReg
 python run_rashomon_experiment.py --dataset compas --epsilon 0.01 --seed 42 --family RF
 python run_rashomon_experiment.py --dataset compas --epsilon 0.01 --seed 42 --family GBM
@@ -40,6 +81,8 @@ python run_rashomon_experiment.py --dataset compas --epsilon 0.01 --seed 42 --fa
 - `family=RF/seed=42_eps=0.01/`
 - `family=GBM/seed=42_eps=0.01/`
 - `family=MLP/seed=42_eps=0.01/`
+
+**Note:** When using CV, the `split.npz` file will contain CV metadata and `cv_splits.npz` will contain all fold splits.
 
 ---
 
@@ -55,10 +98,13 @@ python run_experiments.py --quick
 - Prints Moran I and n_HH (real vs null)
 - Prints interpretable rules for Global HH components
 
+**Note:** The analysis script works with both CV and single-split results. It automatically detects and loads the appropriate result files.
+
 **Interpretation**:
 - **Real Moran I >> null Moran I** → hotspots are not pipeline artefacts
 - **Real n_HH >> null n_HH** → same conclusion
 - If any family shows real >> null, within-family hotspots are real
+- **CV results** should show similar or more stable patterns compared to single-split
 
 ---
 
@@ -121,15 +167,62 @@ Run these **in order** from the project root (or from `notebooks/`):
 
 ---
 
-## 7. Troubleshooting
+## 7. CV vs Single Split: When to Use What?
+
+| Scenario | Recommendation | Command |
+|----------|---------------|---------|
+| **Thesis/publication** | Use CV (more robust) | `--use_cv --cv_method kfold --n_folds 5` |
+| **Quick testing** | Single split (faster) | (no CV flags) |
+| **Comparison study** | Run both, compare | Run with and without `--use_cv` |
+| **Stability analysis** | Use CV (required) | `--use_cv --cv_method kfold --n_folds 5` |
+
+**Key differences:**
+- **CV mode**: Rashomon membership based on mean CV loss (averaged across folds)
+- **Single split**: Rashomon membership based on single validation loss
+- **Training time**: CV is ~K times slower (K = number of folds) but more stable
+- **Results**: CV results are less split-dependent and more reproducible
+
+---
+
+## 8. Troubleshooting
 
 | Error | Fix |
 |-------|-----|
 | `Missing results at ...` | Run Rashomon training first (section 2) |
 | `ModuleNotFoundError: analysis` | Set `PYTHONPATH=.\src` and run from project root |
+| `ImportError: cannot import name 'load_dataset'` | Script now auto-adds `src/` to path; ensure you're in project root |
 | LISA slow | In nulls, reduce `permutations` to 99 (or 999 for publication) |
 | Empty HH components | Try smaller `min_size` in `extract_hh_components` |
+| CV training very slow | Reduce `--n_folds` to 3 for faster testing, or use `--n_models 10` for quick checks |
 
 ---
 
-*Last updated: 2025-02-08*
+## 9. Progress Tracking
+
+The script now prints detailed progress:
+- Configuration summary at start
+- Progress for each model family (every 10 models)
+- Rashomon selection summary (best loss, threshold, counts)
+- Final predictions shape
+
+Example output:
+```
+============================================================
+Rashomon Experiment Configuration
+============================================================
+Dataset: compas
+Mode: global
+CV: kfold (5 folds/repeats)
+...
+
+[LogReg] Starting training (30 models)...
+  [LogReg] Progress: 10/30 models trained
+  [LogReg] Progress: 20/30 models trained
+  [LogReg] Progress: 30/30 models trained
+[LogReg] ✓ Finished training 30 models
+...
+```
+
+---
+
+*Last updated: 2025-02-08 (Added CV support)*
