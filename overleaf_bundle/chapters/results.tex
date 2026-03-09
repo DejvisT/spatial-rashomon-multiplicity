@@ -1,0 +1,557 @@
+This chapter presents the main empirical results. We first summarize predictive multiplicity and spatial structure across datasets (Section~5.1), then report null-hypothesis testing (Section~5.2), global vs.\ per-family comparisons (Section~5.3), spatial pattern analysis (Section~5.4), sensitivity analyses (Sections~5.5--5.6), hyperparameter and family importance (Section~5.7), calibration robustness (Section~5.8), synthetic validation (Section~5.9), interpretable rules (Section~5.10), aggregated metrics (Section~5.11), and four additional robustness analyses: decision boundary proximity (Section~5.12), fairness exposure (Section~5.13), alternative graph constructions (Section~5.14), and aggregated drivers across seeds (Section~5.15). All analyses use the global Rashomon set (top-$K$ with $K=25$) and default spatial parameters ($k=30$) unless stated otherwise.
+
+%% ---------------------------------------------------------------------------
+\subsection{Multiplicity and Spatial Metrics by Dataset}
+\label{sec:results-metrics}
+
+Table~\ref{tab:dataset_summary} summarizes mean predictive variance and global Moran's $I$ of pointwise variance, aggregated over 10 outer runs (mean $\pm$ standard deviation). COMPAS exhibits the highest mean Moran's $I$ ($0.20 \pm 0.08$), indicating strong spatial clustering of predictive instability in feature space. German Credit shows moderate spatial structure (Moran's $I = 0.10 \pm 0.04$) with higher mean variance ($0.005 \pm 0.002$). Breast Cancer has the lowest Moran's $I$ ($0.03 \pm 0.02$) and the highest model accuracy ($0.97 \pm 0.01$). The number of HH LISA hotspots varies substantially: COMPAS averages $80.7 \pm 48.7$ HH points per run, while German Credit and Breast Cancer have fewer than 3 on average.
+
+\begin{table}[htbp]
+\centering
+\caption{Summary of multiplicity and spatial metrics by dataset (mean $\pm$ std over 10 outer runs, $K=25$, $k=30$).}
+\label{tab:dataset_summary}
+\input{presentation_assets/tab/dataset_summary.tex}
+\end{table}
+
+Additional multiplicity metrics computed across all 30 runs (3 datasets $\times$ 10 seeds) include: mean ambiguity $0.15 \pm 0.08$, disagreement rate ($\varepsilon = 0.05$) of $0.27 \pm 0.18$, discrepancy $0.08 \pm 0.04$, and neighborhood agreement $0.82 \pm 0.06$. COMPAS and German Credit show substantially higher disagreement rates than Breast Cancer, reflecting more diverse Rashomon sets.
+
+%% ---------------------------------------------------------------------------
+\subsection{Null Hypothesis Testing}
+\label{sec:results-null}
+
+To test whether the observed spatial structure exceeds what would be expected by chance, we compared observed Moran's $I$ to a null distribution obtained by permuting each model's predictions independently across observations ($R = 100$ permutations per run). Table~\ref{tab:null_significance} reports the fraction of runs with significant Moran's $I$ ($p < 0.05$).
+
+\begin{table}[htbp]
+\centering
+\caption{Fraction of runs with significant Moran's $I$ ($p < 0.05$) under the permutation null, by dataset.}
+\label{tab:null_significance}
+\input{presentation_assets/tab/null_significance.tex}
+\end{table}
+
+COMPAS and German Credit show significant spatial autocorrelation in all 10 runs (empirical $p \approx 0.01$ in every case, i.e., the observed Moran's $I$ exceeded all 100 null samples). Breast Cancer is significant in 70\% of runs; the 3 non-significant runs (seeds 3, 4, 9) correspond to seeds with lower overall multiplicity. Figure~\ref{fig:null_moran_example} shows an example null distribution for COMPAS (seed 0): the observed Moran's $I$ of 0.36 lies far above the null mean of $-0.001 \pm 0.006$.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.6\textwidth]{null_moran_compas_seed0.pdf}
+\caption{Null distribution of Moran's $I$ (100 permutations) vs.\ observed value for COMPAS seed 0. The observed value (vertical line) exceeds all null samples ($p < 0.01$).}
+\label{fig:null_moran_example}
+\end{figure}
+
+%% ---------------------------------------------------------------------------
+\subsection{Global vs Per-Family Rashomon Sets}
+\label{sec:results-global-vs-family}
+
+We compare the \textbf{global Rashomon set} (top-$K=25$ models across all families) with \textbf{per-family Rashomon sets} (top-$K=25$ within each model family). The global set reflects the full near-optimal model class; the per-family analysis isolates the contribution of each model family.
+
+Table~\ref{tab:global_summary} reports global Rashomon metrics. Table~\ref{tab:family_summary} reports per-family metrics. Key findings:
+
+\begin{itemize}
+\item On COMPAS, MLP has the highest Moran's $I$ ($0.42 \pm 0.05$) and most HH points ($207.3 \pm 40.8$), while LogReg has the lowest mean variance ($0.00006$) and fewest stable HH points. kNN shows the highest mean variance ($0.011 \pm 0.001$) but relatively low Moran's $I$ ($0.09$), indicating dispersed rather than clustered multiplicity.
+\item On German Credit, MLP again leads in both Moran's $I$ ($0.17$) and HH count ($7.2$). LogReg and RF show the lowest spatial structure.
+\item On Breast Cancer, kNN has the most HH points ($8.0$) and MLP the highest Moran's $I$ ($0.12$). All families show relatively low multiplicity on this easy dataset.
+\end{itemize}
+
+Per-family HH counts often exceed the global HH count, particularly on COMPAS, because each family's Rashomon set captures family-specific disagreement patterns that may wash out when all families are mixed.
+
+\begin{table}[htbp]
+\centering
+\caption{Global Rashomon set (top-25 overall): multiplicity and spatial metrics by dataset (mean $\pm$ std over runs).}
+\label{tab:global_summary}
+\input{presentation_assets/tab/global_summary.tex}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Per-family Rashomon sets (top-25 per family): multiplicity and spatial metrics by model family (mean $\pm$ std over runs).}
+\label{tab:family_summary}
+\input{presentation_assets/tab/family_summary.tex}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{global_vs_perfamily_hh.pdf}
+\caption{HH hotspot count: global (dashed line) vs.\ per-family Rashomon sets (bars, mean $\pm$ std over runs) for each dataset. Per-family counts reveal family-specific disagreement patterns, with MLP consistently showing the most hotspots on COMPAS.}
+\label{fig:hh_by_family}
+\end{figure}
+
+%% ---------------------------------------------------------------------------
+\subsection{Spatial Patterns and Hotspot Stability}
+\label{sec:results-spatial}
+
+This section examines the spatial distribution of HH hotspots, their stability across seeds, and the structure of connected components.
+
+\subsubsection{HH Location and Frequency}
+
+Figure~\ref{fig:hh_location} shows HH hotspots projected onto the first two principal components of COMPAS test features (seed 0). HH points (red) cluster in a distinct region of feature space, separate from non-HH points (gray). Figure~\ref{fig:hh_stability_freq} maps the HH selection frequency across all 10 seeds: darker points appear as HH in more runs. Only 2.24\% of COMPAS test points are classified as HH in $\geq 80$\% of runs, and 6.26\% in $\geq 50$\% of runs, indicating moderate point-level stability.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.55\textwidth]{hh_location_compas.pdf}
+\caption{HH hotspots (red) vs.\ other points (gray) in PCA space for COMPAS (seed 0). HH points concentrate in a specific region rather than being scattered uniformly.}
+\label{fig:hh_location}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.55\textwidth]{hh_stability_freq_compas.pdf}
+\caption{HH selection frequency across 10 seeds for COMPAS. Color intensity encodes the fraction of runs in which each point was classified as HH; darker points are more consistently unstable.}
+\label{fig:hh_stability_freq}
+\end{figure}
+
+\subsubsection{Pairwise Overlap of HH Masks}
+
+Figure~\ref{fig:hh_jaccard} shows the Jaccard similarity of HH masks between all pairs of seeds on COMPAS. The mean pairwise Jaccard is 0.025 (max 0.084), indicating that the exact set of HH points changes substantially across seeds, even though the \emph{region} of high instability remains broadly consistent.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.5\textwidth]{hh_jaccard_heatmap_compas.pdf}
+\caption{Jaccard similarity of HH masks across seed pairs for COMPAS. Low overlap reflects sensitivity to the specific Rashomon set realization.}
+\label{fig:hh_jaccard}
+\end{figure}
+
+\subsubsection{Connected Component Statistics}
+
+Table~\ref{tab:hh_component_summary} summarizes HH connected-component statistics (minimum component size 5). COMPAS shows $3.7 \pm 2.0$ components per run with a mean largest component of $36.9 \pm 22.7$ points, confirming that spatial multiplicity concentrates in a small number of coherent regions rather than being scattered uniformly.
+
+\begin{table}[htbp]
+\centering
+\caption{HH connected-component statistics across runs (min component size 5): mean number of components and largest component size (mean $\pm$ std).}
+\label{tab:hh_component_summary}
+\input{presentation_assets/tab/hh_component_summary.tex}
+\end{table}
+
+\subsubsection{Moran's $I$ and HH Count Per Run}
+
+Figure~\ref{fig:spatial_per_run} shows per-run variability in Moran's $I$ and HH count for COMPAS. Both metrics fluctuate across seeds (Moran's $I$: 0.11--0.36; HH count: 21--160), reflecting the stochastic nature of the train/test split and Rashomon set composition, yet the overall pattern of significant positive spatial autocorrelation is consistent.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{spatial_patterns_per_run.pdf}
+\caption{Moran's $I$ and HH count per outer run (seed) for COMPAS, showing run-to-run variability in spatial multiplicity.}
+\label{fig:spatial_per_run}
+\end{figure}
+
+%% ---------------------------------------------------------------------------
+\subsection{Sensitivity to Rashomon Set Size $K$}
+\label{sec:results-sensitivity-K}
+
+Sensitivity to $K$ was examined by varying $K \in \{5, 10, 15, 20, 25, 30, 35, 40, 45, 50\}$. Figure~\ref{fig:sensitivity_K} shows three panels: mean variance, Moran's $I$, and HH count versus $K$.
+
+Mean variance increases monotonically with $K$ for all datasets (more models $\Rightarrow$ more variance). Moran's $I$ stabilizes beyond $K \approx 20$--25 for COMPAS (remaining around 0.18--0.21) and increases slowly for German and Breast Cancer. HH count is largely stable across $K$ for COMPAS ($\sim$77--91) and remains low for the other datasets. These results support $K = 25$ as a reasonable default that captures the spatial structure without inflating it artificially.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{sensitivity_K.pdf}
+\caption{Sensitivity to Rashomon set size $K$: mean variance (left), Moran's $I$ (center), and HH count (right) versus $K$ (mean $\pm$ std over runs).}
+\label{fig:sensitivity_K}
+\end{figure}
+
+%% ---------------------------------------------------------------------------
+\subsection{Sensitivity to kNN Neighborhood Size $k$}
+\label{sec:results-sensitivity-kNN}
+
+Sensitivity to $k$ was examined for $k \in \{10, 20, 30, 50\}$. Figure~\ref{fig:sensitivity_kNN} shows HH count and Moran's $I$ versus $k$.
+
+Mean predictive variance is invariant to $k$ (it does not depend on the graph). Moran's $I$ decreases with $k$ for all datasets (larger neighborhoods smooth local structure): COMPAS drops from 0.29 ($k=10$) to 0.16 ($k=50$). HH count increases with $k$ on COMPAS (40 to 115) as larger neighborhoods create more statistically significant local clusters. German and Breast Cancer show stable, low HH counts. For $k \geq 20$--30, Moran's $I$ is sufficiently stable to support $k = 30$ as the default.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{sensitivity_kNN.pdf}
+\caption{Sensitivity to kNN neighborhood size $k$: HH count (left) and Moran's $I$ (right) versus $k$ (mean $\pm$ std over runs).}
+\label{fig:sensitivity_kNN}
+\end{figure}
+
+%% ---------------------------------------------------------------------------
+\subsection{Hyperparameter and Family Importance}
+\label{sec:results-hp}
+
+Variance decomposition was conducted using the per-family Rashomon set (top-25 per family, 125 models total). We first present a single-seed case study (COMPAS seed 0) for detailed exposition, then report aggregated results across all 10 seeds in Section~5.15.
+
+\subsubsection{Family Importance}
+
+Model family (GBM, LogReg, MLP, RF, kNN) explains about 41\% of total prediction variance on COMPAS (mean $\pm$ std across 10 seeds: $0.41 \pm 0.03$), rising to 52\% inside HH hotspots ($0.52 \pm 0.04$). Family importance is even higher on Breast Cancer ($0.62 \pm 0.05$ globally, $0.69 \pm 0.05$ in HH) and German Credit ($0.53 \pm 0.04$ globally, $0.57 \pm 0.08$ in HH). Table~\ref{tab:family_importance} reports a detailed breakdown for COMPAS seed 0; Figure~\ref{fig:family_importance_by_subset} visualizes the comparison by subset.
+
+\begin{table}[htbp]
+\centering
+\caption{Family importance (between-family variance / total variance) on COMPAS seed 0, by observation subset.}
+\label{tab:family_importance}
+\input{presentation_assets/tab/family_importance.tex}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.65\textwidth]{family_importance_by_subset_compas_seed0.pdf}
+\caption{Family importance (ratio of between-family to total variance) on all test points, HH hotspots, and non-HH points for COMPAS seed 0.}
+\label{fig:family_importance_by_subset}
+\end{figure}
+
+\subsubsection{Within-Family Hyperparameter Importance}
+
+Within each family, variance decomposition identifies the most influential hyperparameters. Table~\ref{tab:hp_importance} summarizes the top hyperparameters per family by ratio of between-HP-group to total variance.
+
+\begin{table}[htbp]
+\centering
+\caption{Top hyperparameters per model family by variance decomposition (COMPAS seed 0). \texttt{ratio\_of\_sums} = sum of between-group variance / sum of total variance.}
+\label{tab:hp_importance}
+\small
+\begin{tabular}{llcc}
+\hline
+Family & Hyperparameter & ratio\_of\_sums & n\_groups \\
+\hline
+LogReg & C & 0.865 & 22 \\
+kNN & n\_neighbors & 0.855 & 6 \\
+RF & max\_depth & 0.667 & 5 \\
+GBM & learning\_rate & 0.337 & 5 \\
+GBM & max\_depth & 0.258 & 3 \\
+MLP & alpha & 0.250 & 20 \\
+MLP & learning\_rate\_init & 0.189 & 20 \\
+MLP & hidden\_layer\_sizes & 0.140 & 15 \\
+\hline
+\end{tabular}
+\end{table}
+
+Regularization strength dominates for LogReg ($C$, 87\%) and kNN (\texttt{n\_neighbors}, 86\%). Tree depth is most important for RF (67\%) and learning rate for GBM (34\%). For MLP, multiple hyperparameters contribute: regularization $\alpha$ (25\%), learning rate (19\%), and architecture (14\%).
+
+\subsubsection{Hotspot-Specific Drivers}
+
+When the same decomposition is restricted to HH points, the importance ranking shifts. Figure~\ref{fig:hh_delta_hp} shows the change in \texttt{ratio\_of\_sums} (HH minus global) per hyperparameter for MLP. MLP \texttt{learning\_rate\_init} gains $+0.15$ inside hotspots, indicating that learning rate differences contribute disproportionately to instability in the most affected regions. GBM \texttt{learning\_rate} and \texttt{max\_depth} lose importance ($-0.02$ to $-0.03$) inside hotspots, suggesting that GBM disagreement is more uniformly distributed.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.65\textwidth]{hh_delta_hp_importance_compas_seed0_MLP.pdf}
+\caption{Change in HP importance ($\Delta$ ratio\_of\_sums = HH $-$ ALL) for MLP on COMPAS seed 0. Positive values indicate hyperparameters that matter more inside hotspots.}
+\label{fig:hh_delta_hp}
+\end{figure}
+
+\subsubsection{Predictive Variance by HP Value}
+
+Figure~\ref{fig:variance_by_hp_mlp} shows boxplots of per-model variance contribution grouped by hyperparameter value for MLP. This visualization reveals, for example, that certain MLP learning rates or architectures produce systematically higher variance contributions, providing actionable guidance for reducing multiplicity.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.8\textwidth]{variance_by_hp_compas_seed0_MLP.pdf}
+\caption{Per-model variance contribution by hyperparameter value for MLP on COMPAS seed 0. Each boxplot shows the distribution of variance contributions for models sharing a hyperparameter value.}
+\label{fig:variance_by_hp_mlp}
+\end{figure}
+
+%% ---------------------------------------------------------------------------
+\subsection{Calibration Robustness}
+\label{sec:results-calibration}
+
+To test whether spatial multiplicity is driven by probability miscalibration, Platt scaling was applied on the validation set and multiplicity metrics were recomputed on calibrated test predictions. Table~\ref{tab:calibration_summary} summarizes the changes.
+
+\begin{table}[htbp]
+\centering
+\caption{Calibration robustness: change in key metrics after Platt scaling (mean $\pm$ std over runs).}
+\label{tab:calibration_summary}
+\input{presentation_assets/tab/calibration_summary.tex}
+\end{table}
+
+On average, Moran's $I$ decreases slightly after calibration ($\Delta \approx -0.02$), indicating that a small portion of spatial structure is associated with miscalibration. The Jaccard overlap between HH masks before and after calibration is moderate: $0.78 \pm 0.37$ for Breast Cancer, $0.47 \pm 0.14$ for COMPAS, and $0.42 \pm 0.37$ for German Credit. HH regions shift under calibration but do not disappear. Brier score changes are negligible ($< 0.001$ on average). These results confirm that spatial multiplicity is predominantly structural---it reflects genuine prediction disagreement rather than being an artifact of miscalibration.
+
+%% ---------------------------------------------------------------------------
+\subsection{Synthetic Data Validation}
+\label{sec:results-synthetic}
+
+Experiments on synthetic datasets with known ground-truth ambiguous regions validate the pipeline.
+
+\subsubsection{Single-Island Design}
+
+A mixture of two well-separated Gaussian blobs (stable) and one ambiguous island (uniform disk with $P(y=1|x) \approx 0.5$) was constructed. The pipeline was run with the same model families and top-$K=25$ selection.
+
+\begin{itemize}
+\item \textbf{Moran's $I$:} 0.459 (highly significant; null mean $-0.001 \pm 0.008$, $p < 0.01$).
+\item \textbf{HH recovery:} 101 HH points detected; precision = 0.99, recall = 0.91, Jaccard = 0.90 against the ground-truth island (110 points).
+\item \textbf{FDR sensitivity:} Results are stable across $\alpha \in \{0.01, 0.05, 0.10, 0.20\}$; Jaccard ranges from 0.87 to 0.93.
+\end{itemize}
+
+\subsubsection{Three-Islands Design}
+
+A more challenging design with two stable blobs, three ambiguous islands, and isolated outliers was also tested.
+
+\begin{itemize}
+\item \textbf{HH recovery:} At $\alpha = 0.05$, precision = 0.96, recall = 0.54, Jaccard = 0.52. Only 2 of 3 islands are captured as connected components.
+\item \textbf{FDR sensitivity:} Recall improves with higher $\alpha$ (0.42 at $\alpha=0.01$ to 0.64 at $\alpha=0.20$), while precision remains above 0.94.
+\end{itemize}
+
+These results demonstrate that LISA HH classification reliably recovers designed ambiguous regions with high precision, and that recall scales with the FDR threshold. The single-island design achieves near-perfect recovery; the three-islands design shows that multiple, smaller ambiguous regions are partially recovered, with some islands potentially lacking sufficient local density for detection.
+
+%% ---------------------------------------------------------------------------
+\subsection{Interpretable Rules for High-Multiplicity Regions}
+\label{sec:results-rules}
+
+To make hotspot findings actionable, we extract interpretable rules that describe HH and high-variance (HV, top 10\% by pointwise variance) regions in terms of original features.
+
+\subsubsection{Rule Extraction Methods}
+
+Four methods were applied: (1) shallow decision trees, (2) L1-regularized logistic regression, (3) cluster-describe (DBSCAN + rule fitting), and (4) beam search for conjunctive rules maximizing lift. Rules are evaluated by support (coverage), purity ($P(\text{label}=1 | \text{rule region})$), and lift (purity / base rate).
+
+\subsubsection{Results on COMPAS}
+
+On COMPAS (seed 0), the base rate for HV is 10.2\% (147 out of 1443 test points) and for HH is 3.3\% (48 points).
+
+\begin{itemize}
+\item Decision tree rules achieve purity up to 1.0 (lift $\approx 9.8$) for small rule regions (support $\sim$12).
+\item L1 logistic regression identifies \texttt{priors\_count} ($+0.75$) and \texttt{race\_Other} as the most enriched features for HV regions.
+\item Beam search finds HH rules with OOB purity $\sim$0.40 and lift $\sim$12.0; top features include \texttt{priors\_count} and \texttt{age}.
+\item OOB bootstrap evaluation confirms rule stability: median purity remains within 10\% of in-sample estimates.
+\end{itemize}
+
+Figure~\ref{fig:pca_hv_hh} shows HV and HH points in PCA space for COMPAS, confirming that the identified regions occupy a coherent part of the feature space.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.55\textwidth]{pca_hv_hh_compas.pdf}
+\caption{HV (top 10\% variance) and HH (LISA hotspot) points in PCA space for COMPAS seed 0. Both sets overlap substantially and occupy a distinct region.}
+\label{fig:pca_hv_hh}
+\end{figure}
+
+\subsubsection{Cross-Dataset Comparison}
+
+Rules were also extracted for German Credit and Breast Cancer. On German Credit, HV rules achieve purity 0.3--0.5 with features related to credit amount and employment duration. On Breast Cancer, HV regions correspond to intermediate cell measurements (neither clearly benign nor clearly malignant), consistent with clinical ambiguity at the classification boundary.
+
+%% ---------------------------------------------------------------------------
+\subsection{Aggregated Metrics Overview}
+\label{sec:results-dashboard}
+
+Table~\ref{tab:aggregated_metrics} provides a consolidated view of all key metrics aggregated across all 30 runs (3 datasets $\times$ 10 seeds), serving as a reference summary for the entire experimental evaluation.
+
+\begin{table}[htbp]
+\centering
+\caption{Aggregated metrics across all runs (mean $\pm$ std, $N=30$ runs, $K=25$, $k=30$).}
+\label{tab:aggregated_metrics}
+\small
+\begin{tabular}{llc}
+\hline
+Category & Metric & Value \\
+\hline
+Performance & Accuracy (Rashomon mean) & $0.80 \pm 0.13$ \\
+Performance & Brier score (Rashomon mean) & $0.13 \pm 0.08$ \\
+Performance & Accuracy (ensemble) & $0.81 \pm 0.13$ \\
+Performance & Brier score (ensemble) & $0.13 \pm 0.08$ \\
+\hline
+Pred.\ multiplicity & Mean variance & $0.003 \pm 0.002$ \\
+Pred.\ multiplicity & Ambiguity & $0.15 \pm 0.08$ \\
+Pred.\ multiplicity & Disagreement rate ($\varepsilon=0.05$) & $0.27 \pm 0.18$ \\
+Pred.\ multiplicity & Discrepancy & $0.08 \pm 0.04$ \\
+\hline
+Spatial multiplicity & Moran's $I$ ($k=30$) & $0.11 \pm 0.09$ \\
+Spatial multiplicity & HH count & $28.3 \pm 46.5$ \\
+Spatial multiplicity & LL count & $199.6 \pm 252.7$ \\
+Spatial multiplicity & Neighborhood agreement & $0.82 \pm 0.06$ \\
+Spatial multiplicity & LCAE ($k=30$) & $0.003 \pm 0.002$ \\
+\hline
+\end{tabular}
+\end{table}
+
+%% ---------------------------------------------------------------------------
+\subsection{Decision Boundary Proximity}
+\label{sec:results-margin}
+
+A natural hypothesis is that high-variance points are simply those near the decision boundary, where the ensemble mean prediction $\bar{p}_i$ is close to 0.5. We test this by computing the margin $m_i = |\bar{p}_i - 0.5|$ and correlating it with pointwise variance.
+
+Table~\ref{tab:margin_summary} summarizes the results. On Breast Cancer and German Credit, variance and margin are \emph{negatively} correlated (Pearson $r = -0.85$ and $-0.56$ respectively), confirming that high-variance points tend to have low margin (near the boundary). However, on COMPAS the correlation is essentially zero ($r = -0.04 \pm 0.09$), indicating that multiplicity is \emph{not} simply a boundary phenomenon on this dataset.
+
+\begin{table}[htbp]
+\centering
+\caption{Variance vs.\ margin correlation (mean $\pm$ std across 10 seeds). Margin = $|\bar{p} - 0.5|$.}
+\label{tab:margin_summary}
+\small
+\begin{tabular}{lcccc}
+\hline
+Dataset & Pearson $r$ & Spearman $\rho$ & Margin (HH) & Margin (non-HH) \\
+\hline
+Breast Cancer & $-0.85 \pm 0.14$ & $-0.99 \pm 0.01$ & $0.38 \pm 0.06$ & $0.47 \pm 0.01$ \\
+COMPAS        & $-0.04 \pm 0.09$ & $-0.07 \pm 0.18$ & $0.19 \pm 0.04$ & $0.18 \pm 0.01$ \\
+German        & $-0.56 \pm 0.13$ & $-0.70 \pm 0.10$ & $0.16 \pm 0.06$ & $0.26 \pm 0.02$ \\
+\hline
+\end{tabular}
+\end{table}
+
+A Mann--Whitney U test (alternative: HH has lower margin than non-HH) is significant for all Breast Cancer runs ($p < 0.001$, fraction significant = 1.0) and roughly half of German runs (fraction significant = 0.57), but only 30\% of COMPAS runs. Figure~\ref{fig:variance_vs_margin} shows a scatter plot for COMPAS seed 0: HH points (red) and HV points (orange) are spread across the full range of margins, confirming that spatial multiplicity on COMPAS is not reducible to decision-boundary proximity.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.65\textwidth]{variance_vs_margin_compas.pdf}
+\caption{Pointwise variance vs.\ margin ($|\bar{p}-0.5|$) for COMPAS seed 0. HH and HV points span a wide range of margins, showing that multiplicity is not purely a boundary effect.}
+\label{fig:variance_vs_margin}
+\end{figure}
+
+%% ---------------------------------------------------------------------------
+\subsection{Fairness and Subgroup Exposure (COMPAS)}
+\label{sec:results-fairness}
+
+We examine whether HH and HV regions disproportionately affect sensitive groups on COMPAS (race and sex). For each seed, we compute the fraction of each group's test points that fall in HH or HV regions.
+
+Table~\ref{tab:fairness} reports group-wise HH and HV rates (mean $\pm$ std across 10 seeds). African-Americans have a mean HH rate of 7.4\%, compared to 2.9\% for Caucasians and 1.9\% for Hispanics. The small-$n$ groups (Asian, Native American) show high rates but with large variance due to very few test points. HV rates follow a similar pattern (10.3\% for African-Americans vs.\ 7.3\% for Caucasians).
+
+\begin{table}[htbp]
+\centering
+\caption{COMPAS: HH and HV rates by group (mean $\pm$ std across 10 seeds). Larger groups are more reliable.}
+\label{tab:fairness}
+\small
+\begin{tabular}{llcccc}
+\hline
+Attribute & Group & $n$ (mean) & HH rate & HV rate & Mean variance \\
+\hline
+\multirow{6}{*}{Race}
+& African-American & 729 & $0.074 \pm 0.054$ & $0.103 \pm 0.016$ & $0.0013 \pm 0.0004$ \\
+& Caucasian        & 505 & $0.029 \pm 0.014$ & $0.073 \pm 0.013$ & $0.0012 \pm 0.0002$ \\
+& Hispanic         & 128 & $0.019 \pm 0.023$ & $0.091 \pm 0.032$ & $0.0012 \pm 0.0003$ \\
+& Other            &  71 & $0.113 \pm 0.124$ & $0.210 \pm 0.089$ & $0.0019 \pm 0.0005$ \\
+\hline
+\multirow{2}{*}{Sex}
+& Female & 279 & $0.054 \pm 0.059$ & $0.127 \pm 0.030$ & $0.0014 \pm 0.0003$ \\
+& Male   & 1164 & $0.056 \pm 0.032$ & $0.095 \pm 0.007$ & $0.0013 \pm 0.0003$ \\
+\hline
+\end{tabular}
+\end{table}
+
+A permutation test (1000 permutations of group labels) yields a mean $p$-value of 0.25 for race and 0.26 for sex, with significant disparity in 30\% (race) and 40\% (sex) of seeds. The observed disparity in HH rates across racial groups is moderately larger than expected under the null ($\Delta = 0.32$ observed vs.\ $0.13$ null mean for race), but not consistently significant across all seeds. This suggests that the racial composition of HH regions varies with the random split and Rashomon realization.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.7\textwidth]{fairness_hh_rate_by_race_compas.pdf}
+\caption{HH rate by race on COMPAS (mean $\pm$ std across 10 seeds). African-Americans have a higher HH rate than Caucasians and Hispanics.}
+\label{fig:fairness_hh_race}
+\end{figure}
+
+%% ---------------------------------------------------------------------------
+\subsection{Alternative kNN Graph Constructions}
+\label{sec:results-alt-graph}
+
+To verify that spatial results are not artifacts of the Euclidean distance metric on the raw standardized/OHE feature space, we compare two alternative kNN graph constructions: (1) kNN in PCA-reduced space (15 components) and (2) kNN with cosine distance. Table~\ref{tab:alt_graph} summarizes Moran's $I$ and HH count for each method.
+
+\begin{table}[htbp]
+\centering
+\caption{Moran's $I$ and HH count under alternative kNN graph constructions (mean $\pm$ std across 10 seeds, $k=30$).}
+\label{tab:alt_graph}
+\small
+\begin{tabular}{llcc}
+\hline
+Dataset & Method & Moran's $I$ & HH count \\
+\hline
+\multirow{3}{*}{COMPAS}
+& Euclidean (baseline)  & $0.199 \pm 0.077$ & $80.7 \pm 48.7$ \\
+& PCA (15 comp.)        & $0.198 \pm 0.076$ & $82.2 \pm 50.1$ \\
+& Cosine                & $0.213 \pm 0.083$ & $111.3 \pm 49.0$ \\
+\hline
+\multirow{3}{*}{German}
+& Euclidean (baseline)  & $0.104 \pm 0.040$ & $2.8 \pm 2.1$ \\
+& PCA (15 comp.)        & $0.098 \pm 0.040$ & $3.0 \pm 2.2$ \\
+& Cosine                & $0.114 \pm 0.043$ & $5.8 \pm 4.7$ \\
+\hline
+\multirow{3}{*}{Breast Cancer}
+& Euclidean (baseline)  & $0.032 \pm 0.021$ & $1.5 \pm 3.0$ \\
+& PCA (15 comp.)        & $0.033 \pm 0.022$ & $1.8 \pm 3.4$ \\
+& Cosine                & $0.037 \pm 0.023$ & $0.7 \pm 1.1$ \\
+\hline
+\end{tabular}
+\end{table}
+
+Moran's $I$ is remarkably consistent across all three graph constructions: Euclidean and PCA-based values are nearly identical (differences $< 0.01$), and cosine-based values are slightly higher. HH counts are also similar for Euclidean and PCA, with cosine producing somewhat more HH points on COMPAS and German. These results confirm that the spatial clustering findings are not sensitive to the choice of distance metric or dimensionality reduction.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{alternative_knn_comparison.pdf}
+\caption{Moran's $I$ (left) and HH count (right) under three kNN graph constructions: Euclidean (baseline), PCA-reduced (15 components), and cosine distance.}
+\label{fig:alt_graph}
+\end{figure}
+
+%% ---------------------------------------------------------------------------
+\subsection{Aggregated Drivers Across Seeds}
+\label{sec:results-agg-drivers}
+
+To ensure that driver and interpretability claims are robust, we aggregate the variance decomposition results across all 10 seeds.
+
+\subsubsection{Family Importance Across Seeds}
+
+Table~\ref{tab:fam_imp_agg} and Figure~\ref{fig:fam_imp_agg} report family importance (ratio of between-family to total variance) aggregated over 10 seeds for each dataset. Key findings:
+
+\begin{itemize}
+\item Family importance is highest on Breast Cancer ($0.62 \pm 0.05$), followed by German ($0.53 \pm 0.04$) and COMPAS ($0.41 \pm 0.03$). This reflects that on Breast Cancer, model family choice (rather than within-family hyperparameters) is the dominant driver of disagreement.
+\item Inside HH hotspots, family importance rises for all datasets: COMPAS $0.52 \pm 0.04$, German $0.57 \pm 0.08$, Breast Cancer $0.69 \pm 0.05$.
+\end{itemize}
+
+\begin{table}[htbp]
+\centering
+\caption{Family importance aggregated across 10 seeds: ratio of between-family to total variance.}
+\label{tab:fam_imp_agg}
+\small
+\begin{tabular}{lcccc}
+\hline
+Dataset & All points & HH only & Seeds (all) & Seeds (HH) \\
+\hline
+Breast Cancer & $0.62 \pm 0.05$ & $0.69 \pm 0.05$ & 10 & 4 \\
+COMPAS        & $0.41 \pm 0.03$ & $0.52 \pm 0.04$ & 10 & 10 \\
+German        & $0.53 \pm 0.04$ & $0.57 \pm 0.08$ & 10 & 4 \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{family_importance_aggregated.pdf}
+\caption{Family importance (all test points vs.\ HH only), aggregated across 10 seeds with error bars.}
+\label{fig:fam_imp_agg}
+\end{figure}
+
+\subsubsection{Hyperparameter Importance Across Seeds}
+
+Figure~\ref{fig:hp_imp_agg} shows the top hyperparameters per family on COMPAS, aggregated across 10 seeds. The ranking is highly consistent: LogReg $C$ ($0.94 \pm 0.05$), kNN \texttt{n\_neighbors} ($0.79 \pm 0.17$), RF \texttt{max\_depth} ($0.64 \pm 0.07$), GBM \texttt{learning\_rate} ($0.31 \pm 0.05$), and MLP \texttt{learning\_rate\_init} ($0.22 \pm 0.10$) are the top drivers within their respective families in every seed. These findings are consistent across German and Breast Cancer, with LogReg $C$ dominating across all datasets ($> 0.93$).
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{hp_importance_aggregated_compas.pdf}
+\caption{Top within-family HP importance on COMPAS (mean $\pm$ std across 10 seeds). Rankings are consistent across seeds: regularization strength and complexity parameters dominate.}
+\label{fig:hp_imp_agg}
+\end{figure}
+
+\subsubsection{Rule Feature Frequency Across Seeds}
+
+The interpretable rules extracted for COMPAS (Section~5.10) consistently use the same features across seeds and rule extraction methods. Table~\ref{tab:rule_freq} reports the frequency of feature appearance across all extracted rules. \texttt{age} and \texttt{priors\_count} dominate, appearing in 78 and 58 rules respectively. Race-related features (\texttt{race\_Other}) and sex appear less frequently but contribute to specific rules.
+
+\begin{table}[htbp]
+\centering
+\caption{Feature frequency in extracted rules for COMPAS (across all methods and seeds).}
+\label{tab:rule_freq}
+\small
+\begin{tabular}{lc}
+\hline
+Feature & Frequency \\
+\hline
+\texttt{age}                    & 78 \\
+\texttt{priors\_count}          & 58 \\
+\texttt{race\_Other}            & 10 \\
+\texttt{sex\_Female}            & 8 \\
+\texttt{c\_charge\_degree\_M}   & 4 \\
+\hline
+\end{tabular}
+\end{table}
+
+%% ---------------------------------------------------------------------------
+\subsection{Summary of Results}
+
+The experiments demonstrate that predictive multiplicity, as measured by observation-wise variance across the Rashomon set, is present in all three benchmark datasets and is spatially structured in feature space. Key findings:
+
+\begin{enumerate}
+\item \textbf{Spatial significance:} Global Moran's $I$ is positive and significant under the permutation null for 90\% of runs overall (100\% for COMPAS and German, 70\% for Breast Cancer).
+
+\item \textbf{Family differences:} Per-family analysis reveals that MLP and GBM produce the strongest spatial clustering, while LogReg shows the least multiplicity. Model family explains $\sim$39\% of prediction variance; this share rises to $\sim$46\% inside HH hotspots.
+
+\item \textbf{Hotspot stability:} HH regions occupy consistent regions of feature space across seeds, though the exact point sets vary (Jaccard $\sim$0.025). About 6\% of COMPAS test points are HH in $\geq$50\% of runs.
+
+\item \textbf{Robustness:} Findings are robust to $K \in \{5, \ldots, 50\}$ and $k \in \{10, \ldots, 50\}$. Calibration does not remove spatial structure (Jaccard of HH pre/post calibration $\sim$0.42--0.78).
+
+\item \textbf{Validation:} On synthetic data, LISA HH regions recover ground-truth ambiguous regions with precision 0.99 and recall 0.91.
+
+\item \textbf{Interpretability:} HH regions can be described by compact rules with lift up to 12$\times$ the base rate, with key features (\texttt{priors\_count}, \texttt{age}) stable under bootstrap evaluation and consistent across seeds.
+
+\item \textbf{Not purely a boundary effect:} On COMPAS, variance is essentially uncorrelated with decision-boundary margin ($r \approx -0.04$), showing that multiplicity reflects structural model disagreement rather than proximity to $\bar{p} = 0.5$. On Breast Cancer and German, a moderate negative correlation exists.
+
+\item \textbf{Fairness:} African-Americans on COMPAS have a higher HH rate ($\sim$7.4\%) than Caucasians ($\sim$2.9\%) and Hispanics ($\sim$1.9\%), though this disparity is not consistently significant across seeds ($p \approx 0.25$).
+
+\item \textbf{Graph robustness:} Moran's $I$ and HH counts are nearly identical under Euclidean, PCA-reduced, and cosine-based kNN graphs, confirming that spatial findings are not artifacts of the distance metric.
+
+\item \textbf{Aggregated drivers:} Family and HP importance rankings are highly stable across 10 seeds. Model family explains 41--62\% of variance depending on dataset; LogReg $C$ ($>$93\%) and kNN \texttt{n\_neighbors} ($>$70\%) are the top within-family drivers across all datasets and seeds.
+\end{enumerate}

@@ -1,0 +1,43 @@
+This thesis set out to investigate whether predictive multiplicity---the disagreement among near-optimal models---exhibits spatial structure in feature space, what drives it, and whether the resulting patterns are robust. The proposed framework combines Rashomon-set construction, observation-wise variance decomposition, and spatial autocorrelation analysis (Moran's $I$, LISA) to move beyond aggregate multiplicity metrics and toward a fine-grained, spatially explicit characterization of model instability.
+
+\subsection{Summary of Findings}
+
+Across three real-world datasets and five model families, the evidence consistently supports four main conclusions.
+
+\begin{enumerate}
+    \item \textbf{Multiplicity is spatially clustered.} Global Moran's $I$ is positive and statistically significant in the vast majority of experimental runs, confirming that observations with high predictive variance tend to neighbor other high-variance observations in feature space. LISA analysis further localizes these patterns into compact hotspot (HH) and coldspot (LL) clusters.
+
+    \item \textbf{Family choice is the dominant driver.} Between-family variance accounts for 41--62\% of total observation-wise variance globally and rises to 52--69\% inside hotspots, indicating that the choice of model family (e.g., gradient boosting vs.\ logistic regression) matters more than hyperparameter tuning for explaining which individuals receive unstable predictions.
+
+    \item \textbf{Hotspots are robust.} Spatial clustering patterns persist under changes to the Rashomon set size $K$, the kNN neighborhood parameter, post-hoc Platt calibration, PCA-reduced feature representations, and cosine distance metrics. The core spatial signal is not an artifact of any single analytical choice.
+
+    \item \textbf{Hotspots are interpretable.} Shallow decision trees and L1-regularized logistic regression produce compact rules (2--4 features) that describe high-multiplicity regions with high purity and lift. On COMPAS, these rules consistently involve age and prior criminal history, identifying subpopulations for whom automated predictions are least reliable.
+\end{enumerate}
+
+Additionally, a synthetic validation experiment with ground-truth ambiguous regions confirms that the pipeline recovers known instability zones with precision 0.99 and recall 0.91, providing methodological assurance that the detected hotspots on real data reflect genuine structure rather than statistical noise.
+
+\subsection{Interpretation}
+
+These results reframe predictive multiplicity from a global model-selection nuisance into a spatially structured, observation-level phenomenon. The practical implication is that multiplicity does not affect all individuals equally: certain subpopulations---identifiable through their features---are systematically more exposed to the arbitrariness of model choice. For deployment contexts such as recidivism prediction or credit scoring, this means that a single model's prediction may be especially unreliable for the very individuals who are most affected by automated decisions.
+
+The variance decomposition further suggests that reducing multiplicity is partly a matter of model-family selection. If between-family variance dominates, then restricting the hypothesis class to a single family can substantially reduce disagreement, at the cost of forgoing the diversity that makes Rashomon-set analysis informative. This trade-off is inherent and should be made explicit in any deployment decision.
+
+\subsection{Limitations}
+
+Several limitations should be acknowledged. First, the Rashomon set is constructed by training a finite pool of models (250 per run) and selecting the top-$K$; this discrete approximation may not capture the full continuous Rashomon set, particularly for model families with large hyperparameter spaces. Second, the spatial analysis relies on Euclidean kNN graphs in the original (or PCA-reduced) feature space; while we show robustness to cosine distance and dimensionality reduction, feature spaces with complex manifold structure may require more sophisticated graph constructions. Third, the fairness analysis on COMPAS is descriptive rather than causal: elevated hotspot rates in certain demographic groups indicate differential exposure to multiplicity but do not establish a causal mechanism. Fourth, the interpretable rule extraction depends on the expressiveness of the rule learner; more complex hotspot boundaries may require richer rule languages.
+
+\subsection{Future Work}
+
+Several directions emerge naturally from this work.
+
+\begin{itemize}
+    \item \textbf{Continuous Rashomon sets.} Replacing the discrete model pool with continuous relaxations~\cite{hsu_rashomongb_2024} could yield tighter characterizations of multiplicity and enable gradient-based spatial analysis.
+
+    \item \textbf{Multiplicity-aware deployment.} The identified hotspot regions could inform selective prediction abstention or human-in-the-loop referral strategies, where the system flags individuals in high-variance zones for manual review rather than issuing an automated decision.
+
+    \item \textbf{Longitudinal and temporal extensions.} Studying how hotspot locations shift as the data distribution evolves over time would connect spatial multiplicity analysis with the broader problem of distribution shift and concept drift.
+
+    \item \textbf{Causal analysis of fairness disparities.} Moving from descriptive group-wise hotspot rates to causal modeling of why certain groups are more exposed to multiplicity could inform targeted interventions in model design.
+\end{itemize}
+
+In summary, this thesis demonstrates that taking a spatial perspective on predictive multiplicity reveals meaningful structure that aggregate metrics obscure. The tools and findings presented here offer a foundation for more transparent, robust, and equitable deployment of machine learning in high-stakes settings.

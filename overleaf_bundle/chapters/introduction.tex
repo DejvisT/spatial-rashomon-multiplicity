@@ -1,0 +1,96 @@
+Supervised machine learning (ML) models are widely used to support decision making in areas such as healthcare, finance, and criminal justice. Their appeal lies in their strong predictive performance, but this often comes at the cost of transparency: multiple models with similar accuracy may behave differently, making their predictions difficult to interpret and trust. Classical evaluation metrics such as accuracy or AUC provide only a coarse summary of model quality and offer little insight into the stability of individual predictions.
+
+Recent work shows that modern ML pipelines typically yield not a single model, but a collection of distinct models that perform almost equally well on the same task. These models may disagree in their predictions for specific individuals, despite being indistinguishable in terms of overall predictive accuracy. This raises fundamental questions about the reliability, fairness, and interpretability of automated decision systems: if several equally accurate models exist, which one should be trusted, and how stable are the conclusions drawn from any single one?
+
+In this work, we study this phenomenon---known as \emph{predictive multiplicity}---by examining how predictions vary across sets of near-optimal models, whether this variation exhibits spatial structure in feature space, and what drives it. We propose a spatial analysis framework that combines observation-wise predictive variance with tools from spatial statistics to identify, localize, and interpret regions of instability.
+
+\subsection{Motivation}
+
+Automated decision systems are increasingly used to support consequential decisions in domains such as criminal justice, credit approval, healthcare, and social services. These systems typically rely on predictive models trained on historical data, and the selected model is often treated as if it were the only, definitive representation of the relationship between inputs and outcomes. In practice, however, modern machine learning pipelines often produce many different models that achieve nearly identical accuracy. These models all appear equally valid from a performance perspective, yet they can still produce different predictions for the same individual. The following fictional examples illustrate how the existence of multiple, equally accurate models can lead to instability, and why this undermines the reliability of automated decision systems.
+
+\subsubsection{Example 1: Prediction Instability at the Individual Level}
+
+Jordan is evaluated by an automated risk assessment system. The deployed model predicts a risk of reoffending within two years with a probability of 0.29, classifying Jordan as ``low risk.'' During an audit, the defense gains access to all models that perform within a small tolerance of the optimal validation accuracy. Although these models are equally accurate overall, they produce substantially different predictions for Jordan, ranging from 0.22 to 0.54.
+
+The prediction-instability score, defined as the variance of Jordan's predicted risk across all equally accurate models, is 0.017, placing Jordan among the most unstable individuals in the dataset. Whether Jordan is assessed as low-risk or high-risk depends not on the data alone, but on which near-optimal model the training procedure happened to select.
+
+\subsubsection{Example 2: Spatial Clustering of Instability}
+
+An auditor discovers that individuals like Jordan are not isolated cases. By mapping prediction instability scores onto the feature space of all individuals evaluated by the system, a clear pattern emerges: high-instability individuals cluster together in specific regions of the input space. Using spatial autocorrelation statistics (Moran's $I$), the auditor confirms that this clustering is statistically significant and not due to chance.
+
+The auditor identifies ``hotspot'' regions---contiguous groups of individuals whose predictions are systematically unstable across near-optimal models. These hotspots correspond to subpopulations for whom the system's output is particularly unreliable: the specific model chosen during training determines their classification outcome more than their actual characteristics do.
+
+\subsubsection{Example 3: Drivers of Instability}
+
+To understand \emph{why} certain individuals land in instability hotspots, the auditor decomposes the prediction variance. About 39\% of the total prediction variance turns out to be explained by model family (e.g., neural networks vs.\ tree-based models vs.\ logistic regression). Within each family, specific hyperparameters drive additional variance: for neural networks, the learning rate and architecture matter most; for tree-based models, the maximum tree depth dominates.
+
+Moreover, the drivers differ between hotspot and non-hotspot regions. Inside the instability hotspots, neural network architecture choices explain more variance than they do globally, suggesting that these regions are where architectural decisions have the most consequential impact on predictions.
+
+\medskip
+
+Together, these examples reveal that predictive multiplicity is not merely a global nuisance but a spatially structured phenomenon: it concentrates in identifiable regions of the feature space, affects specific subpopulations, and is driven by identifiable modeling choices. Understanding where such instability occurs and what drives it is essential for the development of reliable and transparent automated decision systems.
+
+\subsection{Predictive Multiplicity and Rashomon Sets}
+
+The phenomenon illustrated above has been formalized under two related concepts. \emph{Predictive multiplicity} \citep{marx_predictive_2020} refers to the situation where models with similar overall performance produce conflicting predictions for individual observations. The \emph{Rashomon effect} \citep{breiman_statistical_2001} describes the broader observation that many distinct models can explain the same data equally well.
+
+The set of near-optimal models is called the \emph{Rashomon set}:
+\[
+\mathcal{R}_\varepsilon = \{ f \in \mathcal{F} : L(f) \leq L^* + \varepsilon \},
+\]
+where $L^*$ is the best achievable loss and $\varepsilon$ controls the tolerance. Prior work has studied predictive multiplicity through metrics such as ambiguity (the range of predictions), discrepancy (maximum pairwise disagreement), and disagreement rate (fraction of observations where models disagree beyond a threshold). In this thesis, ambiguity and discrepancy follow the probability-space definitions used in the \emph{Resolving Predictive Multiplicity for the Rashomon Set} framework. However, these metrics treat observations independently and do not capture spatial structure---whether instability concentrates in specific regions of the feature space, how stable these regions are, or what drives them.
+
+\subsection{Problem Statement}
+
+Predictive models with similar accuracy can differ substantially in their predictions. Such variation arises naturally in modern machine learning pipelines due to changes in model family, hyperparameters, random seeds, or optimization paths. Standard evaluation metrics do not reveal whether an individual prediction is stable across near-optimal models, whether instability clusters in specific regions of the input space, or what modeling choices drive it. As a result, users of automated decision systems cannot assess how reliable a prediction truly is, nor identify which subpopulations are most affected.
+
+The problem addressed in this thesis is to characterize and quantify how predictions vary across sets of equally accurate models, with a focus on the \emph{spatial structure} of this variation in feature space. Specifically, we ask: (i) how much do individual predictions vary across near-optimal models? (ii) does this variation cluster spatially, forming identifiable hotspots? (iii) what are the drivers---model family, hyperparameters---of this instability? and (iv) can the affected regions be described by interpretable rules?
+
+\subsection{Research Questions}
+
+Building on the problem described above, this thesis investigates the following research questions:
+
+\begin{enumerate}
+\item \textbf{Prediction-Level Multiplicity.}
+How much do individual predictions vary across equally accurate models, and which individuals are most affected? Is this variation statistically significant compared to a chance baseline?
+
+\item \textbf{Spatial Structure of Multiplicity.}
+Does predictive variance exhibit spatial autocorrelation in feature space? Can we identify contiguous High--High (HH) hotspot regions where models systematically disagree?
+
+\item \textbf{Stability of Spatial Patterns.}
+Are the identified hotspot regions stable across different data splits and Rashomon set realizations, or are they artifacts of specific random seeds?
+
+\item \textbf{Drivers of Multiplicity.}
+How much of the predictive variance is explained by model family versus hyperparameters within each family? Do the drivers differ between hotspot and non-hotspot regions?
+
+\item \textbf{Robustness and Sensitivity.}
+Are the spatial multiplicity findings robust to (a) the Rashomon set size $K$, (b) the neighborhood size $k$ in the spatial graph, and (c) post-hoc probability calibration?
+
+\item \textbf{Validation.}
+Does the pipeline correctly recover known ambiguous regions when applied to synthetic data with ground-truth instability?
+
+\item \textbf{Interpretable Characterization.}
+Can the identified high-multiplicity regions be described by simple, interpretable rules in terms of the original features?
+\end{enumerate}
+
+\subsection{Contributions of This Thesis}
+
+This thesis makes the following contributions:
+
+\begin{enumerate}
+\item \textbf{Spatial multiplicity framework.} We propose a pipeline that combines observation-wise predictive variance with spatial statistics (Moran's $I$, LISA) to detect, localize, and test for significance of multiplicity hotspots in feature space.
+
+\item \textbf{Variance decomposition.} We decompose predictive variance into between-family and within-family (hyperparameter) components, identifying which modeling choices drive instability globally and within hotspots specifically.
+
+\item \textbf{Comprehensive empirical evaluation.} We evaluate the framework on three benchmark datasets (COMPAS, German Credit, Breast Cancer) with 10 outer runs each, five model families, and 250 candidate models per run, providing robust evidence across domains.
+
+\item \textbf{Validation on synthetic data.} We demonstrate on synthetic datasets with known ambiguous regions that LISA HH hotspots recover the ground-truth instability regions with high precision and recall.
+
+\item \textbf{Robustness analysis.} We show that the findings are robust to the Rashomon set size, neighborhood graph density, and post-hoc calibration, and that spatial structure is not an artifact of probability miscalibration.
+
+\item \textbf{Interpretable rules.} We show that high-multiplicity regions can be described by compact decision rules with high purity and lift, making the spatial findings actionable for practitioners.
+\end{enumerate}
+
+\subsection{Thesis Structure}
+
+The remainder of this thesis is organized as follows. Chapter~2 reviews related work on predictive multiplicity, Rashomon sets, and spatial statistics. Chapter~3 presents the methodology: observation-wise variance, spatial analysis, null models, variance decomposition, and calibration robustness checks. Chapter~4 describes the experimental setup: datasets, model families, training protocol, and analysis parameters. Chapter~5 presents the results, organized by research question. Chapter~6 discusses the findings, limitations, and implications. Chapter~7 concludes and outlines directions for future work.

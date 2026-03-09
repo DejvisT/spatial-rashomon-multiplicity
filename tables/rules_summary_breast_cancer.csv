@@ -1,0 +1,10 @@
+method,label,rule,support,precision,recall,lift
+tree,HV_q,num__radius error > -0.4283 AND num__worst area <= 0.3693 AND num__mean concavity > -0.5347 AND num__smoothness error <= -0.0003538 OR num__radius error > -0.4283 AND num__worst area <= 0.3693 AND num__mean concavity > -0.5347 AND num__smoothness error > -0.0003538,23,0.5217391304347826,1.0,4.956521739130435
+l1_logreg,HV_q,num__concave points error=+0.3508 | num__smoothness error=-0.3093 | num__compactness error=+0.1747 | num__symmetry error=+0.09207 | num__worst smoothness=-0.02791 | num__worst concave points=+0 | num__worst compactness=+0 | num__worst concavity=+0 | num__worst area=+0 | num__worst perimeter=+0 | num,25,0.28,0.5833333333333334,2.6600000000000006
+cluster_describe,HV_q,Cluster0: num__fractal dimension error > 3.812,3,1.0,0.25,9.5
+cluster_describe,HV_q,Cluster1: num__radius error > -0.4283 AND num__worst area <= 0.3693 AND num__worst perimeter > -0.4468,21,0.5238095238095238,0.9166666666666666,4.976190476190476
+beam_search,HV_q,num__mean compactness > 0.5097 AND num__worst radius <= 0.5852 AND num__worst texture <= 0.6123,10,0.7,0.5833333333333334,6.65
+beam_search,HV_q,num__mean compactness > 0.5097 AND num__worst perimeter <= 0.6091 AND num__worst texture <= 0.6123,10,0.7,0.5833333333333334,6.65
+beam_search,HV_q,num__mean compactness > 0.5097 AND num__worst area <= 0.4305 AND num__worst texture <= 0.6123,10,0.7,0.5833333333333334,6.65
+beam_search,HV_q,num__mean compactness > 0.5097 AND num__mean radius <= 0.5646 AND num__worst texture <= 0.6123,10,0.7,0.5833333333333334,6.65
+beam_search,HV_q,num__mean compactness > 0.5097 AND num__mean perimeter <= 0.5264 AND num__worst texture <= 0.6123,10,0.7,0.5833333333333334,6.65

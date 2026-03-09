@@ -1,0 +1,79 @@
+This chapter interprets the empirical results beyond metric reporting, connects them back to the research questions, and discusses the practical and methodological implications of treating predictive multiplicity as a spatially structured phenomenon.
+
+\subsection{From Global Multiplicity to Local Risk}
+
+The central empirical message is that multiplicity is not uniform across the population. Global disagreement metrics (ambiguity, discrepancy, disagreement rate) are informative but incomplete: they quantify \emph{how much} disagreement exists overall, yet they do not reveal \emph{who} is affected most. By combining observation-wise predictive variance with Moran's $I$ and LISA, we show that disagreement concentrates in contiguous HH regions in feature space.
+
+This result changes the interpretation of model uncertainty in practice. Under a single deployed model, two individuals may receive equally confident probabilities, but one may lie in a high-multiplicity region where many near-optimal models disagree strongly, while the other lies in a stable region. The first prediction is therefore operationally less reliable, even if both scores are numerically similar.
+
+\subsection{Research Questions Revisited}
+
+\paragraph{RQ1--RQ2 (prediction-level multiplicity and spatial structure).}
+Across datasets, observation-wise variance is nontrivial and spatially clustered, with strong evidence on COMPAS and German Credit and weaker but still present structure on Breast Cancer. The null experiments support that this is not explained by random assignment of variance values to observations.
+
+\paragraph{RQ3 (stability of spatial patterns).}
+At the level of exact HH point sets, overlap across runs is modest. However, at the level of \emph{regions}, unstable areas recur in similar parts of feature space. This distinction is important: pointwise labels are sensitive to finite-sample perturbations, while regional structure is more stable.
+
+\paragraph{RQ4 (drivers of multiplicity).}
+Variance decomposition shows that model family explains a large share of disagreement globally, and an even larger share inside hotspots. Within families, a small number of hyperparameters dominate (e.g., regularization strength in LogReg, neighborhood size in kNN, depth/rate controls in tree-based models, optimization/architecture controls in MLP).
+
+\paragraph{RQ5 (robustness and sensitivity).}
+The core conclusions are robust under changes in $K$, neighborhood size $k$, post-hoc calibration, and alternative graph constructions (PCA and cosine). Robustness across these checks increases confidence that the spatial signal is structural rather than a tuning artifact.
+
+\paragraph{RQ6--RQ7 (synthetic validation and interpretability).}
+Synthetic experiments with known ambiguous regions confirm that the pipeline can recover ground-truth instability zones with high precision. Rule extraction demonstrates that hotspot regions can be summarized by compact feature conditions, making multiplicity diagnostics actionable rather than purely descriptive.
+
+\subsection{Practical Implications}
+
+The findings suggest a deployment workflow that is different from standard ``single best model'' practice:
+\begin{enumerate}
+    \item train and retain a near-optimal model set,
+    \item compute pointwise variance and hotspot maps,
+    \item flag predictions in high-multiplicity regions for caution, abstention, or human review.
+\end{enumerate}
+
+For high-stakes applications, this enables risk-aware use of model outputs: users can distinguish between predictions that are stable across near-optimal alternatives and predictions that are highly contingent on arbitrary model-selection choices.
+
+The subgroup exposure analysis indicates that multiplicity can be unevenly distributed across demographic groups. Even when disparities are not consistently significant across all seeds, they are large enough in several runs to justify routine multiplicity audits as part of fairness monitoring.
+
+\subsection{Methodological Reflection}
+
+An important conceptual point is that multiplicity and decision-boundary uncertainty are related but not identical. On some datasets (Breast Cancer, German), high-variance points are strongly associated with low margin. On COMPAS, this relationship is weak, indicating that multiplicity can arise from structural differences among model families and hyperparameters, not only from boundary proximity.
+
+This supports the value of separating three views of uncertainty:
+\begin{itemize}
+    \item \textbf{aleatoric/data ambiguity} (intrinsic overlap),
+    \item \textbf{epistemic/model uncertainty} (limited data or model misspecification),
+    \item \textbf{Rashomon multiplicity} (many equally accurate but behaviorally different models).
+\end{itemize}
+The proposed pipeline is primarily a tool for the third category.
+
+\subsection{Limitations and Threats to Validity}
+
+Despite strong empirical evidence, several limitations remain:
+\begin{itemize}
+    \item \textbf{Finite approximation of the Rashomon set.} The top-$K$ candidate approach approximates a potentially much larger continuous set. Results depend on the explored hyperparameter grids and model families.
+    \item \textbf{Graph dependence.} Although robustness checks across graph constructions are encouraging, the analysis still depends on neighborhood definitions in transformed feature space.
+    \item \textbf{Small subgroup uncertainty.} Some demographic categories have very low sample counts, causing wide variability in subgroup rates and reduced inferential reliability.
+    \item \textbf{Descriptive fairness analysis.} The subgroup exposure results are observational and do not establish causal mechanisms for disparity.
+    \item \textbf{External validity.} Experiments use three benchmark datasets; conclusions should be validated on larger and more domain-specific deployments before operational use.
+\end{itemize}
+
+\subsection{Position Relative to Prior Work}
+
+Relative to prior multiplicity studies, this thesis contributes a spatially explicit diagnostic layer. Existing methods largely provide global disagreement summaries or per-instance intervals; our results show that adding feature-space localization changes the practical interpretation of multiplicity by identifying coherent regions of instability and their drivers.
+
+This also complements interpretability research: instead of explaining one model's predictions, we explain \emph{where model choice itself matters}. In settings where governance and accountability are central, this perspective is often more relevant than explanations of a single selected model.
+
+\subsection{Future Directions}
+
+The most promising next steps are:
+\begin{itemize}
+    \item continuous/optimization-based Rashomon approximations,
+    \item multiplicity-aware selective prediction and abstention policies,
+    \item temporal tracking of hotspot drift under distribution shift,
+    \item stronger inferential fairness analyses with hierarchical or causal designs,
+    \item extension to multiclass tasks and regression.
+\end{itemize}
+
+Overall, the evidence supports the thesis claim: predictive multiplicity is a structured property of model classes and data geometry, not just random training noise, and it should be measured, localized, and reported in any high-stakes ML deployment.

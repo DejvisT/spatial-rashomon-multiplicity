@@ -4,3 +4,5 @@ figures/
 .RData
 .Rhistory
 __pycache__/
+results/
+results_fixed_test/

@@ -5,4 +5,8 @@ matplotlib==3.10.5
 tqdm==4.67.1
 joblib==1.5.2
 nbformat==5.10.4
+# For analysis/run_analysis.py spatial and null (PySAL)
+libpysal>=4.9
+esda>=2.5
+scipy>=1.10
 

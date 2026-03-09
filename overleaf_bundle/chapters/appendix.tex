@@ -1,0 +1,66 @@
+\subsection{Within-Family Hyperparameter Importance (All Families)}
+\label{app:hp-importance}
+
+This section reports the full within-family hyperparameter importance results for all five model families on COMPAS (seed 0), complementing the summary in Section~5.7. For each family, Figure~\ref{fig:hp_importance_gbm} and Figure~\ref{fig:hp_importance_mlp} show bar charts of the \texttt{ratio\_of\_sums} for each hyperparameter.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.8\textwidth]{within_family_hp_importance_compas_seed0_GBM.pdf}
+\caption{Within-family HP importance for GBM on COMPAS seed 0: ratio of between-HP-group variance to total variance per hyperparameter.}
+\label{fig:hp_importance_gbm}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.8\textwidth]{within_family_hp_importance_compas_seed0_MLP.pdf}
+\caption{Within-family HP importance for MLP on COMPAS seed 0.}
+\label{fig:hp_importance_mlp}
+\end{figure}
+
+\subsection{Family-Wise Spatial Comparison}
+\label{app:family-spatial}
+
+Figure~\ref{fig:family_vs_global_spatial} compares Moran's $I$ and HH count across model families and the global Rashomon set for COMPAS, aggregated over 10 seeds.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{family_vs_global_spatial_compas.pdf}
+\caption{Family-wise vs.\ global Moran's $I$ and HH count for COMPAS (mean $\pm$ std over 10 seeds). MLP shows the strongest spatial clustering.}
+\label{fig:family_vs_global_spatial}
+\end{figure}
+
+\subsection{Variance vs.\ Moran's $I$ Correlation}
+\label{app:variance-moran}
+
+Figure~\ref{fig:variance_vs_moran} shows the relationship between mean variance and Moran's $I$ across runs for COMPAS.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.55\textwidth]{variance_vs_moran_compas.pdf}
+\caption{Mean variance vs.\ Moran's $I$ across runs for COMPAS. Higher overall multiplicity tends to accompany stronger spatial structure.}
+\label{fig:variance_vs_moran}
+\end{figure}
+
+\subsection{Family Between-Ratio Histogram}
+\label{app:between-ratio-hist}
+
+Figure~\ref{fig:between_ratio_hist} shows the per-observation distribution of the between-family variance ratio on COMPAS seed 0. The distribution is right-skewed, with most observations having moderate family importance but a tail of observations where family explains $>$60\% of variance.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.6\textwidth]{family_between_ratio_hist_compas_seed0.pdf}
+\caption{Distribution of per-observation between-family variance ratio (COMPAS seed 0). Most observations have moderate family importance; a long tail indicates observations where family choice is particularly consequential.}
+\label{fig:between_ratio_hist}
+\end{figure}
+
+\subsection{Interpretable Rules: Support vs.\ Purity}
+\label{app:rules-support-purity}
+
+Figure~\ref{fig:rules_support_purity} shows the trade-off between rule support (coverage) and purity for all rule extraction methods on COMPAS.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.65\textwidth]{rules_support_precision_compas.pdf}
+\caption{Rule support vs.\ purity for all extraction methods on COMPAS seed 0. Decision tree rules achieve high purity at low support; L1 logistic regression achieves broader coverage at lower purity.}
+\label{fig:rules_support_purity}
+\end{figure}

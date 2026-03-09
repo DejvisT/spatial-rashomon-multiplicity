@@ -1,0 +1,9 @@
+family,hp_name,group_label,hp_value_min,hp_value_max,n_models_in_group,hv_count,hh_count,overlap_count,mean_var
+kNN,n_neighbors,"(2.999, 10.0]",2.999,10.0,8,142,54,28,0.010946714263040794
+kNN,n_neighbors,"(10.0, 25.0]",10.0,25.0,6,1,2,0,0.0018716339416339415
+kNN,n_neighbors,"(25.0, 70.0]",25.0,70.0,5,1,4,0,0.0014067410581696295
+kNN,n_neighbors,"(70.0, 150.0]",70.0,150.0,6,198,6,2,0.011382813007787347
+kNN,p,1.0,1.0,1.0,12,108,34,14,0.010643044365927964
+kNN,p,2.0,2.0,2.0,13,207,31,12,0.013673801027731662
+kNN,weights,distance,distance,distance,1,0,0,0,0.0
+kNN,weights,uniform,uniform,uniform,24,94,37,16,0.01023497045283047

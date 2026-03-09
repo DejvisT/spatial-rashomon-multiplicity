@@ -40,7 +40,8 @@ def jaccard_index(mask_a: np.ndarray, mask_b: np.ndarray) -> float:
 
     union = np.logical_or(a, b).sum()
     if union == 0:
-        return 0.0
+        # By convention, two empty sets are perfectly identical.
+        return 1.0
 
     intersection = np.logical_and(a, b).sum()
     return intersection / union

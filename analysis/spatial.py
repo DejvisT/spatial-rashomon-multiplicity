@@ -101,6 +101,8 @@ def moran_global(
 
     num = v_centered @ (W @ v_centered)
     den = v_centered @ v_centered
+    if den < 1e-12:
+        return {"I": 0.0, "p_value": 1.0}
     I = num / den
 
     permuted = []
@@ -136,18 +138,27 @@ def lisa_local(
     rng = np.random.RandomState(seed)
 
     v = np.asarray(v)
-    z = (v - v.mean()) / v.std(ddof=0)
+    std = v.std(ddof=0)
+    if std < 1e-12:
+        return pd.DataFrame({
+            "Ii": np.zeros(len(v)),
+            "p_value": np.ones(len(v)),
+            "cluster": np.full(len(v), "NS", dtype=object),
+        })
+    z = (v - v.mean()) / std
 
     lag_z = W @ z
     Ii = z * lag_z
 
-    # permutation test per observation
+    # Conditional permutation test per observation (hold z[i] fixed)
     p_vals = np.zeros_like(z)
     for i in range(len(z)):
+        others = np.delete(z, i)
         perm_stats = []
         for _ in range(permutations):
-            zp = rng.permutation(z)
-            perm_stats.append(z[i] * (W[i] @ zp))
+            others_perm = rng.permutation(others)
+            z_perm = np.insert(others_perm, i, z[i])
+            perm_stats.append(z[i] * (W[i] @ z_perm))
         perm_stats = np.asarray(perm_stats)
         p_vals[i] = (np.abs(perm_stats) >= np.abs(Ii[i])).mean()
 
@@ -188,11 +199,12 @@ def lisa_local(
 
 def extract_hh_components(
     lisa_df: pd.DataFrame,
-    W: sparse.csr_matrix,
+    W: sparse.spmatrix,
     min_size: int = 5,
 ) -> Tuple[np.ndarray, Dict[int, np.ndarray]]:
     """
     Extract connected components of HH points.
+    W is converted to CSR internally if needed (e.g. PySAL may provide COO).
 
     Returns
     -------
@@ -201,6 +213,10 @@ def extract_hh_components(
     """
     hh_mask = lisa_df["cluster"].values == "HH"
     n = len(hh_mask)
+
+    # Row indexing W[u] requires CSR; PySAL may give COO
+    if not isinstance(W, sparse.csr_matrix):
+        W = sparse.csr_matrix(W)
 
     visited = np.zeros(n, dtype=bool)
     comp_id = -np.ones(n, dtype=int)

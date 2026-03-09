@@ -234,200 +234,45 @@ def plot_controversial_cases(metrics: Dict, y_test: np.ndarray = None,
     plt.show()
 
 
-# PDP plots
+# Conflict vs variance plots
 
-def plot_pdp_overlay(pdp_result: Dict, feature_name: str, 
-                     n_models: int = 30, save_dir: str = None) -> None:
+
+def plot_conflict_vs_variance(
+    var_p: np.ndarray,
+    conflict: np.ndarray,
+    *,
+    var_thresh: float = None,
+    conflict_thresh: float = None,
+    alpha: float = 0.3,
+    s: int = 15,
+    title: str = "Soft Variance vs Hard Conflict",
+    save_dir: str = None,
+    filename: str = "conflict_vs_variance.png",
+) -> None:
     """
-    Plot PDP overlay for a single feature.
-    """
-    set_style()
-    
-    fig, ax = plt.subplots(figsize=(10, 6))
-    
-    # Handle categorical grids (strings) vs numeric grids
-    grid = pdp_result['grid']
-    is_categorical = isinstance(grid, (list, tuple, np.ndarray)) and len(grid) > 0 and isinstance(grid[0], str)
-    x = np.arange(len(grid)) if is_categorical else grid
-
-    # Plot individual PDPs
-    n_plot = min(n_models, pdp_result['pdp_matrix'].shape[0])
-    if is_categorical:
-        for i in range(n_plot):
-            ax.plot(
-                x,
-                pdp_result['pdp_matrix'][i],
-                linestyle='-',
-                marker='o',
-                markersize=5,
-                linewidth=0.8,
-                alpha=0.25,
-                color='steelblue',
-            )
-    else:
-        for i in range(n_plot):
-            ax.plot(
-                x,
-                pdp_result['pdp_matrix'][i],
-                alpha=0.3,
-                color='steelblue',
-                linewidth=0.8,
-            )
-    
-    # Plot mean PDP
-    if is_categorical:
-        ax.plot(x, pdp_result['mean_pdp'], '-o', color='red', linewidth=2.0, markersize=7, label='Mean')
-        ax.set_xticks(x)
-        ax.set_xticklabels(list(grid), rotation=30, ha='right')
-    else:
-        ax.plot(x, pdp_result['mean_pdp'], 'r-', linewidth=2.5, label='Mean')
-    
-    ax.set_xlabel(feature_name)
-    ax.set_ylabel('Predicted Probability')
-    ax.set_title(f'PDP Overlay: {feature_name} (Mean Variance = {pdp_result["mean_variance_pdp"]:.4f})')
-    ax.legend()
-    
-    plt.tight_layout()
-    save_figure(fig, f'pdp_{feature_name}.png', save_dir)
-    plt.show()
-
-
-def plot_pdp_top_features(pdp_results: Dict, top_n: int = 4, 
-                          save_dir: str = None) -> None:
-    """
-    Plot PDP overlays for top N most unstable features.
+    Scatter plot of per-point soft variance (y) vs hard conflict ratio (x).
+    Optionally draws threshold lines for quadrant analysis.
     """
     set_style()
-    
-    # Get ranking
-    ranking = sorted(pdp_results.items(), key=lambda x: x[1]['mean_variance_pdp'], reverse=True)
-    top_features = ranking[:top_n]
-    
-    n_cols = 2
-    n_rows = (top_n + 1) // 2
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(14, 5*n_rows))
-    axes = axes.flatten()
-    
-    for i, (fname, res) in enumerate(top_features):
-        ax = axes[i]
+    fig, ax = plt.subplots(figsize=(8, 6))
 
-        grid = res['grid']
-        is_categorical = isinstance(grid, (list, tuple, np.ndarray)) and len(grid) > 0 and isinstance(grid[0], str)
-        x = np.arange(len(grid)) if is_categorical else grid
-        
-        # Plot individual PDPs
-        n_plot = min(30, res['pdp_matrix'].shape[0])
-        if is_categorical:
-            for j in range(n_plot):
-                ax.plot(
-                    x,
-                    res['pdp_matrix'][j],
-                    linestyle='-',
-                    marker='o',
-                    markersize=5,
-                    linewidth=0.8,
-                    alpha=0.25,
-                    color='steelblue',
-                )
-            ax.plot(x, res['mean_pdp'], '-o', color='red', linewidth=2.0, markersize=7, label='Mean')
-            ax.set_xticks(x)
-            ax.set_xticklabels(list(grid), rotation=30, ha='right')
-        else:
-            for j in range(n_plot):
-                ax.plot(x, res['pdp_matrix'][j], alpha=0.3, color='steelblue')
-            ax.plot(x, res['mean_pdp'], 'r-', linewidth=2, label='Mean')
-        ax.set_xlabel(fname)
-        ax.set_ylabel('Predicted Probability')
-        ax.set_title(f'{fname} (Mean Variance = {res["mean_variance_pdp"]:.4f})')
-        ax.legend(loc='best')
-    
-    # Hide empty subplots
-    for i in range(len(top_features), len(axes)):
-        axes[i].set_visible(False)
-    
-    plt.suptitle('PDP Overlay: Top Unstable Features', fontsize=14, y=1.02)
+    ax.scatter(conflict, var_p, alpha=alpha, s=s, c="steelblue", edgecolors="none")
+
+    if conflict_thresh is not None:
+        ax.axvline(conflict_thresh, color="crimson", linestyle="--", linewidth=1,
+                   label=f"conflict thresh = {conflict_thresh:.4f}")
+    if var_thresh is not None:
+        ax.axhline(var_thresh, color="darkorange", linestyle="--", linewidth=1,
+                   label=f"var_p thresh = {var_thresh:.4f}")
+
+    ax.set_xlabel("Hard conflict ratio  min(q, 1-q)")
+    ax.set_ylabel("Soft prediction variance  Var(p)")
+    ax.set_title(title)
+    if conflict_thresh is not None or var_thresh is not None:
+        ax.legend(fontsize=9)
+
     plt.tight_layout()
-    save_figure(fig, 'pdp_top_features.png', save_dir)
-    plt.show()
-
-
-def plot_pdp_ranking(pdp_ranking: pd.Series, save_dir: str = None) -> None:
-    """
-    Plot horizontal bar chart of RPDP-II values.
-    """
-    set_style()
-    
-    fig, ax = plt.subplots(figsize=(10, max(6, len(pdp_ranking)*0.4)))
-    
-    colors = plt.cm.coolwarm(np.linspace(0.8, 0.2, len(pdp_ranking)))
-    ax.barh(range(len(pdp_ranking)), pdp_ranking.values, color=colors, edgecolor='black')
-    ax.set_yticks(range(len(pdp_ranking)))
-    ax.set_yticklabels(pdp_ranking.index)
-    ax.set_xlabel('RPDP-II (Mean PDP Variance)')
-    ax.set_title('Feature Instability Ranking (Global Effects)')
-    ax.invert_yaxis()
-    
-    plt.tight_layout()
-    save_figure(fig, 'pdp_ranking.png', save_dir)
-    plt.show()
-
-
-# FME plots
-
-def plot_fme_ranking(fme_ranking: pd.Series, save_dir: str = None) -> None:
-    """
-    Plot horizontal bar chart of FME variance values.
-    """
-    set_style()
-    
-    fig, ax = plt.subplots(figsize=(10, max(6, len(fme_ranking)*0.4)))
-    
-    colors = plt.cm.coolwarm(np.linspace(0.8, 0.2, len(fme_ranking)))
-    ax.barh(range(len(fme_ranking)), fme_ranking.values, color=colors, edgecolor='black')
-    ax.set_yticks(range(len(fme_ranking)))
-    ax.set_yticklabels(fme_ranking.index)
-    ax.set_xlabel('Mean FME Variance')
-    ax.set_title('Feature Instability Ranking (Local Effects)')
-    ax.invert_yaxis()
-    
-    plt.tight_layout()
-    save_figure(fig, 'fme_ranking.png', save_dir)
-    plt.show()
-
-
-def plot_fme_distribution(fme_result: Dict, feature_name: str,
-                          save_dir: str = None) -> None:
-    """
-    Plot distribution of FME values for a feature.
-    """
-    set_style()
-    
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-    
-    # Left: Mean FME distribution
-    ax = axes[0]
-    mean_fme = fme_result['mean_fme']
-    if isinstance(mean_fme, np.ndarray) and mean_fme.ndim > 1:
-        mean_fme = mean_fme.ravel()
-    ax.hist(mean_fme, bins=50, edgecolor='black', alpha=0.7, color='steelblue')
-    ax.axvline(0, color='red', linestyle='--', alpha=0.7)
-    ax.set_xlabel('Mean FME')
-    ax.set_ylabel('Count')
-    ax.set_title(f'{feature_name}: Mean FME Distribution')
-    
-    # Right: FME variance distribution
-    ax = axes[1]
-    var = fme_result['variance']
-    if isinstance(var, np.ndarray) and var.ndim > 1:
-        var = var.ravel()
-    ax.hist(var, bins=50, edgecolor='black', alpha=0.7, color='coral')
-    ax.set_xlabel('FME Variance')
-    ax.set_ylabel('Count')
-    ax.set_title(f'{feature_name}: FME Variance Distribution')
-    
-    plt.suptitle(f'FME Analysis: {feature_name}', fontsize=14, y=1.02)
-    plt.tight_layout()
-    save_figure(fig, f'fme_dist_{feature_name}.png', save_dir)
+    save_figure(fig, filename, save_dir)
     plt.show()
 
 

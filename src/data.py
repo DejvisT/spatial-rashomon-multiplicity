@@ -1,13 +1,19 @@
+from pathlib import Path
 from typing import Dict, List, Tuple, Optional
 
 import numpy as np
 import pandas as pd
+
+# Data directory relative to project root (src/data.py -> parent.parent/data)
+_DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
 from sklearn.model_selection import train_test_split, KFold, StratifiedKFold
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
+from sklearn.datasets import fetch_openml
+from sklearn.datasets import load_breast_cancer as sk_load_breast_cancer
 
 
 # ---------------------------------------------------------------------
@@ -59,6 +65,65 @@ def make_split(
     }
 
 
+def make_split_with_fixed_test(
+    n_samples: int,
+    *,
+    fixed_test_idx: np.ndarray,
+    val_size: float = 0.2,  # fraction of FULL dataset
+    seed: int = 42,
+    stratify: Optional[np.ndarray] = None,
+) -> Dict[str, np.ndarray]:
+    """
+    Create a train/val/test split where the test set is fixed.
+
+    Parameters
+    ----------
+    n_samples : int
+        Total number of observations.
+    fixed_test_idx : array-like
+        Absolute indices of the test set to keep fixed across runs.
+    val_size : float
+        Validation fraction relative to the full dataset.
+    seed : int
+        Random seed used only for train/val split.
+    stratify : Optional[np.ndarray]
+        Optional labels for stratified train/val split.
+    """
+    indices = np.arange(n_samples)
+    fixed_test_idx = np.asarray(fixed_test_idx, dtype=int)
+    fixed_test_idx = np.unique(fixed_test_idx)
+
+    if np.any(fixed_test_idx < 0) or np.any(fixed_test_idx >= n_samples):
+        raise ValueError("fixed_test_idx contains out-of-range indices")
+    if len(fixed_test_idx) == 0:
+        raise ValueError("fixed_test_idx must not be empty")
+
+    if stratify is not None:
+        stratify = np.asarray(stratify)
+
+    train_val_idx = np.setdiff1d(indices, fixed_test_idx, assume_unique=False)
+    if len(train_val_idx) == 0:
+        raise ValueError("No samples left for train/val after fixing test set")
+
+    # Convert full-dataset val fraction to fraction of train_val pool
+    val_size_rel = val_size * n_samples / len(train_val_idx)
+    val_size_rel = float(np.clip(val_size_rel, 1.0 / len(train_val_idx), 1.0 - 1.0 / len(train_val_idx)))
+
+    train_idx, val_idx = train_test_split(
+        train_val_idx,
+        test_size=val_size_rel,
+        random_state=seed,
+        stratify=stratify[train_val_idx] if stratify is not None else None,
+    )
+
+    return {
+        "train": train_idx,
+        "val": val_idx,
+        "test": fixed_test_idx,
+        "seed": seed,
+    }
+
+
 
 # ---------------------------------------------------------------------
 # Dataset loading
@@ -68,7 +133,7 @@ def load_compas() -> Tuple[pd.DataFrame, pd.Series, Dict[str, List[str]]]:
     """
     Load COMPAS dataset with a fixed feature set.
     """
-    df = pd.read_csv("data/compas-scores-two-years.csv")
+    df = pd.read_csv(_DATA_DIR / "compas-scores-two-years.csv")
 
     feature_info = {
         "numeric": ["age", "priors_count"],
@@ -83,9 +148,16 @@ def load_compas() -> Tuple[pd.DataFrame, pd.Series, Dict[str, List[str]]]:
 
 def load_german_credit() -> Tuple[pd.DataFrame, pd.Series, Dict[str, List[str]]]:
     """
-    Load German Credit dataset.
+    Load German Credit dataset from OpenML (credit-g).
     """
-    df = pd.read_csv("data/german_credit.csv")
+
+    data = fetch_openml(name="credit-g", version=1, as_frame=True)
+    df = data.frame.copy()
+
+    # Target column in OpenML version is "class"
+    # Values are "good" and "bad"
+    df["credit_risk"] = (df["class"] == "good").astype(int)
+    df = df.drop(columns=["class"])
 
     target = "credit_risk"
 
@@ -105,11 +177,14 @@ def load_german_credit() -> Tuple[pd.DataFrame, pd.Series, Dict[str, List[str]]]
 
 def load_breast_cancer() -> Tuple[pd.DataFrame, pd.Series, Dict[str, List[str]]]:
     """
-    Load Breast Cancer Wisconsin dataset.
+    Load Breast Cancer Wisconsin dataset from sklearn.
     """
-    df = pd.read_csv("data/breast_cancer.csv")
+
+    data = sk_load_breast_cancer(as_frame=True)
+    df = data.frame.copy()
 
     target = "target"
+
     numeric = [c for c in df.columns if c != target]
 
     feature_info = {
@@ -120,6 +195,40 @@ def load_breast_cancer() -> Tuple[pd.DataFrame, pd.Series, Dict[str, List[str]]]
     X = df[numeric].copy()
     y = df[target].astype(int)
 
+    return X, y, feature_info
+
+
+def load_adult() -> Tuple[pd.DataFrame, pd.Series, Dict[str, List[str]]]:
+    """
+    Load Adult (Census Income) dataset from OpenML (adult, data_id=1590).
+    Target: income >50K (1) vs <=50K (0).
+    """
+    data = fetch_openml(data_id=1590, as_frame=True)
+    df = data.frame.copy()
+
+    # Target may be in frame as 'class' or 'income', or in data.target
+    target_series = None
+    if "class" in df.columns:
+        target_series = (df["class"].astype(str).str.strip() == ">50K").astype(int)
+        df = df.drop(columns=["class"])
+    elif "income" in df.columns:
+        target_series = (df["income"].astype(str).str.strip() == ">50K").astype(int)
+        df = df.drop(columns=["income"])
+    if target_series is None and hasattr(data, "target") and data.target is not None:
+        target_series = (pd.Series(data.target).astype(str).str.strip() == ">50K").astype(int)
+    if target_series is None:
+        raise ValueError("Could not find target column (class/income) in Adult dataset")
+
+    y = target_series.astype(int)
+    categorical = df.select_dtypes(include=["object", "category"]).columns.tolist()
+    numeric = [c for c in df.columns if c not in categorical]
+
+    feature_info = {
+        "numeric": numeric,
+        "categorical": categorical,
+    }
+
+    X = df[numeric + categorical].copy()
     return X, y, feature_info
 
 
@@ -137,6 +246,8 @@ def load_dataset(
         return load_german_credit()
     elif name == "breast_cancer":
         return load_breast_cancer()
+    elif name == "adult":
+        return load_adult()
     else:
         raise ValueError(f"Unknown dataset: {name}")
 

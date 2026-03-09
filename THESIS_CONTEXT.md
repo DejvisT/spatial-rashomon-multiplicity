@@ -58,37 +58,42 @@ Find multiplicity hotspots statistically in feature space; show with null models
 ```
 rashomon-multiplicity/
 ├── analysis/
-│   ├── nulls.py        # Model-wise permutation, run_null_experiment
-│   ├── rules.py        # extract_component_rules, rules_summary_df (interpretable rules)
-│   ├── spatial.py      # build_knn_graph, moran_global, lisa_local, extract_hh_components
-│   └── stability.py     # hh_selection_frequency, jaccard_index, hh_jaccard_matrix
+│   ├── run_analysis.py    # Rashomon selection, spatial (Moran/LISA), null, multiplicity metrics
+│   ├── experiment_runner.py # run_dataset_experiment, run_all_experiments
+│   ├── preprocessing.py   # get_transformed_test_features (for spatial/null)
+│   ├── spatial.py         # extract_hh_components, hand-rolled kNN/LISA (supplement to run_analysis)
+│   ├── stability.py       # hh_selection_frequency, jaccard_index, hh_jaccard_matrix
+│   ├── hyperparams.py     # family/HP importance, variance decomposition
+│   ├── calibration.py     # Platt scaling, calibration robustness
+│   └── rules.py           # interpretable rules for HH components
 ├── src/
-│   ├── data.py         # load_dataset, make_split, make_preprocessor
-│   ├── metrics.py      # prediction_variance, flip_instability, etc.
-│   ├── rashomon.py     # build_rashomon_set (global, per_family, single-family)
+│   ├── data.py            # load_dataset, make_split, make_preprocessor, make_split_with_fixed_test
+│   ├── training_pipeline.py # run_one_training_run, TRAINING_MODEL_CONFIGS
+│   ├── synthetic_data.py  # synthetic dataset generators
 │   └── plots.py
 ├── notebooks/
-│   ├── 01_load_and_sanity_check.ipynb
-│   ├── 02_spatial_hotspots.ipynb      # Moran I, LISA, HH components
-│   ├── 03_null_models.ipynb          # Permutation null
-│   ├── 04_stability.ipynb            # HH stability across runs
-│   ├── 05_single_family_rashomon.ipynb  # Within-family Moran/LISA
-│   └── 06_interpretable_rules.ipynb   # Describe HH components with decision-tree rules
-├── run_rashomon_experiment.py
-├── data/
-│   └── compas-scores-two-years.csv
+│   ├── 01_primary_experiment.ipynb
+│   ├── 02_null_experiment.ipynb
+│   ├── 03_spatial_patterns.ipynb
+│   ├── 04_sensitivity_K.ipynb, 05_sensitivity_kNN.ipynb
+│   ├── 06_hyperparameter_analysis.ipynb, 07_calibration_robustness.ipynb
+│   ├── 08_metrics_dashboard.ipynb
+│   ├── 10_synthetic_multiplicity.ipynb, 11_interpretable_rules.ipynb
+│   └── 12_robustness_and_fairness.ipynb
+├── run_training_pipeline.py      # Main training (10 outer runs, 50 candidates/family)
+├── run_training_pipeline_fixed_test.py  # Same with fixed test set (for notebook 03)
+├── run_experiments.py            # Analysis over results (Rashomon, spatial, null)
 └── results/
-    └── compas/
-        ├── seed=42_eps=0.01/         # Global Rashomon
-        ├── family=LogReg/, family=RF/, family=GBM/, family=MLP/
-        └── ...
+    └── {dataset}/
+        └── seed={N}/   # split.npz, meta.csv, P_val.npy, P_test.npy, config.json
 ```
 
 ### Key Data Artifacts
-- `P_test.npy`: shape `(n_models, n_obs)` – predicted probabilities per model per observation
-- `metrics.npz`: `variance`, `flip_instability`, etc.
-- `X_test.csv`, `y_test.npy`: test features and labels
-- `config.json`: ε, seed, n_models_rashomon, etc.
+- `P_test.npy`: shape `(n_candidates, n_test)` – predicted probabilities per candidate per test observation
+- `P_val.npy`: same for validation set
+- `meta.csv`: model_name, val_brier, etc. per candidate
+- `split.npz`: train, val, test indices; config.json: dataset, outer_seed, n_candidates, etc.
+- Preprocessed test features are obtained via `analysis.preprocessing.get_transformed_test_features` (fit on train).
 
 ### Implemented Functionality
 - **Spatial**: kNN graph, Moran's I, LISA (with FDR), HH component extraction
@@ -143,21 +148,20 @@ rashomon-multiplicity/
 ## 5. Technical Notes (for Code Development)
 
 ### Rashomon Pipeline
-- `run_rashomon_experiment.py` uses `src/rashomon.py`
-- `build_rashomon_set` supports `selection_mode`: `"global"` or `"per_family"`
-- Single-family: `--family LogReg` (or RF, GBM, MLP)
-- Output: `P_test`, `metrics`, `meta`, `X_test`, `y_test`
+- **Training:** `run_training_pipeline.py` trains 50 candidates per family per run (10 outer seeds), saves P_val, P_test, meta, split. Rashomon set is **not** chosen at training time; it is selected at analysis time by top-K validation Brier.
+- **Analysis:** `run_experiments.py` uses `analysis.experiment_runner` and `analysis.run_analysis`: for each run dir, load artifacts, select Rashomon (global top-K or per-family), compute multiplicity and spatial metrics.
+- **Selection:** `select_rashomon_global(run_dir, K=25)`, `select_rashomon_per_family_totalK`, `select_rashomon_per_family_k_each` in `run_analysis.py`.
+- Output: per-run summary in `results/{dataset}/summary_per_run.csv`; per-point arrays in `results/{dataset}/seed=N/per_point/`.
 
 ### Spatial Analysis
-- `build_knn_graph(X, k)` – standardize=True by default
-- `moran_global(v, W)` – returns `{"I": float, "p_value": float}`
-- `lisa_local(v, W)` – returns DataFrame with `cluster` (HH, HL, LH, LL, NS)
-- `extract_hh_components(lisa_df, W, min_size=5)` – returns `comp_id`, `components`
+- In `run_analysis.py`: `spatial_analysis(v, X_test, k=30)` uses PySAL (KNN, Moran, Moran_Local), FDR correction; returns Moran's I, HH_mask, LL_mask, etc.
+- `run_spatial`, `run_spatial_per_family`, `run_null` wrap loading + Rashomon selection + spatial/null.
+- In `analysis/spatial.py`: `extract_hh_components` for connected-component analysis of HH subgraph.
 
 ### Null Model
-- `permute_predictions(P)` – permutes each model's predictions independently
-- `run_null_experiment(P, X_knn, k=10)` – returns `v_perm`, `moran`, `lisa`
-- Under null: Moran I should be ~0; HH count should drop
+- In `run_analysis.py`: `permute_predictions_independent(P, seed)` permutes each model's predictions independently; `null_experiment(...)` runs R permutations, recomputes variance and Moran/LISA each time.
+- `run_null(run_dir, X_test, K=25, R=100, ...)` loads run, selects Rashomon, runs null.
+- Under null: Moran I ~ 0; HH count drops; empirical p-value computed as (1 + count(null >= observed)) / (R + 1).
 
 ### Calibration (sklearn)
 - `CalibratedClassifierCV(estimator, method='isotonic'|'sigmoid', cv=5)`

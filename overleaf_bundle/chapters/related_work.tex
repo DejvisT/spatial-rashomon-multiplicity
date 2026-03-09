@@ -1,0 +1,64 @@
+Predictive multiplicity refers to the fact that multiple models can achieve nearly identical predictive performance while producing different predictions for the same individual. Recent work shows this behavior is common in realistic pipelines and has direct implications for reliability, fairness, and interpretability. This chapter reviews the literature most relevant to this thesis and identifies the methodological gaps our work addresses.
+
+\subsection{Rashomon Sets and Near-Optimal Model Classes}
+
+The modern formulation of multiplicity is rooted in the Rashomon effect \citep{breiman_statistical_2001}: many models can explain the same data equally well. Let $\mathcal{F}$ be a hypothesis class, $L(f)$ a loss function, and $L^* = \min_{f \in \mathcal{F}} L(f)$. The Rashomon set is
+\[
+\mathcal{R}_\varepsilon = \{f \in \mathcal{F} : L(f) \leq L^* + \varepsilon\}.
+\]
+This definition is central because it shifts attention from ``the best model'' to a \emph{set} of near-optimal models. In high-dimensional settings, this set can be large and structurally diverse.
+
+\cite{rudin_amazing_2024} argue that this requires a change in modeling practice: if many near-optimal models exist, model selection should explicitly consider secondary criteria (interpretability, fairness, robustness), rather than treating one selected model as uniquely correct. \cite{semenova_existence_2022} provide complementary theoretical support, showing that large Rashomon sets often contain simpler models with comparable performance.
+
+\subsection{How Multiplicity Is Measured}
+
+\paragraph{Label-space metrics.}
+\cite{marx_predictive_2020} introduced ambiguity and discrepancy in a label-based framework relative to a baseline model. These metrics quantify whether model choice can flip predicted class labels.
+
+\paragraph{Probability-space metrics.}
+Subsequent work in the Rashomon literature emphasizes probability-level disagreement, including per-observation prediction ranges and pairwise probability differences. In this thesis, ambiguity and discrepancy use these probability-space definitions (Section~3 and Chapter~4), which better preserve calibration-relevant information than binary flips alone.
+
+\paragraph{Global geometry metrics.}
+\cite{hsu_rashomon_nodate} propose Rashomon Capacity, a global measure of how broadly the Rashomon set spans prediction space. This captures diversity at the dataset level, not just at isolated points.
+
+\paragraph{Procedural instability metrics.}
+\cite{cooper_arbitrariness_2024} study self-consistency across repeated training runs, quantifying disagreement induced by random seeds and training stochasticity even within one model family.
+
+\paragraph{Per-instance feasible ranges.}
+\cite{hsu_rashomongb_2024} introduce the Viable Prediction Range (VPR), which estimates for each observation the min/max prediction attainable inside the near-optimal set.
+
+\subsection{What Existing Metrics Miss}
+
+Although these methods establish that multiplicity exists, three limitations remain important for deployment:
+
+\begin{itemize}
+    \item \textbf{Limited localization.} Most metrics are global summaries (single numbers or averages) and do not identify \emph{where} instability concentrates in feature space.
+    \item \textbf{Limited source attribution.} Existing measures typically quantify disagreement magnitude but do not decompose it into between-family and within-family (hyperparameter) contributions.
+    \item \textbf{Weak link to operational diagnostics.} Metrics such as range width or pairwise disagreement do not directly reveal contiguous subpopulations that could be targeted for mitigation, auditing, or abstention policies.
+\end{itemize}
+
+These gaps motivate our spatial variance framework: per-observation variance across Rashomon models, followed by graph-based spatial statistics to detect and localize clusters of instability.
+
+\subsection{Related Work in Spatial Error Structure and Localized Uncertainty}
+
+Spatial statistics are widely used to detect non-random local structure in geospatial and networked data. The key idea is transferable to feature-space neighborhoods: if neighboring observations (under a kNN graph) exhibit similar instability, multiplicity is not random noise but structured disagreement. Global Moran's $I$ tests overall dependence, while LISA localizes High--High and Low--Low regions.
+
+In the multiplicity literature, explicit feature-space localization remains comparatively underdeveloped. Prior work predominantly quantifies \emph{how much} models disagree, not \emph{where} they disagree in a contiguous and statistically testable way. This thesis operationalizes that missing step.
+
+\subsection{Interpretability and Fairness in Multiplicity Analysis}
+
+Interpretability work often focuses on explaining one model's decision boundary. Under multiplicity, however, the central object is a \emph{region of instability} across many near-optimal models. Rule extraction for HH/HV regions therefore addresses a different question: not ``why this one model predicted 1,'' but ``which subpopulations are systematically sensitive to model choice.''
+
+Fairness analyses of multiplicity are similarly nascent. Most studies assess fairness metrics per model; fewer examine whether high-instability regions are disproportionately concentrated in specific demographic groups. Our subgroup exposure analysis is descriptive (not causal), but it adds a practically relevant layer by quantifying who is most exposed to model arbitrariness.
+
+\subsection{Positioning of This Thesis}
+
+Relative to prior work, this thesis contributes by integrating four strands that are usually studied separately:
+\begin{enumerate}
+    \item Rashomon-set predictive multiplicity,
+    \item spatial localization via Moran's $I$ and LISA,
+    \item source attribution via family/HP variance decomposition,
+    \item interpretable and subgroup-aware characterization of instability regions.
+\end{enumerate}
+
+The resulting perspective treats multiplicity as a localized, structured phenomenon rather than a single global nuisance metric, and provides diagnostics that are directly usable for model governance in high-stakes settings.
