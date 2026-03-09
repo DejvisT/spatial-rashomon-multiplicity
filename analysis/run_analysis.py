@@ -551,6 +551,7 @@ def null_experiment(
 
     rng = np.random.RandomState(seed)
     null_moran_i = np.zeros(R)
+    null_conflict_moran_i = np.zeros(R)
     null_n_hh = np.zeros(R, dtype=int)
     null_n_ll = np.zeros(R, dtype=int)
 
@@ -558,9 +559,16 @@ def null_experiment(
         perm_seed = int(rng.randint(0, 2**31))
         P_perm = permute_predictions_independent(P, perm_seed)
         v_perm = pointwise_variance(P_perm, ddof=0)
+        c_perm = pointwise_conflict(P_perm)
 
         moran_r = Moran(v_perm, W)
         null_moran_i[r] = moran_r.I
+
+        if float(np.var(c_perm)) > 1e-15:
+            moran_c = Moran(c_perm, W)
+            null_conflict_moran_i[r] = moran_c.I
+        else:
+            null_conflict_moran_i[r] = 0.0
 
         lisa_seed = int(rng.randint(0, 2**31))
         np.random.seed(lisa_seed)
@@ -577,10 +585,13 @@ def null_experiment(
 
     result = {
         "null_moran_i": null_moran_i,
+        "null_conflict_moran_i": null_conflict_moran_i,
         "null_n_hh": null_n_hh,
         "null_n_ll": null_n_ll,
         "null_mean": float(np.mean(null_moran_i)),
         "null_std": float(np.std(null_moran_i, ddof=1)),
+        "null_conflict_moran_mean": float(np.mean(null_conflict_moran_i)),
+        "null_conflict_moran_std": float(np.std(null_conflict_moran_i, ddof=1)),
         "null_n_hh_mean": float(np.mean(null_n_hh)),
         "null_n_hh_std": float(np.std(null_n_hh, ddof=1)),
         "R": R,

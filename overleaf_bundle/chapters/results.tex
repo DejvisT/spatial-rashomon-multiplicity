@@ -15,6 +15,15 @@ Table~\ref{tab:dataset_summary} summarizes mean predictive variance and global M
 
 Additional multiplicity metrics computed across all 30 runs (3 datasets $\times$ 10 seeds) include: mean ambiguity $0.15 \pm 0.08$, disagreement rate ($\varepsilon = 0.05$) of $0.27 \pm 0.18$, discrepancy $0.08 \pm 0.04$, and neighborhood agreement $0.82 \pm 0.06$. COMPAS and German Credit show substantially higher disagreement rates than Breast Cancer, reflecting more diverse Rashomon sets.
 
+Figure~\ref{fig:dataset_comparison_bars} provides a visual comparison of four key metrics---Moran's $I$, HH hotspot count, mean predictive variance, and mean conflict---across datasets. COMPAS dominates on all spatial metrics (highest Moran's $I$ and HH count), while German Credit has the highest mean variance. Mean conflict follows a similar pattern to mean variance, with COMPAS and German Credit exhibiting the highest values.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{dataset_comparison_bars.pdf}
+\caption{Dataset comparison: Moran's $I$, HH count, mean variance, and mean conflict (mean $\pm$ std over 10 outer runs, $K=25$, $k=30$). COMPAS shows the strongest spatial structure; German Credit has the highest variance.}
+\label{fig:dataset_comparison_bars}
+\end{figure}
+
 %% ---------------------------------------------------------------------------
 \subsection{Null Hypothesis Testing}
 \label{sec:results-null}
@@ -35,6 +44,23 @@ COMPAS and German Credit show significant spatial autocorrelation in all 10 runs
 \includegraphics[width=0.6\textwidth]{null_moran_compas_seed0.pdf}
 \caption{Null distribution of Moran's $I$ (100 permutations) vs.\ observed value for COMPAS seed 0. The observed value (vertical line) exceeds all null samples ($p < 0.01$).}
 \label{fig:null_moran_example}
+\end{figure}
+
+\subsubsection{Conflict-Based Null Testing}
+
+In addition to variance-based Moran's $I$, we repeat the null experiment using \emph{pointwise conflict} (the fraction of model pairs that disagree on the predicted class) as the spatial variable. This tests whether conflict---a more direct measure of prediction disagreement---also exhibits significant spatial clustering.
+
+The observed conflict Moran's $I$ is comparable to the variance-based statistic on COMPAS and German Credit. Under the same permutation null (independently permuting predictions per model, $R = 100$), the conflict Moran's $I$ is significant in the same fraction of runs as the variance-based statistic for COMPAS and German Credit. This confirms that spatial clustering is not an artifact of the variance metric but reflects genuine local concentration of predictive disagreement.
+
+\subsubsection{Aggregated Null Summary}
+
+Figure~\ref{fig:null_summary} provides a cross-seed summary of the null experiment. The left panel shows boxplots of observed Moran's $I$ (variance-based) versus null mean $\pm$ std for each dataset. The right panel displays z-scores, $z = (\text{observed} - \mu_{\text{null}}) / \sigma_{\text{null}}$, for both variance-based and conflict-based Moran's $I$. All COMPAS and German Credit z-scores exceed the $z = 1.96$ threshold, confirming robust significance across seeds. Breast Cancer z-scores are lower but mostly above the threshold, consistent with weaker but still detectable spatial structure.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{null_summary_across_seeds.pdf}
+\caption{Aggregated null summary. Left: observed Moran's $I$ (boxplot) vs.\ null mean $\pm$ std per dataset. Right: z-scores for variance and conflict Moran's $I$ across seeds; the dashed line marks $z = 1.96$.}
+\label{fig:null_summary}
 \end{figure}
 
 %% ---------------------------------------------------------------------------
