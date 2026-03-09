@@ -1,0 +1,269 @@
+"""
+Per-family, multi-seed hyperparameter importance analysis for Rashomon sets.
+
+Analyses HP associations among near-optimal models and their relationship
+to model-level disagreement contribution V_m.
+
+V_m = mean_x( (P[m,x] - p_bar(x))^2 )
+
+measures how much model m's predictions deviate from the family ensemble
+mean — its contribution to predictive multiplicity within that family.
+
+Importance of an HP is quantified by the between-group variance of V_m
+when models are grouped by HP value, expressed as a fraction of total V_m
+variance.  This is a *marginal association*, not a causal partial dependence.
+"""
+from __future__ import annotations
+
+from collections import Counter
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+
+import numpy as np
+import pandas as pd
+
+from analysis.run_analysis import load_meta, load_P_test
+from analysis.hyperparams import ensure_hp_columns, make_hp_key
+
+PathLike = Union[str, Path]
+
+EPS = 1e-15
+
+
+# ---------------------------------------------------------------------------
+# Core primitives
+# ---------------------------------------------------------------------------
+
+def select_rashomon_family(
+    run_dir: PathLike,
+    family: str,
+    K: int = 25,
+) -> Tuple[np.ndarray, int]:
+    """
+    Select top-K models within *family* by val_brier.
+
+    Returns
+    -------
+    idx : ndarray of int
+        Global indices into P_test / meta (row positions).
+    K_actual : int
+        Number of models actually selected (may be < K).
+    """
+    meta = load_meta(Path(run_dir))
+    family_mask = meta["model_name"] == family
+    fam_indices = np.where(family_mask)[0]
+    if len(fam_indices) == 0:
+        return np.array([], dtype=int), 0
+    K_actual = min(K, len(fam_indices))
+    fam_brier = meta.loc[family_mask, "val_brier"].values
+    order = np.argsort(fam_brier)[:K_actual]
+    return fam_indices[order], K_actual
+
+
+def compute_Vm(P_sel: np.ndarray) -> np.ndarray:
+    """
+    Model-level disagreement contribution.
+
+    For each model m in P_sel (K, n_obs):
+        V_m = mean_x( (P_sel[m, x] - p_bar(x))^2 )
+    where p_bar(x) = mean_m P_sel[m, x].
+    """
+    p_bar = P_sel.mean(axis=0)
+    return np.array([np.mean((P_sel[m] - p_bar) ** 2) for m in range(P_sel.shape[0])])
+
+
+# ---------------------------------------------------------------------------
+# HP importance via V_m (scalar per model)
+# ---------------------------------------------------------------------------
+
+def hp_importance_Vm(
+    V_m: np.ndarray,
+    meta_sel: pd.DataFrame,
+    *,
+    min_groups: int = 2,
+    min_group_size: int = 1,
+) -> pd.DataFrame:
+    """
+    For each HP column in meta_sel, compute between-group / total variance
+    of V_m.  Returns one row per HP that passes the filters.
+    """
+    hp_cols = [c for c in meta_sel.columns if c.startswith("hp_")]
+    rows: List[Dict[str, Any]] = []
+
+    for hp_col in hp_cols:
+        hp_name = hp_col.replace("hp_", "")
+        keys = np.array([make_hp_key(v) for v in meta_sel[hp_col].values], dtype=object)
+
+        valid = keys != "nan"
+        if valid.sum() < 3:
+            continue
+        V_valid = V_m[valid]
+        keys_valid = keys[valid]
+
+        counts = Counter(keys_valid)
+        keep_keys = {k for k, c in counts.items() if c >= min_group_size}
+        if len(keep_keys) < min_groups:
+            continue
+
+        keep_mask = np.array([k in keep_keys for k in keys_valid])
+        V_use = V_valid[keep_mask]
+        keys_use = keys_valid[keep_mask]
+
+        var_total = float(np.var(V_use))
+        if var_total < EPS:
+            continue
+
+        overall_mean = np.mean(V_use)
+        n_total = len(V_use)
+        var_between = 0.0
+        for k in np.unique(keys_use):
+            group = V_use[keys_use == k]
+            p_g = len(group) / n_total
+            var_between += p_g * (np.mean(group) - overall_mean) ** 2
+
+        rows.append({
+            "hp_name": hp_name,
+            "ratio_of_sums": var_between / var_total,
+            "n_values": len(np.unique(keys_use)),
+            "n_models": int(n_total),
+            "mean_V_m": float(overall_mean),
+        })
+
+    if not rows:
+        return pd.DataFrame()
+    return pd.DataFrame(rows).sort_values("ratio_of_sums", ascending=False).reset_index(drop=True)
+
+
+# ---------------------------------------------------------------------------
+# Marginal V_m by HP value (for marginal-effect plots)
+# ---------------------------------------------------------------------------
+
+def marginal_Vm_by_hp(
+    V_m: np.ndarray,
+    meta_sel: pd.DataFrame,
+    hp_col: str,
+) -> pd.DataFrame:
+    """
+    Group V_m by HP value and return mean/std/count per group.
+    Useful for marginal-effect scatter/bar plots.
+    """
+    keys = np.array([make_hp_key(v) for v in meta_sel[hp_col].values], dtype=object)
+    valid = keys != "nan"
+    V_v, keys_v = V_m[valid], keys[valid]
+
+    rows = []
+    for k in sorted(set(keys_v)):
+        group = V_v[keys_v == k]
+        rows.append({
+            "hp_value": k,
+            "mean_Vm": float(np.mean(group)),
+            "std_Vm": float(np.std(group)) if len(group) > 1 else 0.0,
+            "count": int(len(group)),
+        })
+    return pd.DataFrame(rows)
+
+
+# ---------------------------------------------------------------------------
+# Multi-seed loop
+# ---------------------------------------------------------------------------
+
+def run_hp_importance_all_seeds(
+    dataset_dir: Path,
+    dataset: str,
+    K: int = 25,
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Iterate over all seed runs and families. For each (seed, family):
+      - select within-family Rashomon (top-K by val_brier)
+      - compute V_m
+      - compute HP importance on V_m
+
+    Returns
+    -------
+    df_per_seed : DataFrame
+        One row per (seed, family, hp_name).
+    df_Vm : DataFrame
+        Per-model V_m with seed/family/hp columns for marginal-effect analysis.
+    """
+    run_dirs = sorted(
+        [p for p in dataset_dir.iterdir() if p.is_dir() and p.name.startswith("seed=")],
+        key=lambda p: int(p.name.split("=")[1]),
+    )
+    if not run_dirs:
+        return pd.DataFrame(), pd.DataFrame()
+
+    imp_rows = []
+    vm_rows = []
+
+    for run_dir in run_dirs:
+        seed_val = int(run_dir.name.split("=")[1])
+        meta = load_meta(run_dir)
+        P_test = load_P_test(run_dir)
+        meta = ensure_hp_columns(meta)
+        families = sorted(meta["model_name"].unique())
+
+        for family in families:
+            idx, K_actual = select_rashomon_family(run_dir, family, K=K)
+            if K_actual < 3:
+                continue
+            P_sel = P_test[idx]
+            meta_sel = meta.iloc[idx].reset_index(drop=True)
+
+            V_m = compute_Vm(P_sel)
+            imp = hp_importance_Vm(V_m, meta_sel)
+            if not imp.empty:
+                imp = imp.copy()
+                imp["dataset"] = dataset
+                imp["seed"] = seed_val
+                imp["family"] = family
+                imp["K_actual"] = K_actual
+                imp_rows.append(imp)
+
+            vm_df = meta_sel[["model_name"] + [c for c in meta_sel.columns if c.startswith("hp_")]].copy()
+            vm_df["V_m"] = V_m
+            vm_df["seed"] = seed_val
+            vm_df["family"] = family
+            vm_rows.append(vm_df)
+
+    df_per_seed = pd.concat(imp_rows, ignore_index=True) if imp_rows else pd.DataFrame()
+    df_Vm = pd.concat(vm_rows, ignore_index=True) if vm_rows else pd.DataFrame()
+    return df_per_seed, df_Vm
+
+
+# ---------------------------------------------------------------------------
+# Aggregation across seeds
+# ---------------------------------------------------------------------------
+
+def aggregate_hp_importance(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Aggregate per-seed HP importance across seeds.
+
+    Adds rank_freq_top1 / top3: how often the HP appears in the top 1 / top 3
+    within that seed+family.
+    """
+    if df.empty:
+        return pd.DataFrame()
+
+    df = df.copy()
+    df["rank"] = (
+        df.groupby(["dataset", "seed", "family"])["ratio_of_sums"]
+        .rank(ascending=False, method="min")
+    )
+
+    agg = (
+        df.groupby(["dataset", "family", "hp_name"])
+        .agg(
+            mean_importance=("ratio_of_sums", "mean"),
+            std_importance=("ratio_of_sums", "std"),
+            n_seeds=("seed", "nunique"),
+            mean_V_m=("mean_V_m", "mean"),
+            rank_freq_top1=("rank", lambda x: float((x == 1).mean())),
+            rank_freq_top3=("rank", lambda x: float((x <= 3).mean())),
+        )
+        .reset_index()
+    )
+    agg["std_importance"] = agg["std_importance"].fillna(0.0)
+    agg = agg.sort_values(
+        ["dataset", "family", "mean_importance"], ascending=[True, True, False]
+    ).reset_index(drop=True)
+    return agg
