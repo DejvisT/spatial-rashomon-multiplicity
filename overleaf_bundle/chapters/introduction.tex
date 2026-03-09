@@ -16,9 +16,9 @@ The prediction-instability score, defined as the variance of Jordan's predicted 
 
 \subsubsection{Example 2: Spatial Clustering of Instability}
 
-An auditor discovers that individuals like Jordan are not isolated cases. By mapping prediction instability scores onto the feature space of all individuals evaluated by the system, a clear pattern emerges: high-instability individuals cluster together in specific regions of the input space. Using spatial autocorrelation statistics (Moran's $I$), the auditor confirms that this clustering is statistically significant and not due to chance.
+An auditor discovers that individuals like Jordan are not isolated cases. By mapping prediction instability scores onto the feature space of all individuals evaluated by the system, a clear pattern emerges: high-instability individuals cluster together in specific regions of the input space. Using a spatial autocorrelation statistic, the auditor confirms that this clustering is statistically significant and not due to chance.
 
-The auditor identifies ``hotspot'' regions---contiguous groups of individuals whose predictions are systematically unstable across near-optimal models. These hotspots correspond to subpopulations for whom the system's output is particularly unreliable: the specific model chosen during training determines their classification outcome more than their actual characteristics do.
+The auditor identifies contiguous groups of individuals whose predictions are systematically unstable across near-optimal models. These regions correspond to subpopulations for whom the system's output is particularly unreliable: the specific model chosen during training determines their classification outcome more than their actual characteristics do.
 
 \subsubsection{Example 3: Drivers of Instability}
 
@@ -55,7 +55,7 @@ Building on the problem described above, this thesis investigates the following 
 How much do individual predictions vary across equally accurate models, and which individuals are most affected? Is this variation statistically significant compared to a chance baseline?
 
 \item \textbf{Spatial Structure of Multiplicity.}
-Does predictive variance exhibit spatial autocorrelation in feature space? Can we identify contiguous High--High (HH) hotspot regions where models systematically disagree?
+Does predictive variance exhibit spatial autocorrelation in feature space? Can we identify contiguous hotspot regions---localized clusters of high disagreement (formally defined as High--High regions via LISA in Section~3.6)---where models systematically disagree?
 
 \item \textbf{Stability of Spatial Patterns.}
 Are the identified hotspot regions stable across different data splits and Rashomon set realizations, or are they artifacts of specific random seeds?
@@ -78,7 +78,7 @@ Can the identified high-multiplicity regions be described by simple, interpretab
 This thesis makes the following contributions:
 
 \begin{enumerate}
-\item \textbf{Spatial multiplicity framework.} We propose a pipeline that combines observation-wise predictive variance with spatial statistics (Moran's $I$, LISA) to detect, localize, and test for significance of multiplicity hotspots in feature space.
+\item \textbf{Spatial multiplicity framework.} We propose a pipeline that combines observation-wise predictive variance with spatial autocorrelation statistics (detailed in Chapter~3) to detect, localize, and test for significance of multiplicity hotspots in feature space.
 
 \item \textbf{Variance decomposition.} We decompose predictive variance into between-family and within-family (hyperparameter) components, identifying which modeling choices drive instability globally and within hotspots specifically.
 

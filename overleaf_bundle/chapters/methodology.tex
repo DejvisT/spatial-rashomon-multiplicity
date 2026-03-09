@@ -8,17 +8,18 @@ Let $(X, y)$ denote a supervised learning dataset with $N$ observations, where $
 We consider probabilistic classifiers $f \in \mathcal{F}$ that output predicted probabilities $\hat{p}_{fi} \in [0,1]$ for each observation $i \in \{1,\dots,N\}$. Model performance is measured using a loss function $L(f)$ evaluated on held-out data.
 
 \subsection{Rashomon Set of Near-Optimal Models}
+\label{sec:meth-rashomon}
 
-Predictive multiplicity is studied through the Rashomon set, defined as the collection of models whose performance lies within a tolerance $\varepsilon > 0$ of the best achievable loss. Formally, let
+Predictive multiplicity is studied through the Rashomon set, defined as the collection of models whose performance lies within a tolerance $\varepsilon > 0$ of the best achievable loss.  In our setting, $\mathcal{F}$ is a \emph{finite} candidate pool: a set of models trained with varying families and hyperparameter configurations on a common training set.  Let
 \[
 L^* = \min_{f \in \mathcal{F}} L(f)
 \]
-denote the minimal loss over all trained models. The Rashomon set is then defined as
+denote the minimum validation loss (Brier score) among all candidates.  The Rashomon set is then
 \[
 \mathcal{R}_\varepsilon = \{ f \in \mathcal{F} : L(f) \leq L^* + \varepsilon \}.
 \]
 
-The tolerance parameter $\varepsilon$ controls the strictness of the selection: smaller values yield a more homogeneous set of models, while larger values admit greater diversity. In practice, the Rashomon set can be operationalized by selecting a fixed number $K$ of best-performing models (top-$K$ by validation loss) to ensure comparable set sizes across runs and datasets; sensitivity to $K$ is examined empirically.
+The tolerance $\varepsilon$ controls the strictness of selection.  Because the exact value of $\varepsilon$ that produces a given set size varies across datasets and splits, we adopt an equivalent \textbf{top-$K$ approximation}: the $K$ models with the lowest validation Brier score are selected, yielding $|\mathcal{R}| = K$.  This fixes the Rashomon set size across runs and datasets, making results comparable.  Selection can be \emph{global} (top-$K$ across all families) or \emph{per-family} (top-$K$ within each model family); the latter preserves enough within-family variation for hyperparameter decomposition (Section~\ref{sec:meth-hp-decomp}).  Sensitivity to $K$ is examined empirically.
 
 \subsection{Observation-Wise Predictive Variance}
 
@@ -31,15 +32,39 @@ v_i = \mathrm{Var}_{m \in \mathcal{R}_\varepsilon}(\hat{p}_{mi}), \quad i = 1,\d
 
 This yields a scalar instability score for each observation, capturing the magnitude of disagreement among near-optimal models. Unlike range-based or binary disagreement metrics, predictive variance reflects the full distribution of predictions within the Rashomon set.
 
+\subsection{Observation-Wise Conflict Ratio}
+
+As a complementary measure of disagreement, we define the \emph{conflict ratio} for each observation.  Let $\tau = 0.5$ be a decision threshold and let
+\[
+  q_i = \frac{1}{M} \sum_{m=1}^{M} \mathbf{1}[\hat{p}_{mi} \geq \tau]
+\]
+denote the fraction of Rashomon models that predict a positive label for observation~$i$.  The conflict ratio is
+\[
+  c_i = \min(q_i,\; 1 - q_i), \quad c_i \in [0, 0.5].
+\]
+A value of $c_i = 0$ indicates unanimous agreement on the predicted label; $c_i = 0.5$ indicates a maximally split ensemble.  Because $c_i$ captures hard-label disagreement it is directly related to the variance of binary votes: $\mathrm{Var}(\hat{y}_{mi}) = q_i(1-q_i) = c_i(1-c_i)$ when computed across models \citep{frohnapfel_using_2026}.
+
+We apply the same spatial analysis (Moran's $I$, LISA; Sections~\ref{sec:meth-moran}--\ref{sec:meth-lisa}) to $c_i$ as to $v_i$, yielding conflict-based hotspot regions that identify areas of concentrated label disagreement.
+
 \subsection{Feature-Space Graph Construction}
+\label{sec:meth-graph}
 
-To study the spatial organization of predictive variance, we represent the dataset as a graph in feature space. Observations are treated as nodes, and edges encode local neighborhood relationships.
+To study the spatial organization of predictive variance, we represent the dataset as a graph in feature space.  Observations are treated as nodes, and edges encode local neighborhood relationships.
 
-A $k$-nearest-neighbor (kNN) graph is constructed using the feature vectors in $X$. Each observation is connected to its $k$ nearest neighbors according to a chosen distance metric. The resulting adjacency structure is represented by a row-normalized spatial weight matrix $W \in \mathbb{R}^{N \times N}$, where $W_{ij} > 0$ indicates that observation $j$ is a neighbor of observation $i$.
+A $k$-nearest-neighbor (kNN) graph is constructed using the (preprocessed) feature vectors in $X$ with Euclidean distance.  The initial graph is \emph{directed}: observation $i$ has an outgoing edge to each of its $k$ nearest neighbors.  We then symmetrize the adjacency so that an edge exists between $i$ and $j$ whenever \emph{either} $i$ is among the $k$ nearest neighbors of $j$ \emph{or} $j$ is among the $k$ nearest neighbors of $i$.  Let $A \in \{0,1\}^{N \times N}$ denote the resulting symmetric binary adjacency matrix ($A_{ij} = 1$ if $i$ and $j$ are connected, $A_{ii} = 0$).
 
-This graph provides the spatial structure required for subsequent autocorrelation and clustering analyses.
+The spatial weight matrix $W$ is obtained by \emph{row-standardizing} $A$:
+\[
+  W_{ij} = \frac{A_{ij}}{\sum_{j'=1}^{N} A_{ij'}}, \quad i = 1, \dots, N.
+\]
+Each row of $W$ sums to one, so the \emph{spatial lag} of a variable $\mathbf{v}$ at observation $i$ is the weighted average of its neighbors' values:
+\[
+  [\,W\mathbf{v}\,]_i = \sum_{j=1}^{N} W_{ij}\, v_j.
+\]
+This spatial lag enters both global Moran's $I$ and the local LISA statistics defined below.
 
 \subsection{Global Spatial Autocorrelation}
+\label{sec:meth-moran}
 
 To test whether predictive variance is spatially structured in feature space, we compute the global Moran's $I$ statistic. Let $\mathbf{v} = (v_1, \dots, v_N)^\top$ denote the vector of observation-wise predictive variances, and let $\bar{v}$ denote its mean.
 
@@ -51,20 +76,31 @@ I = \frac{\sum_{i=1}^N \sum_{j=1}^N W_{ij} (v_i - \bar{v})(v_j - \bar{v})}
 
 Positive values of $I$ indicate that observations with similar levels of predictive variance tend to be neighbors in feature space, while values near zero suggest spatial randomness.
 
-Statistical significance is assessed using permutation tests: the variance values are randomly permuted across observations while the spatial structure encoded by $W$ is held fixed. For local Moran statistics, significance is assessed per observation via permutation, and the Benjamini--Hochberg procedure is applied to control the false discovery rate (FDR) when identifying significant hotspots.
+Statistical significance of global Moran's $I$ is assessed via a permutation test: the variance values $v_i$ are randomly reassigned across observations while the spatial weight matrix $W$ is held fixed, yielding a null distribution for $I$.  (This global-level permutation test is distinct from the observation-level permutation null described in Section~\ref{sec:meth-null}, which permutes model predictions rather than variance scores.)
 
 \subsection{Local Indicators of Spatial Association}
+\label{sec:meth-lisa}
 
-While global Moran's $I$ assesses overall spatial dependence, it does not identify where such dependence occurs. To localize regions of elevated predictive multiplicity, we compute Local Indicators of Spatial Association (LISA).
+While global Moran's $I$ assesses overall spatial dependence, it does not identify \emph{where} such dependence occurs.  To localize regions of elevated predictive multiplicity, we compute Local Indicators of Spatial Association (LISA).
 
-For each observation $i$, the local Moran statistic is defined as
+For each observation $i$, let $z_i = v_i - \bar{v}$ denote the mean-centered predictive variance and let $l_i = [W\mathbf{z}]_i = \sum_j W_{ij} z_j$ denote its spatial lag.  The local Moran statistic is
 \[
-I_i = (v_i - \bar{v}) \sum_{j=1}^N W_{ij} (v_j - \bar{v}).
+  I_i = z_i \cdot l_i.
 \]
 
-Permutation-based significance tests are performed independently for each observation. Based on the sign of $v_i - \bar{v}$ and the local spatial lag, observations are assigned to one of four categories: High--High (HH), Low--Low (LL), High--Low (HL), or Low--High (LH). Observations that do not reach statistical significance after FDR correction are labeled as non-significant.
+\paragraph{Significance testing.}
+For each observation a \emph{conditional} permutation test is performed: the values $\{z_j : j \neq i\}$ are randomly permuted (999 times by default) while $z_i$ and $W$ are held fixed, yielding a reference distribution for $I_i$.  A pseudo $p$-value is computed as $(1 + \#\{\text{null} \geq \text{observed}\}) / (R_{\text{local}} + 1)$.  To control the family-wise false discovery rate across all $N$ tests, the Benjamini--Hochberg (BH) procedure is applied at level $\alpha = 0.05$.
 
-High--High observations correspond to locally unstable regions in which high predictive variance is surrounded by similarly unstable neighbors.
+\paragraph{Quadrant classification.}
+Each observation whose adjusted $p$-value falls below $\alpha$ is classified into one of four categories based on the signs of $z_i$ and $l_i$:
+
+\begin{itemize}
+  \item \textbf{High--High (HH):} $z_i > 0$ and $l_i > 0$ --- the observation has above-average variance \emph{and} its neighbors have above-average variance.  These are the \emph{multiplicity hotspots}.
+  \item \textbf{Low--Low (LL):}  $z_i < 0$ and $l_i < 0$ --- both the observation and its neighborhood have below-average variance (stable coldspots).
+  \item \textbf{High--Low (HL):} $z_i > 0$, $l_i < 0$ --- a high-variance outlier surrounded by low-variance neighbors.
+  \item \textbf{Low--High (LH):} $z_i < 0$, $l_i > 0$ --- a low-variance observation in a high-variance neighborhood.
+\end{itemize}
+Observations that do not reach significance after BH correction are labeled \emph{non-significant}.  Throughout this thesis, ``HH region'' refers specifically to the set of observations classified as High--High by this procedure.
 
 \subsection{Connected Components of High-Multiplicity Regions}
 
@@ -73,27 +109,74 @@ To extract coherent regions of predictive multiplicity, we restrict the kNN grap
 Each connected component represents a contiguous region of feature space in which predictive variance is consistently elevated. Components below a minimum size threshold may be discarded to avoid spurious detections. The resulting components support region-level analysis and stability assessments across different data splits or Rashomon set realizations.
 
 \subsection{Null Models for Spatial Multiplicity}
+\label{sec:meth-null}
 
 To ensure that detected spatial structure is not an artifact of marginal variance distributions, we employ null models based on permutation of predictions.
 
-Specifically, predictions are permuted independently within each model across observations, preserving the overall distribution of predictions for each model while destroying any alignment between predictive variance and feature space. Observation-wise variance and spatial statistics are recomputed on the permuted data.
+The null transformation operates on the prediction matrix $P \in \mathbb{R}^{M \times N}$.  For each model $m$ independently, the vector of predicted probabilities $(\hat{p}_{m1}, \dots, \hat{p}_{mN})$ is randomly permuted across observations.  This \emph{within-model permutation} has two key properties:
 
-Comparing observed statistics to their null distributions allows us to assess whether spatial clustering of predictive variance exceeds what would be expected under spatial randomness.
+\begin{enumerate}
+  \item \textbf{Preserved:} the marginal distribution of each model's predictions (i.e., the set of predicted values is unchanged, only their assignment to observations differs).
+  \item \textbf{Destroyed:} the alignment between any observation's predictions across models and its position in feature space.  In particular, any spatial clustering of the resulting observation-wise variance $v_i$ or conflict ratio $c_i$ is due to chance alone.
+\end{enumerate}
+
+For each of $R$ permutations, observation-wise variance (and, separately, conflict ratio) and global Moran's $I$ are recomputed on the permuted data.  The empirical $p$-value for the observed statistic is
+\[
+  p = \frac{1 + \#\{\text{null} \geq \text{observed}\}}{R + 1}.
+\]
+This design tests specifically whether spatially structured disagreement exceeds what would arise from independent, spatially unstructured predictions of the same overall magnitude.
 
 \subsection{Hyperparameter Variance Decomposition}
+\label{sec:meth-hp-decomp}
 
-To investigate the sources of predictive multiplicity, we decompose observation-wise variance into contributions attributable to hyperparameter choices.
+To investigate the \emph{sources} of predictive multiplicity, we decompose disagreement among Rashomon models into contributions attributable to model family and, within each family, to individual hyperparameters.  Because hyperparameters are family-specific (e.g., tree depth applies only to tree-based models), mixing families would introduce missing values and spurious importance.  The analysis is therefore conducted \emph{per family}.
 
-For a given hyperparameter $h$, models in the Rashomon set are grouped according to their value of $h$. For each observation, total variance is decomposed into between-group and within-group components:
+\paragraph{Per-family Rashomon selection.}
+For each model family $\mathcal{F}_j$ (e.g., GBM, RF, MLP), we select the top-$K$ models by validation Brier score within that family, yielding a within-family Rashomon set of size $K_j = \min(K, |\mathcal{F}_j|)$.
+
+\paragraph{Model-level disagreement contribution.}
+Let $P^{(j)} \in \mathbb{R}^{K_j \times N_{\text{test}}}$ denote the test predictions of the within-family Rashomon set, and let
 \[
-\mathrm{Var}_{\text{total}} = \mathrm{Var}_{\text{between}}(h) + \mathrm{Var}_{\text{within}}(h).
+  \bar{p}_i^{(j)} = \frac{1}{K_j} \sum_{m=1}^{K_j} \hat{p}_{mi}^{(j)}
 \]
+be the family-ensemble mean for observation~$i$.  The \emph{disagreement contribution} of model $m$ is
+\begin{equation}
+  V_m = \frac{1}{N_{\text{test}}} \sum_{i=1}^{N_{\text{test}}} \bigl(\hat{p}_{mi}^{(j)} - \bar{p}_i^{(j)}\bigr)^2.
+  \label{eq:Vm}
+\end{equation}
+$V_m$ measures the mean squared deviation of model $m$'s predictions from its family ensemble; higher values indicate that the model contributes more to within-family disagreement.
 
-This decomposition quantifies how much of the predictive instability for each observation is explained by differences in hyperparameter values versus residual variation within hyperparameter groups. Aggregating these quantities across observations provides a principled measure of hyperparameter importance for predictive multiplicity.
+\paragraph{HP importance via between-group variance of $V_m$.}
+For a hyperparameter $h$ with $G$ distinct values (after dropping missing or constant columns), we partition the $K_j$ models into groups $\{S_1,\dots,S_G\}$ by their value of $h$.  Standard one-way variance decomposition yields
+\[
+  \underbrace{\mathrm{Var}(V_m)}_{\text{total}}
+  = \underbrace{\sum_{g=1}^{G} \frac{|S_g|}{K_j}\bigl(\bar{V}_{S_g} - \bar{V}\bigr)^2}_{\mathrm{Var}_{\text{between}}(h)}
+  + \underbrace{\sum_{g=1}^{G} \frac{|S_g|}{K_j}\,\mathrm{Var}_{m \in S_g}(V_m)}_{\mathrm{Var}_{\text{within}}(h)},
+\]
+where $\bar{V}$ is the overall mean and $\bar{V}_{S_g}$ the group mean.  The \emph{importance} of hyperparameter $h$ is
+\begin{equation}
+  \rho(h) = \frac{\mathrm{Var}_{\text{between}}(h)}{\mathrm{Var}_{\text{total}}}.
+  \label{eq:hp-importance}
+\end{equation}
+This ratio-of-variances formulation is preferred over a mean-of-per-observation-ratios because it is more stable when individual observations have near-zero total variance.
+
+\paragraph{Edge cases.}
+Hyperparameter columns with all missing values or fewer than two unique values (after dropping NaN) are excluded.  Groups with fewer than one model are dropped before computing the decomposition.  If after filtering fewer than two groups remain, the hyperparameter is skipped.
 
 \subsection{Calibration Robustness Check}
+\label{sec:meth-calibration}
 
-To test whether detected spatial multiplicity is driven by probability miscalibration rather than genuine disagreement, we apply a post-hoc calibration step. Platt scaling (a logistic regression fitted on predicted probabilities versus true labels) is fit on the \emph{validation set only} and applied to test-set predictions for each model in the Rashomon set. Multiplicity and spatial metrics (mean variance, Moran's $I$, LISA HH masks) are then recomputed on the calibrated predictions. If spatial structure were largely an artifact of miscalibration, we would expect Moran's $I$ and HH regions to change substantially after calibration; persistence of structure indicates that multiplicity reflects genuine prediction disagreement.
+Observation-wise variance $v_i$ is computed from raw predicted probabilities $\hat{p}_{mi}$, which may be poorly calibrated.  If spatial clustering were an artifact of systematic miscalibration (e.g., consistently over-confident predictions near certain feature regions), correcting calibration should substantially reduce Moran's $I$ and shift HH regions.  We therefore apply a post-hoc calibration step and compare the resulting multiplicity and spatial metrics to their uncalibrated counterparts.
+
+\paragraph{Calibration procedure.}
+For each model $m$ in the Rashomon set, a \emph{Platt scaling} model is fitted: a logistic regression $\sigma(a \hat{p} + b)$ is trained on the validation set $(\hat{p}_{m,\text{val}}, y_{\text{val}})$, where $\hat{p}_{m,\text{val}}$ are the model's validation-set predicted probabilities and $y_{\text{val}}$ are the true labels.  The fitted mapping is then applied to obtain calibrated test predictions $\tilde{p}_{mi} = \sigma(a\,\hat{p}_{mi} + b)$ for each test observation $i$.  Crucially, the calibration mapping is fit on the validation set only, so no test-set information leaks into the calibrated predictions.
+
+\paragraph{Before/after comparison.}
+The full multiplicity and spatial pipeline --- mean variance, conflict ratio, Moran's $I$, and LISA classification --- is recomputed on the calibrated prediction matrix $\tilde{P}$.  We record the change in each metric ($\Delta$ mean variance, $\Delta$ Moran's $I$, $\Delta$ HH count) and the Jaccard similarity between the HH masks before and after calibration:
+\[
+  J_{\text{cal}} = \frac{|\text{HH}_{\text{before}} \cap \text{HH}_{\text{after}}|}{|\text{HH}_{\text{before}} \cup \text{HH}_{\text{after}}|}.
+\]
+High $J_{\text{cal}}$ and small $\Delta$ Moran's $I$ indicate that spatial structure is robust to calibration and reflects genuine prediction disagreement rather than probability-scale artifacts.
 
 \subsection{Validation on Synthetic Data}
 
@@ -127,6 +210,6 @@ To verify that spatial results are not artifacts of the Euclidean distance metri
 
 \subsection{Summary}
 
-The methodology described in this chapter provides a unified framework for analyzing predictive multiplicity as a spatial phenomenon. By combining Rashomon set analysis, observation-wise predictive variance, spatial statistics, null models, hyperparameter decomposition, calibration checks, validation on synthetic data, interpretable rule extraction, decision boundary proximity analysis, fairness exposure assessment, and alternative graph constructions, the approach enables identification, localization, interpretation, and description of regions in feature space where model predictions are particularly unstable, along with robustness verification of the findings.
+The methodology described in this chapter provides a unified framework for analyzing predictive multiplicity as a spatial phenomenon.  By combining Rashomon set analysis, observation-wise predictive variance and conflict ratio, spatial statistics (Moran's $I$, LISA), null models, hyperparameter variance decomposition, calibration checks, validation on synthetic data, interpretable rule extraction, decision boundary proximity analysis, fairness exposure assessment, and alternative graph constructions, the approach enables identification, localization, interpretation, and characterization of regions in feature space where model predictions are particularly unstable, along with robustness verification of the findings.
 
 

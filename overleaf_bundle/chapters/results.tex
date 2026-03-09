@@ -1,4 +1,4 @@
-This chapter presents the main empirical results. We first summarize predictive multiplicity and spatial structure across datasets (Section~5.1), then report null-hypothesis testing (Section~5.2), global vs.\ per-family comparisons (Section~5.3), spatial pattern analysis (Section~5.4), sensitivity analyses (Sections~5.5--5.6), hyperparameter and family importance (Section~5.7), calibration robustness (Section~5.8), synthetic validation (Section~5.9), interpretable rules (Section~5.10), aggregated metrics (Section~5.11), and four additional robustness analyses: decision boundary proximity (Section~5.12), fairness exposure (Section~5.13), alternative graph constructions (Section~5.14), and aggregated drivers across seeds (Section~5.15). All analyses use the global Rashomon set (top-$K$ with $K=25$) and default spatial parameters ($k=30$) unless stated otherwise.
+This chapter presents the main empirical results.  We first summarize predictive multiplicity and spatial structure across datasets (Section~\ref{sec:results-metrics}), then report null-hypothesis testing (Section~\ref{sec:results-null}), global vs.\ per-family comparisons (Section~\ref{sec:results-global-vs-family}), spatial pattern analysis (Section~\ref{sec:results-spatial}), sensitivity analyses (Sections~\ref{sec:results-sensitivity-K}--\ref{sec:results-sensitivity-kNN}), hyperparameter and family importance (Section~\ref{sec:results-hp}), calibration robustness (Section~\ref{sec:results-calibration}), synthetic validation (Section~\ref{sec:results-synthetic}), interpretable rules (Section~\ref{sec:results-rules}), aggregated metrics (Section~\ref{sec:results-dashboard}), and four additional robustness analyses: decision boundary proximity (Section~\ref{sec:results-margin}), fairness exposure (Section~\ref{sec:results-fairness}), alternative graph constructions (Section~\ref{sec:results-alt-graph}), and aggregated drivers across seeds (Section~\ref{sec:results-agg-drivers}).  All analyses use the global Rashomon set (top-$K$ with $K=25$) and default spatial parameters ($k=30$) unless stated otherwise.
 
 %% ---------------------------------------------------------------------------
 \subsection{Multiplicity and Spatial Metrics by Dataset}
@@ -13,7 +13,7 @@ Table~\ref{tab:dataset_summary} summarizes mean predictive variance and global M
 \input{presentation_assets/tab/dataset_summary.tex}
 \end{table}
 
-Additional multiplicity metrics computed across all 30 runs (3 datasets $\times$ 10 seeds) include: mean ambiguity $0.15 \pm 0.08$, disagreement rate ($\varepsilon = 0.05$) of $0.27 \pm 0.18$, discrepancy $0.08 \pm 0.04$, and neighborhood agreement $0.82 \pm 0.06$. COMPAS and German Credit show substantially higher disagreement rates than Breast Cancer, reflecting more diverse Rashomon sets.
+Additional multiplicity metrics computed across all 30 runs (3 datasets $\times$ 10 seeds) include: mean ambiguity $0.15 \pm 0.08$, disagreement rate ($\delta = 0.05$) of $0.27 \pm 0.18$, discrepancy $0.08 \pm 0.04$, and neighborhood agreement $0.82 \pm 0.06$. COMPAS and German Credit show substantially higher disagreement rates than Breast Cancer, reflecting more diverse Rashomon sets.
 
 Figure~\ref{fig:dataset_comparison_bars} provides a visual comparison of four key metrics---Moran's $I$, HH hotspot count, mean predictive variance, and mean conflict---across datasets. COMPAS dominates on all spatial metrics (highest Moran's $I$ and HH count), while German Credit has the highest mean variance. Mean conflict follows a similar pattern to mean variance, with COMPAS and German Credit exhibiting the highest values.
 
@@ -28,7 +28,7 @@ Figure~\ref{fig:dataset_comparison_bars} provides a visual comparison of four ke
 \subsection{Null Hypothesis Testing}
 \label{sec:results-null}
 
-To test whether the observed spatial structure exceeds what would be expected by chance, we compared observed Moran's $I$ to a null distribution obtained by permuting each model's predictions independently across observations ($R = 100$ permutations per run). Table~\ref{tab:null_significance} reports the fraction of runs with significant Moran's $I$ ($p < 0.05$).
+To test whether the observed spatial structure exceeds what would be expected by chance, we compared observed Moran's $I$ to the null distribution described in Section~\ref{sec:exp-null}: each model's test-set predictions are independently permuted across observations ($R = 100$ permutations per run), preserving per-model marginal distributions while destroying spatial alignment.  Table~\ref{tab:null_significance} reports the fraction of runs with significant Moran's $I$ ($p < 0.05$).
 
 \begin{table}[htbp]
 \centering
@@ -37,7 +37,7 @@ To test whether the observed spatial structure exceeds what would be expected by
 \input{presentation_assets/tab/null_significance.tex}
 \end{table}
 
-COMPAS and German Credit show significant spatial autocorrelation in all 10 runs (empirical $p \approx 0.01$ in every case, i.e., the observed Moran's $I$ exceeded all 100 null samples). Breast Cancer is significant in 70\% of runs; the 3 non-significant runs (seeds 3, 4, 9) correspond to seeds with lower overall multiplicity. Figure~\ref{fig:null_moran_example} shows an example null distribution for COMPAS (seed 0): the observed Moran's $I$ of 0.36 lies far above the null mean of $-0.001 \pm 0.006$.
+COMPAS and German Credit show significant spatial autocorrelation in all 10 runs.  In every case the observed Moran's $I$ exceeded all 100 null samples, yielding $p = 1/101 \approx 0.0099$---the resolution floor of the permutation test (see Section~\ref{sec:exp-null}).  Breast Cancer is significant in 70\% of runs; the 3 non-significant runs (seeds 3, 4, 9) correspond to seeds with lower overall multiplicity. Figure~\ref{fig:null_moran_example} shows an example null distribution for COMPAS (seed 0): the observed Moran's $I$ of 0.36 lies far above the null mean of $-0.001 \pm 0.006$.
 
 \begin{figure}[htbp]
 \centering
@@ -48,7 +48,7 @@ COMPAS and German Credit show significant spatial autocorrelation in all 10 runs
 
 \subsubsection{Conflict-Based Null Testing}
 
-In addition to variance-based Moran's $I$, we repeat the null experiment using \emph{pointwise conflict} (the fraction of model pairs that disagree on the predicted class) as the spatial variable. This tests whether conflict---a more direct measure of prediction disagreement---also exhibits significant spatial clustering.
+In addition to variance-based Moran's $I$, we repeat the null experiment using the pointwise conflict ratio $c_i$ (Section~3.4) as the spatial variable.  This tests whether hard-label disagreement---a complementary measure to soft prediction variance---also exhibits significant spatial clustering.
 
 The observed conflict Moran's $I$ is comparable to the variance-based statistic on COMPAS and German Credit. Under the same permutation null (independently permuting predictions per model, $R = 100$), the conflict Moran's $I$ is significant in the same fraction of runs as the variance-based statistic for COMPAS and German Credit. This confirms that spatial clustering is not an artifact of the variance metric but reflects genuine local concentration of predictive disagreement.
 
@@ -191,7 +191,7 @@ Mean predictive variance is invariant to $k$ (it does not depend on the graph). 
 \subsection{Hyperparameter and Family Importance}
 \label{sec:results-hp}
 
-Variance decomposition was conducted using the per-family Rashomon set (top-25 per family, 125 models total). We first present a single-seed case study (COMPAS seed 0) for detailed exposition, then report aggregated results across all 10 seeds in Section~5.15.
+To identify which modeling choices drive predictive multiplicity, we apply the variance decomposition described in Section~\ref{sec:meth-hp-decomp}, using the per-family Rashomon set (top-25 per family, up to 125 models total).  Each model's disagreement contribution $V_m$ (Eq.~\ref{eq:Vm}) is decomposed by hyperparameter; HP importance $\rho(h)$ (Eq.~\ref{eq:hp-importance}) measures the fraction of $V_m$ variance explained by that hyperparameter.  We first present a single-seed case study (COMPAS seed 0) for detailed exposition, then report aggregated results across all 10 seeds in Section~\ref{sec:results-agg-drivers}.
 
 \subsubsection{Family Importance}
 
@@ -213,16 +213,16 @@ Model family (GBM, LogReg, MLP, RF, kNN) explains about 41\% of total prediction
 
 \subsubsection{Within-Family Hyperparameter Importance}
 
-Within each family, variance decomposition identifies the most influential hyperparameters. Table~\ref{tab:hp_importance} summarizes the top hyperparameters per family by ratio of between-HP-group to total variance.
+Within each family, the variance decomposition of $V_m$ identifies the most influential hyperparameters.  Table~\ref{tab:hp_importance} summarizes the top hyperparameters per family by HP importance $\rho(h)$.
 
 \begin{table}[htbp]
 \centering
-\caption{Top hyperparameters per model family by variance decomposition (COMPAS seed 0). \texttt{ratio\_of\_sums} = sum of between-group variance / sum of total variance.}
+\caption{Top hyperparameters per model family by variance decomposition of $V_m$ (COMPAS seed 0). $\rho(h)$ denotes the HP importance defined in Eq.~\ref{eq:hp-importance}.}
 \label{tab:hp_importance}
 \small
 \begin{tabular}{llcc}
 \hline
-Family & Hyperparameter & ratio\_of\_sums & n\_groups \\
+Family & Hyperparameter & $\rho(h)$ & Groups \\
 \hline
 LogReg & C & 0.865 & 22 \\
 kNN & n\_neighbors & 0.855 & 6 \\
@@ -236,27 +236,27 @@ MLP & hidden\_layer\_sizes & 0.140 & 15 \\
 \end{tabular}
 \end{table}
 
-Regularization strength dominates for LogReg ($C$, 87\%) and kNN (\texttt{n\_neighbors}, 86\%). Tree depth is most important for RF (67\%) and learning rate for GBM (34\%). For MLP, multiple hyperparameters contribute: regularization $\alpha$ (25\%), learning rate (19\%), and architecture (14\%).
+Regularization strength dominates for LogReg ($C$, 87\%) and kNN (number of neighbors, 86\%).  Tree depth is most important for RF (67\%) and learning rate for GBM (34\%).  For MLP, multiple hyperparameters contribute: weight decay $\alpha$ (25\%), learning rate (19\%), and hidden-layer architecture (14\%).
 
 \subsubsection{Hotspot-Specific Drivers}
 
-When the same decomposition is restricted to HH points, the importance ranking shifts. Figure~\ref{fig:hh_delta_hp} shows the change in \texttt{ratio\_of\_sums} (HH minus global) per hyperparameter for MLP. MLP \texttt{learning\_rate\_init} gains $+0.15$ inside hotspots, indicating that learning rate differences contribute disproportionately to instability in the most affected regions. GBM \texttt{learning\_rate} and \texttt{max\_depth} lose importance ($-0.02$ to $-0.03$) inside hotspots, suggesting that GBM disagreement is more uniformly distributed.
+When the same decomposition is restricted to HH observations, the importance ranking shifts. Figure~\ref{fig:hh_delta_hp} shows the change in HP importance $\rho(h)$ (HH minus global) per hyperparameter for MLP. MLP learning rate initialization gains $+0.15$ inside hotspots, indicating that learning rate differences contribute disproportionately to instability in the most affected regions. GBM learning rate and maximum depth lose importance ($-0.02$ to $-0.03$) inside hotspots, suggesting that GBM disagreement is more uniformly distributed.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.65\textwidth]{hh_delta_hp_importance_compas_seed0_MLP.pdf}
-\caption{Change in HP importance ($\Delta$ ratio\_of\_sums = HH $-$ ALL) for MLP on COMPAS seed 0. Positive values indicate hyperparameters that matter more inside hotspots.}
+\caption{Change in HP importance ($\Delta\rho(h)$ = HH $-$ all) for MLP on COMPAS seed 0. Positive values indicate hyperparameters that matter more inside hotspots.}
 \label{fig:hh_delta_hp}
 \end{figure}
 
 \subsubsection{Predictive Variance by HP Value}
 
-Figure~\ref{fig:variance_by_hp_mlp} shows boxplots of per-model variance contribution grouped by hyperparameter value for MLP. This visualization reveals, for example, that certain MLP learning rates or architectures produce systematically higher variance contributions, providing actionable guidance for reducing multiplicity.
+Figure~\ref{fig:variance_by_hp_mlp} shows boxplots of per-model disagreement contribution $V_m$ grouped by hyperparameter value for MLP. This visualization reveals, for example, that certain learning rates or architectures produce systematically higher disagreement contributions, providing actionable guidance for reducing multiplicity.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.8\textwidth]{variance_by_hp_compas_seed0_MLP.pdf}
-\caption{Per-model variance contribution by hyperparameter value for MLP on COMPAS seed 0. Each boxplot shows the distribution of variance contributions for models sharing a hyperparameter value.}
+\caption{Per-model disagreement contribution $V_m$ by hyperparameter value for MLP on COMPAS seed 0.  Each boxplot shows the distribution of $V_m$ for models sharing a hyperparameter value.}
 \label{fig:variance_by_hp_mlp}
 \end{figure}
 
@@ -358,7 +358,7 @@ Performance & Brier score (ensemble) & $0.13 \pm 0.08$ \\
 \hline
 Pred.\ multiplicity & Mean variance & $0.003 \pm 0.002$ \\
 Pred.\ multiplicity & Ambiguity & $0.15 \pm 0.08$ \\
-Pred.\ multiplicity & Disagreement rate ($\varepsilon=0.05$) & $0.27 \pm 0.18$ \\
+Pred.\ multiplicity & Disagreement rate ($\delta=0.05$) & $0.27 \pm 0.18$ \\
 Pred.\ multiplicity & Discrepancy & $0.08 \pm 0.04$ \\
 \hline
 Spatial multiplicity & Moran's $I$ ($k=30$) & $0.11 \pm 0.09$ \\
@@ -524,7 +524,7 @@ German        & $0.53 \pm 0.04$ & $0.57 \pm 0.08$ & 10 & 4 \\
 
 \subsubsection{Hyperparameter Importance Across Seeds}
 
-Figure~\ref{fig:hp_imp_agg} shows the top hyperparameters per family on COMPAS, aggregated across 10 seeds. The ranking is highly consistent: LogReg $C$ ($0.94 \pm 0.05$), kNN \texttt{n\_neighbors} ($0.79 \pm 0.17$), RF \texttt{max\_depth} ($0.64 \pm 0.07$), GBM \texttt{learning\_rate} ($0.31 \pm 0.05$), and MLP \texttt{learning\_rate\_init} ($0.22 \pm 0.10$) are the top drivers within their respective families in every seed. These findings are consistent across German and Breast Cancer, with LogReg $C$ dominating across all datasets ($> 0.93$).
+Figure~\ref{fig:hp_imp_agg} shows the top hyperparameters per family on COMPAS, aggregated across 10 seeds.  The ranking is highly consistent: LogReg regularization strength $C$ ($\rho = 0.94 \pm 0.05$), kNN number of neighbors ($0.79 \pm 0.17$), RF maximum depth ($0.64 \pm 0.07$), GBM learning rate ($0.31 \pm 0.05$), and MLP learning rate initialization ($0.22 \pm 0.10$) are the top drivers within their respective families in every seed.  These findings are consistent across German and Breast Cancer, with LogReg $C$ dominating across all datasets ($\rho > 0.93$).
 
 \begin{figure}[htbp]
 \centering
@@ -535,7 +535,7 @@ Figure~\ref{fig:hp_imp_agg} shows the top hyperparameters per family on COMPAS, 
 
 \subsubsection{Rule Feature Frequency Across Seeds}
 
-The interpretable rules extracted for COMPAS (Section~5.10) consistently use the same features across seeds and rule extraction methods. Table~\ref{tab:rule_freq} reports the frequency of feature appearance across all extracted rules. \texttt{age} and \texttt{priors\_count} dominate, appearing in 78 and 58 rules respectively. Race-related features (\texttt{race\_Other}) and sex appear less frequently but contribute to specific rules.
+The interpretable rules extracted for COMPAS (Section~\ref{sec:results-rules}) consistently use the same features across seeds and rule extraction methods. Table~\ref{tab:rule_freq} reports the frequency of feature appearance across all extracted rules. \texttt{age} and \texttt{priors\_count} dominate, appearing in 78 and 58 rules respectively. Race-related features (\texttt{race\_Other}) and sex appear less frequently but contribute to specific rules.
 
 \begin{table}[htbp]
 \centering
@@ -579,5 +579,5 @@ The experiments demonstrate that predictive multiplicity, as measured by observa
 
 \item \textbf{Graph robustness:} Moran's $I$ and HH counts are nearly identical under Euclidean, PCA-reduced, and cosine-based kNN graphs, confirming that spatial findings are not artifacts of the distance metric.
 
-\item \textbf{Aggregated drivers:} Family and HP importance rankings are highly stable across 10 seeds. Model family explains 41--62\% of variance depending on dataset; LogReg $C$ ($>$93\%) and kNN \texttt{n\_neighbors} ($>$70\%) are the top within-family drivers across all datasets and seeds.
+\item \textbf{Aggregated drivers:} Family and HP importance rankings are highly stable across 10 seeds.  Model family explains 41--62\% of variance depending on dataset; LogReg regularization strength ($\rho > 0.93$) and kNN number of neighbors ($\rho > 0.70$) are the top within-family drivers across all datasets and seeds.
 \end{enumerate}
