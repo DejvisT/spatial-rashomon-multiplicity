@@ -101,6 +101,9 @@ def _run_single(
 
     out = {
         "mean_variance": mult["mean_variance"],
+        "ambiguity": mult["ambiguity"],
+        "disagreement_rate": mult["disagreement_rate"],
+        "discrepancy": mult["discrepancy"],
         "mean_conflict": mult["mean_conflict"],
         "frac_conflict_gt0": mult["frac_conflict_gt0"],
         "frac_conflict_ge025": mult["frac_conflict_ge025"],
@@ -270,6 +273,9 @@ def run_dataset_experiment(
         row = {
             "outer_seed": r["outer_seed"],
             "mean_variance": r["mean_variance"],
+            "ambiguity": r["ambiguity"],
+            "disagreement_rate": r["disagreement_rate"],
+            "discrepancy": r["discrepancy"],
             "mean_conflict": r["mean_conflict"],
             "frac_conflict_gt0": r["frac_conflict_gt0"],
             "frac_conflict_ge025": r["frac_conflict_ge025"],
@@ -312,6 +318,9 @@ def run_dataset_experiment(
             rec["_quadrant_summary"].to_csv(pp_dir / "quadrant_summary.csv", index=False)
 
     mean_var = np.array([r["mean_variance"] for r in records])
+    ambiguity_arr = np.array([r["ambiguity"] for r in records])
+    disagree_arr = np.array([r["disagreement_rate"] for r in records])
+    discrep_arr = np.array([r["discrepancy"] for r in records])
     mean_conf = np.array([r["mean_conflict"] for r in records])
     frac_conf_gt0 = np.array([r["frac_conflict_gt0"] for r in records])
     frac_conf_ge025 = np.array([r["frac_conflict_ge025"] for r in records])
@@ -340,6 +349,12 @@ def run_dataset_experiment(
         "n_runs": len(records),
         "mean_variance_mean": _mean_std(mean_var)[0],
         "mean_variance_std": _mean_std(mean_var)[1],
+        "ambiguity_mean": _mean_std(ambiguity_arr)[0],
+        "ambiguity_std": _mean_std(ambiguity_arr)[1],
+        "disagreement_rate_mean": _mean_std(disagree_arr)[0],
+        "disagreement_rate_std": _mean_std(disagree_arr)[1],
+        "discrepancy_mean": _mean_std(discrep_arr)[0],
+        "discrepancy_std": _mean_std(discrep_arr)[1],
         "mean_conflict_mean": _mean_std(mean_conf)[0],
         "mean_conflict_std": _mean_std(mean_conf)[1],
         "frac_conflict_gt0_mean": _mean_std(frac_conf_gt0)[0],
