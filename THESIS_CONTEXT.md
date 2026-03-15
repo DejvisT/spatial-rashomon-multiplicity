@@ -61,11 +61,12 @@ rashomon-multiplicity/
 │   ├── run_analysis.py    # Rashomon selection, spatial (Moran/LISA), null, multiplicity metrics
 │   ├── experiment_runner.py # run_dataset_experiment, run_all_experiments
 │   ├── preprocessing.py   # get_transformed_test_features (for spatial/null)
-│   ├── spatial.py         # extract_hh_components, hand-rolled kNN/LISA (supplement to run_analysis)
-│   ├── stability.py       # hh_selection_frequency, jaccard_index, hh_jaccard_matrix
+│   ├── spatial.py         # kNN graph, LISA, HH component extraction, regionality metrics
+│   ├── stability.py       # hh_selection_frequency, jaccard, region-level stability
 │   ├── hyperparams.py     # family/HP importance, variance decomposition
-│   ├── calibration.py     # Platt scaling, calibration robustness
-│   └── rules.py           # interpretable rules for HH components
+│   ├── calibration.py     # Platt + isotonic scaling, calibration robustness
+│   ├── rules.py           # interpretable rules for HH components
+│   └── bootstrap_ablation.py  # bootstrap ablation infrastructure for robustness testing
 ├── src/
 │   ├── data.py            # load_dataset, make_split, make_preprocessor, make_split_with_fixed_test
 │   ├── training_pipeline.py # run_one_training_run, TRAINING_MODEL_CONFIGS
@@ -77,9 +78,9 @@ rashomon-multiplicity/
 │   ├── 03_spatial_patterns.ipynb
 │   ├── 04_sensitivity_K.ipynb, 05_sensitivity_kNN.ipynb
 │   ├── 06_hyperparameter_analysis.ipynb, 07_calibration_robustness.ipynb
-│   ├── 08_metrics_dashboard.ipynb
-│   ├── 10_synthetic_multiplicity.ipynb, 11_interpretable_rules.ipynb
-│   └── 12_robustness_and_fairness.ipynb
+│   ├── 08_synthetic_multiplicity.ipynb
+│   ├── 09_interpretable_rules.ipynb
+│   └── 10_robustness_and_fairness.ipynb
 ├── run_training_pipeline.py      # Main training (10 outer runs, 50 candidates/family)
 ├── run_training_pipeline_fixed_test.py  # Same with fixed test set (for notebook 03)
 ├── run_experiments.py            # Analysis over results (Rashomon, spatial, null)
@@ -101,13 +102,24 @@ rashomon-multiplicity/
 - **Stability**: `hh_selection_frequency`, `jaccard_index`, `hh_jaccard_matrix`, `summarize_hh_stability`
 - **Single-family**: Notebook 05 compares global vs. per-family (RF, LR, GBM, MLP) Moran/LISA
 
-### Gaps
-- **Interpretability / rules**: ✓ Implemented in `analysis/rules.py` and `06_interpretable_rules.ipynb` (decision trees, precision/recall, out-of-sample when possible)
-- **Hyperparameter analysis**: No variance decomposition, no HP-vs-hotspot analysis
-- **Stability (3)**: No sensitivity analysis for ε, k, n_models
-- **Stability (2)**: No cluster-level stability (e.g., same regions across runs)
-- **Calibration**: No CalibratedClassifierCV integration
-- **Multi-dataset**: Only COMPAS results present; German Credit, Breast Cancer need runs
+### Gaps (last reviewed 2026-03-13)
+- **Interpretability / rules**: ✓ Implemented in `analysis/rules.py` and `09_interpretable_rules.ipynb`
+- **Hyperparameter analysis**: ✓ Implemented in `analysis/hyperparams.py` and `06_hyperparameter_analysis.ipynb`
+- **Stability**: ✓ Pointwise HH stability in `03_spatial_patterns.ipynb`; region-level stability metrics added to `analysis/stability.py`
+- **Sensitivity (K, kNN)**: ✓ Implemented in `04_sensitivity_K.ipynb` and `05_sensitivity_kNN.ipynb`
+- **Calibration**: ✓ Platt + isotonic scaling in `analysis/calibration.py` and `07_calibration_robustness.ipynb`
+- **Multi-dataset**: ✓ COMPAS, German Credit, Breast Cancer all running
+- **Region-level metrics**: ✓ Regionality ratio, HH/HL fractions in `analysis/spatial.py`
+- **Within-hotspot performance**: ✓ HH vs non-HH accuracy/Brier comparison in `10_robustness_and_fairness.ipynb`
+- **Getis-Ord Gi***: ✓ Cleaner hotspot definition via Gi* statistic in `01_primary_experiment.ipynb`
+- **Soft Rashomon set**: ✓ Weighted model selection (Brier-based weights) in `01_primary_experiment.ipynb`
+- **Spatial correlogram**: ✓ Distance-decay analysis of spatial autocorrelation in `01_primary_experiment.ipynb`
+- **Cross-family HH overlap**: ✓ Overlap matrix and variance correlation across families in `10_robustness_and_fairness.ipynb`
+- **HP diversity/entropy/prediction-difference**: ✓ Diversity indices and entropy analysis in `06_hyperparameter_analysis.ipynb`
+- **Calibration quadrant movement**: ✓ Tracking how points move between LISA quadrants after calibration in `10_robustness_and_fairness.ipynb`
+- **Systematic driver analysis**: ✓ L1 logistic + decision tree for HH vs non-HH characterization in `09_interpretable_rules.ipynb`
+- **Bootstrap ablation infrastructure**: ✓ Implemented in `analysis/bootstrap_ablation.py` and `10_robustness_and_fairness.ipynb`
+- **Gower distance and PCA-based kNN**: ✓ Mixed-type feature support via Gower distance and PCA-reduced kNN in `10_robustness_and_fairness.ipynb`
 
 ---
 
@@ -199,4 +211,4 @@ rashomon-multiplicity/
 
 ---
 
-*Last updated: 2025-02-08. Use this document when implementing thesis code and experiments.*
+*Last updated: 2026-03-13. Use this document when implementing thesis code and experiments.*

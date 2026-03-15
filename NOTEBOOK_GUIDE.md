@@ -16,10 +16,9 @@ This document explains every notebook in the project: what analyses are performe
 8. [Notebook 05 — Sensitivity to kNN](#notebook-05--sensitivity-to-knn)
 9. [Notebook 06 — Hyperparameter Analysis](#notebook-06--hyperparameter-analysis)
 10. [Notebook 07 — Calibration Robustness](#notebook-07--calibration-robustness)
-11. [Notebook 08 — Metrics Dashboard](#notebook-08--metrics-dashboard)
-12. [Notebook 10 — Synthetic Multiplicity](#notebook-10--synthetic-multiplicity)
-13. [Notebook 11 — Interpretable Rules](#notebook-11--interpretable-rules)
-14. [Notebook 12 — Robustness and Fairness](#notebook-12--robustness-and-fairness)
+11. [Notebook 08 — Synthetic Multiplicity](#notebook-08--synthetic-multiplicity)
+12. [Notebook 09 — Interpretable Rules](#notebook-09--interpretable-rules)
+13. [Notebook 10 — Robustness and Fairness](#notebook-10--robustness-and-fairness)
 
 ---
 
@@ -65,7 +64,7 @@ This project investigates **predictive multiplicity** in machine learning — th
 | `stability.py`         | `hh_selection_frequency`, `hh_jaccard_matrix`, `jaccard_index`, `summarize_hh_stability`                                                                                                                                                                                         |
 | `hyperparams.py`       | Variance decomposition: `compute_family_importance`, `compute_within_family_hp_importance`, `compute_within_family_hp_importance_on_subset`, `hyperparameter_profiling`                                                                                                          |
 | `calibration.py`       | `run_calibration_experiment` — Platt scaling on validation set, recomputes metrics on calibrated predictions                                                                                                                                                                     |
-| `rules.py`             | Rule extraction helpers for notebook 11                                                                                                                                                                                                                                          |
+| `rules.py`             | Rule extraction helpers for notebook 09                                                                                                                                                                                                                                          |
 
 
 ---
@@ -148,6 +147,18 @@ Load all training runs for each dataset, perform global Rashomon selection (K=25
 - **High Moran's I** (positive, significant) = disagreement is spatially clustered, not random.
 - **n_hh** = number of individuals in multiplicity hotspots.
 - Compare global vs per-family: if per-family HH counts are much lower, inter-family diversity drives hotspots.
+
+### Getis-Ord Gi* Section
+
+Computes the Getis-Ord Gi* statistic as a complement to LISA. While LISA classifies points into HH/HL/LH/LL quadrants, Gi* produces a single z-score per point measuring local concentration of high values (a "hotspot score"). Points with Gi* z > threshold (after FDR correction) are classified as hotspots. This provides a cleaner, threshold-free hotspot definition that avoids the binary quadrant classification of LISA.
+
+### Soft Rashomon Section
+
+Instead of the standard hard-threshold Rashomon set (top-K models by Brier), computes a **weighted** Rashomon set where each model receives a weight inversely proportional to its validation Brier score. Pointwise variance is then a weighted variance. This avoids sensitivity to the exact K cutoff and gives a smoother picture of multiplicity.
+
+### Spatial Correlogram Section
+
+Builds a spatial correlogram: computes Moran's I at increasing distance bands (lag orders) to reveal how spatial autocorrelation decays with distance in feature space. A sharp drop-off indicates that multiplicity hotspots are tightly localized; a slow decay suggests broad, diffuse regions of disagreement.
 
 ---
 
@@ -317,6 +328,10 @@ Decompose predictive variance into **between-family** and **within-family** comp
 - **Positive delta in HH**: That HP is *more* important in hotspot regions than globally — it's a driver of localized instability.
 - **Low family importance in HH but high globally** (or vice versa): Hotspot drivers differ from population-level drivers.
 
+### HP Diversity and Flexibility Section
+
+Extends the hyperparameter analysis with diversity and entropy-based metrics. Computes the **Shannon entropy** of per-family prediction distributions and the **mean absolute prediction difference** across HP configurations within each family. Identifies which HP axes produce the most *flexible* models (large prediction swings) versus *rigid* ones (similar predictions regardless of HP choice). This complements the variance-decomposition approach with an information-theoretic perspective.
+
 ---
 
 ## Notebook 07 — Calibration Robustness
@@ -352,44 +367,9 @@ Test whether spatial multiplicity is an artifact of **probability miscalibration
 
 ---
 
-## Notebook 08 — Metrics Dashboard
+## Notebook 08 — Synthetic Multiplicity
 
-**File:** `notebooks/08_metrics_dashboard.ipynb`
-
-### Purpose
-
-Consolidated dashboard of all metrics — performance, predictive multiplicity, and spatial multiplicity — aggregated across runs. Intended for quick reference and thesis reporting.
-
-### What the Code Does
-
-1. For each dataset and seed: load run, select Rashomon (K=25), compute performance (accuracy, Brier), multiplicity (mean_variance, ambiguity, disagreement_rate, discrepancy), and spatial metrics (Moran's I, n_hh, n_ll, neighborhood_agreement, LCAE).
-2. Aggregate by dataset: mean +/- std.
-3. Optionally compute sensitivity to K.
-
-### Plots
-
-- **Performance box plots**: Accuracy and Brier score distributions.
-- **Predictive multiplicity bar chart**: Mean variance, ambiguity, disagreement rate, discrepancy.
-- **Multiplicity vs K** (4-panel): How each metric changes with Rashomon set size.
-- **Spatial multiplicity**: Moran's I bar, HH/LL bar, neighborhood agreement box plot, pointwise variance and LCAE box plots.
-
-### Output
-
-- Summary table with all metrics formatted for the thesis.
-
-### How to Interpret
-
-This is the "one-stop shop" for seeing all metrics side by side. Use it to:
-
-- Verify that models perform well (high accuracy, low Brier).
-- Compare multiplicity across datasets (COMPAS typically has more HH than Breast Cancer).
-- Check that spatial metrics are consistent with the null experiment (notebook 02).
-
----
-
-## Notebook 10 — Synthetic Multiplicity
-
-**File:** `notebooks/10_synthetic_multiplicity.ipynb`
+**File:** `notebooks/08_synthetic_multiplicity.ipynb`
 
 ### Purpose
 
@@ -445,9 +425,9 @@ The XOR pattern (p = 0.5 +/- delta based on sign(x1*x2)) is clever because:
 
 ---
 
-## Notebook 11 — Interpretable Rules
+## Notebook 09 — Interpretable Rules
 
-**File:** `notebooks/11_interpretable_rules.ipynb`
+**File:** `notebooks/09_interpretable_rules.ipynb`
 
 ### Purpose
 
@@ -487,11 +467,15 @@ Find interpretable feature-based rules that **describe** HH and high-variance re
 - **Stable features** (appear in > 80% of bootstrap samples): Robust indicators of hotspot membership.
 - For COMPAS: `num__priors_count` and `num__age` are the most stable hotspot descriptors — individuals with high prior count and high age are systematically in the multiplicity hotspot.
 
+### Systematic Driver Analysis Section
+
+Goes beyond rule extraction to provide a full **systematic characterization** of HH vs non-HH points. Fits an L1-regularized logistic regression and a shallow decision tree to predict HH membership from test features. Reports coefficients, feature importances, and classification metrics (precision, recall, F1). This gives a more principled answer to "what distinguishes hotspot individuals" than individual rules, and the L1 sparsity identifies the minimal feature set needed to describe hotspot membership.
+
 ---
 
-## Notebook 12 — Robustness and Fairness
+## Notebook 10 — Robustness and Fairness
 
-**File:** `notebooks/12_robustness_and_fairness.ipynb`
+**File:** `notebooks/10_robustness_and_fairness.ipynb`
 
 ### Purpose
 
@@ -547,11 +531,55 @@ Four add-on studies that extend the core analysis with robustness checks and fai
 - **Significant permutation p-value**: The disparity is unlikely due to chance.
 - **High Jaccard with protected-excluded kNN**: HH patterns are not driven by race/sex features in the kNN graph — they persist even without protected attributes, suggesting they reflect genuine structural features of the prediction problem.
 
-### Section 4: Alternative kNN Graph Constructions
+### Section 4: Cross-Family HH Overlap
 
 **What it does:**
 
-- Build three kNN graphs: Euclidean (baseline), PCA-reduced (15 components), cosine distance.
+- For each model family, computes the HH mask from per-family spatial analysis.
+- Builds an overlap matrix (Jaccard similarity) of HH masks across families.
+- Correlates per-family pointwise variance vectors (Pearson r) to assess whether families produce similar variance patterns.
+
+**Output:** `tables/cross_family_hh_overlap.csv`, `tables/cross_family_variance_corr.csv`
+
+**How to interpret:**
+
+- **High Jaccard overlap between families**: The same individuals are in hotspots regardless of model family — multiplicity is structurally driven.
+- **Low overlap**: Different families flag different regions, suggesting family-specific sources of disagreement.
+- **High variance correlation**: Families produce similar uncertainty landscapes even if they disagree on predictions.
+
+### Section 5: Calibration Quadrant Movement
+
+**What it does:**
+
+- Compares LISA quadrant assignments (HH, HL, LH, LL, NS) before and after Platt/isotonic calibration.
+- Builds a transition matrix showing how many points move between quadrants.
+- Quantifies the fraction of HH points that remain HH after calibration.
+
+**How to interpret:**
+
+- **Most HH points remain HH**: Hotspots are not calibration artifacts.
+- **Large movement from HH to NS (not significant)**: Calibration resolves some apparent hotspots, suggesting they were partly driven by probability scaling differences.
+
+### Section 6: Bootstrap Ablation
+
+**What it does:**
+
+- Uses `analysis/bootstrap_ablation.py` to systematically test the impact of removing individual model families or subsets of models from the Rashomon set.
+- For each ablation: recomputes spatial metrics (Moran's I, HH count) and compares to the full-set baseline.
+- Reports which families, when removed, cause the largest drop in detected multiplicity.
+
+**Output:** `tables/bootstrap_ablation_summary.csv`
+
+**How to interpret:**
+
+- **Large drop when family X is removed**: Family X is a key driver of multiplicity (its models disagree most with others).
+- **Minimal change regardless of removal**: Multiplicity is distributed across families and robust to any single family's absence.
+
+### Section 7: Alternative kNN Graph Constructions
+
+**What it does:**
+
+- Build kNN graphs using multiple distance metrics: Euclidean (baseline), PCA-reduced (15 components), cosine distance, and **Gower distance** (for mixed categorical/numerical features).
 - For each: recompute Moran's I and HH count.
 - Compare across methods.
 
@@ -564,6 +592,7 @@ Four add-on studies that extend the core analysis with robustness checks and fai
 - **Similar results across graph types**: Spatial patterns are robust to the distance metric.
 - **Cosine tends to yield higher Moran's I**: The angular distance captures inter-point relationships differently; more HH may be detected.
 - **PCA close to Euclidean**: Dimensionality reduction doesn't fundamentally change the spatial structure.
+- **Gower distance**: Handles mixed-type features natively (categorical + numerical) without one-hot encoding distortion. Particularly relevant for German Credit and COMPAS which have categorical features.
 - If results differ dramatically: the spatial analysis is sensitive to the graph construction, and this should be noted as a limitation.
 
 ---
@@ -574,8 +603,8 @@ To reproduce all results from scratch:
 
 1. **Train models**: `python run_training_pipeline.py` (10 seeds x 3 datasets)
 2. **Train fixed-test models**: `python run_training_pipeline_fixed_test.py` (for notebook 03)
-3. **Run notebooks in order**: 01 through 12
-4. **Notebook 10** (synthetic) is self-contained — it trains its own models inline
+3. **Run notebooks in order**: 01 through 10
+4. **Notebook 08** (synthetic) is self-contained — it trains its own models inline
 5. **Check thesis tables**: `results/_thesis_tables/` and `tables/`
 6. **Check figures**: `figures/`
 

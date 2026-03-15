@@ -279,3 +279,95 @@ def rules_summary_df(rules: Dict[int, Dict]) -> pd.DataFrame:
             "out_of_sample": r["out_of_sample"],
         })
     return pd.DataFrame(rows)
+
+
+# ---------------------------------------------------------------------
+# Systematic driver analysis (HH vs non-HH)
+# ---------------------------------------------------------------------
+
+def systematic_driver_analysis(
+    X: pd.DataFrame,
+    hh_mask: np.ndarray,
+    *,
+    seed: int = 42,
+    test_size: float = 0.3,
+) -> Dict:
+    """
+    Systematic driver analysis: train simple classifiers to predict HH vs non-HH
+    using original features. Purely descriptive — "hotspots are associated with..."
+    
+    Trains: L1 logistic regression, shallow decision tree
+    Reports: top features, calibrated AUC, precision, recall
+    """
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.tree import DecisionTreeClassifier, export_text
+    from sklearn.metrics import roc_auc_score, precision_score, recall_score
+    from sklearn.model_selection import train_test_split
+    
+    X_arr, feature_names = prepare_X_for_rules(X)
+    y = hh_mask.astype(int)
+    
+    if y.sum() < 5 or (1 - y).sum() < 5:
+        return {"error": "too few HH or non-HH points", "n_hh": int(y.sum())}
+    
+    X_train, X_eval, y_train, y_eval = train_test_split(
+        X_arr, y, test_size=test_size, random_state=seed, stratify=y,
+    )
+    
+    results = {}
+    
+    # L1 Logistic Regression
+    lr = LogisticRegression(
+        penalty="l1", solver="saga", C=1.0, max_iter=2000,
+        class_weight="balanced", random_state=seed,
+    )
+    lr.fit(X_train, y_train)
+    lr_proba = lr.predict_proba(X_eval)[:, 1]
+    lr_pred = lr.predict(X_eval)
+    
+    lr_auc = float(roc_auc_score(y_eval, lr_proba)) if len(np.unique(y_eval)) > 1 else float("nan")
+    lr_coefs = lr.coef_[0]
+    top_lr_idx = np.argsort(np.abs(lr_coefs))[::-1][:10]
+    lr_top_features = [(feature_names[i], float(lr_coefs[i])) for i in top_lr_idx if abs(lr_coefs[i]) > 1e-6]
+    
+    results["l1_logistic"] = {
+        "auc": lr_auc,
+        "precision": float(precision_score(y_eval, lr_pred, zero_division=0)),
+        "recall": float(recall_score(y_eval, lr_pred, zero_division=0)),
+        "n_nonzero_coefs": int(np.sum(np.abs(lr_coefs) > 1e-6)),
+        "top_features": lr_top_features,
+    }
+    
+    # Shallow Decision Tree
+    tree = DecisionTreeClassifier(
+        max_depth=3, min_samples_leaf=5,
+        class_weight="balanced", random_state=seed,
+    )
+    tree.fit(X_train, y_train)
+    tree_proba = tree.predict_proba(X_eval)[:, 1]
+    tree_pred = tree.predict(X_eval)
+    
+    tree_auc = float(roc_auc_score(y_eval, tree_proba)) if len(np.unique(y_eval)) > 1 else float("nan")
+    
+    try:
+        tree_text = export_text(tree, feature_names=feature_names, max_depth=3, decimals=2)
+    except Exception:
+        tree_text = "(could not export)"
+    
+    feat_imp = tree.feature_importances_
+    top_tree_idx = np.argsort(feat_imp)[::-1][:10]
+    tree_top_features = [(feature_names[i], float(feat_imp[i])) for i in top_tree_idx if feat_imp[i] > 1e-6]
+    
+    results["decision_tree"] = {
+        "auc": tree_auc,
+        "precision": float(precision_score(y_eval, tree_pred, zero_division=0)),
+        "recall": float(recall_score(y_eval, tree_pred, zero_division=0)),
+        "top_features": tree_top_features,
+        "tree_text": tree_text,
+    }
+    
+    results["n_hh"] = int(y.sum())
+    results["n_total"] = len(y)
+    results["hh_rate"] = float(y.mean())
+    
+    return results

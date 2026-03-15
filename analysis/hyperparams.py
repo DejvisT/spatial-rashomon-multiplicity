@@ -784,3 +784,146 @@ def compute_hp_importance(
     return df
 
 
+# ---------------------------------------------------------------------------
+# HP diversity and entropy analysis
+# ---------------------------------------------------------------------------
+
+def compute_hp_diversity(
+    meta: pd.DataFrame,
+    family_col: str = "model_name",
+) -> pd.DataFrame:
+    """
+    For each family and hyperparameter, report how many distinct values
+    appear in the Rashomon set. High count → diverse configurations survived.
+    """
+    meta = ensure_hp_columns(meta)
+    hp_cols = [c for c in meta.columns if c.startswith("hp_")]
+    
+    rows = []
+    for fam in sorted(meta[family_col].dropna().unique()):
+        fam_meta = meta[meta[family_col] == fam]
+        for hp_col in hp_cols:
+            hp_name = hp_col.replace("hp_", "")
+            values = fam_meta[hp_col].dropna()
+            keys = [make_hp_key(v) for v in values]
+            unique_keys = set(k for k in keys if k != "nan")
+            rows.append({
+                "family": fam,
+                "hp": hp_name,
+                "n_distinct_values": len(unique_keys),
+                "n_models_with_hp": len([k for k in keys if k != "nan"]),
+            })
+    
+    return pd.DataFrame(rows)
+
+
+def compute_hp_entropy(
+    meta: pd.DataFrame,
+    family_col: str = "model_name",
+) -> pd.DataFrame:
+    """
+    For each family and hyperparameter, compute Shannon entropy of the
+    HP value distribution. High entropy → hyperparameter is flexible
+    (many different values are near-optimal).
+    
+    H = -sum p_i * log(p_i)
+    """
+    meta = ensure_hp_columns(meta)
+    hp_cols = [c for c in meta.columns if c.startswith("hp_")]
+    
+    rows = []
+    for fam in sorted(meta[family_col].dropna().unique()):
+        fam_meta = meta[meta[family_col] == fam]
+        for hp_col in hp_cols:
+            hp_name = hp_col.replace("hp_", "")
+            values = fam_meta[hp_col].dropna()
+            keys = np.array([make_hp_key(v) for v in values])
+            keys = keys[keys != "nan"]
+            
+            if len(keys) == 0:
+                continue
+            
+            unique, counts = np.unique(keys, return_counts=True)
+            probs = counts / counts.sum()
+            entropy = float(-np.sum(probs * np.log(probs + 1e-12)))
+            max_entropy = float(np.log(len(unique))) if len(unique) > 1 else 0.0
+            normalized_entropy = entropy / max_entropy if max_entropy > 0 else 0.0
+            
+            rows.append({
+                "family": fam,
+                "hp": hp_name,
+                "entropy": entropy,
+                "max_entropy": max_entropy,
+                "normalized_entropy": normalized_entropy,
+                "n_distinct": len(unique),
+                "n_models": len(keys),
+            })
+    
+    return pd.DataFrame(rows)
+
+
+def compute_prediction_difference_by_hp(
+    meta: pd.DataFrame,
+    P: np.ndarray,
+    family_col: str = "model_name",
+    dropna: bool = True,
+) -> pd.DataFrame:
+    """
+    For each family and HP: compute mean prediction difference between models
+    with different HP values. Avoids the small-group variance problem.
+    
+    For each HP, compute:
+        mean |p_i(x) - p_j(x)| for all model pairs (i,j) with different HP values,
+        averaged over observations.
+    """
+    meta = ensure_hp_columns(meta)
+    P = np.asarray(P)
+    hp_cols = [c for c in meta.columns if c.startswith("hp_")]
+    
+    rows = []
+    for fam in sorted(meta[family_col].dropna().unique()):
+        mask_f = (meta[family_col] == fam).values
+        P_f = P[mask_f]
+        meta_f = meta.loc[mask_f].reset_index(drop=True)
+        
+        for hp_col in hp_cols:
+            hp_name = hp_col.replace("hp_", "")
+            keys = np.array([make_hp_key(v) for v in meta_f[hp_col].values])
+            
+            if dropna:
+                valid = keys != "nan"
+                if valid.sum() < 2:
+                    continue
+                P_hp = P_f[valid]
+                keys_hp = keys[valid]
+            else:
+                P_hp = P_f
+                keys_hp = keys
+            
+            if len(np.unique(keys_hp)) < 2:
+                continue
+            
+            # Compute mean abs diff between models with DIFFERENT HP values
+            n_models = P_hp.shape[0]
+            diffs_different = []
+            diffs_same = []
+            for i in range(n_models):
+                for j in range(i + 1, n_models):
+                    mean_diff = float(np.mean(np.abs(P_hp[i] - P_hp[j])))
+                    if keys_hp[i] != keys_hp[j]:
+                        diffs_different.append(mean_diff)
+                    else:
+                        diffs_same.append(mean_diff)
+            
+            rows.append({
+                "family": fam,
+                "hp": hp_name,
+                "mean_diff_different_hp": float(np.mean(diffs_different)) if diffs_different else 0.0,
+                "mean_diff_same_hp": float(np.mean(diffs_same)) if diffs_same else 0.0,
+                "n_pairs_different": len(diffs_different),
+                "n_pairs_same": len(diffs_same),
+                "n_models": n_models,
+            })
+    
+    return pd.DataFrame(rows)
+
