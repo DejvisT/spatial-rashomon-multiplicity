@@ -10,21 +10,19 @@ Automated decision systems are increasingly used to support consequential decisi
 
 \subsubsection{Example 1: Prediction Instability at the Individual Level}
 
-Jordan is evaluated by an automated risk assessment system. The deployed model predicts a risk of reoffending within two years with a probability of 0.29, classifying Jordan as ``low risk.'' During an audit, the defense gains access to all models that perform within a small tolerance of the optimal validation accuracy. Although these models are equally accurate overall, they produce substantially different predictions for Jordan, ranging from 0.22 to 0.54.
+Alice is evaluated by an automated risk assessment system. The deployed model predicts a risk of reoffending within two years with a probability of 0.29, classifying Alice as ``low risk.'' During an audit, the defense gains access to all models that perform within a small tolerance of the optimal validation accuracy. Although these models are equally accurate overall, they produce substantially different predictions for Alice, ranging from 0.22 to 0.54.
 
-The prediction-instability score, defined as the variance of Jordan's predicted risk across all equally accurate models, is 0.017, placing Jordan among the most unstable individuals in the dataset. Whether Jordan is assessed as low-risk or high-risk depends not on the data alone, but on which near-optimal model the training procedure happened to select.
+The prediction-instability score, defined as the variance of Alice's predicted risk across all equally accurate models, is 0.017, placing Alice among the most unstable individuals in the dataset. Whether Alice is assessed as low-risk or high-risk depends not on the data alone, but on which near-optimal model the training procedure happened to select.
 
 \subsubsection{Example 2: Spatial Clustering of Instability}
 
-An auditor discovers that individuals like Jordan are not isolated cases. By mapping prediction instability scores onto the feature space of all individuals evaluated by the system, a clear pattern emerges: high-instability individuals cluster together in specific regions of the input space. Using a spatial autocorrelation statistic, the auditor confirms that this clustering is statistically significant and not due to chance.
+An auditor discovers that individuals like Alice are not isolated cases. By mapping prediction instability scores onto the feature space of all individuals evaluated by the system, a clear pattern emerges: high-instability individuals cluster together in specific regions of the input space. Using a spatial autocorrelation statistic, the auditor confirms that this clustering is statistically significant and not due to chance.
 
 The auditor identifies contiguous groups of individuals whose predictions are systematically unstable across near-optimal models. These regions correspond to subpopulations for whom the system's output is particularly unreliable: the specific model chosen during training determines their classification outcome more than their actual characteristics do.
 
 \subsubsection{Example 3: Drivers of Instability}
 
-To understand \emph{why} certain individuals land in instability hotspots, the auditor decomposes the prediction variance. About 41--62\% of the total prediction variance turns out to be explained by model family (e.g., neural networks vs.\ tree-based models vs.\ logistic regression), rising to 52--69\% inside hotspots. Within each family, specific hyperparameters drive additional variance: for neural networks, the learning rate and architecture matter most; for tree-based models, the maximum tree depth dominates.
-
-Moreover, the drivers differ between hotspot and non-hotspot regions. Inside the instability hotspots, neural network architecture choices explain more variance than they do globally, suggesting that these regions are where architectural decisions have the most consequential impact on predictions.
+To understand \emph{why} certain individuals land in instability hotspots, the auditor examines the sources of prediction variance. Model family (e.g., neural networks vs.\ tree-based models vs.\ logistic regression) explains a substantial share of the disagreement, and within each family, specific hyperparameters drive additional variance. Moreover, the drivers differ between hotspot and non-hotspot regions, suggesting that some modeling choices have outsized impact in localized areas of the feature space.
 
 \medskip
 
@@ -38,13 +36,13 @@ The set of near-optimal models is called the \emph{Rashomon set}:
 \[
 \mathcal{R}_\varepsilon = \{ f \in \mathcal{F} : L(f) \leq L^* + \varepsilon \},
 \]
-where $L^*$ is the best achievable loss and $\varepsilon$ controls the tolerance. Prior work has studied predictive multiplicity through metrics such as ambiguity (the range of predictions), discrepancy (maximum pairwise disagreement), and disagreement rate (fraction of observations where models disagree beyond a threshold). In this thesis, ambiguity and discrepancy follow the probability-space definitions used in the \emph{Resolving Predictive Multiplicity for the Rashomon Set} framework. However, these metrics treat observations independently and do not capture spatial structure---whether instability concentrates in specific regions of the feature space, how stable these regions are, or what drives them.
+where $L^*$ is the best achievable loss and $\varepsilon$ controls the tolerance. Prior work has studied predictive multiplicity through metrics such as ambiguity (the range of predictions), discrepancy (maximum pairwise disagreement), and disagreement rate (fraction of observations where models disagree beyond a threshold). These metrics provide useful global summaries of predictive multiplicity, but they do not show whether disagreement is concentrated in specific local regions of the feature space.
 
 \subsection{Problem Statement}
 
-Predictive models with similar accuracy can differ substantially in their predictions. Such variation arises naturally in modern machine learning pipelines due to changes in model family, hyperparameters, random seeds, or optimization paths. Standard evaluation metrics do not reveal whether an individual prediction is stable across near-optimal models, whether instability clusters in specific regions of the input space, or what modeling choices drive it. As a result, users of automated decision systems cannot assess how reliable a prediction truly is, nor identify which subpopulations are most affected.
+Predictive models with similar accuracy can differ substantially in their predictions. Such variation arises naturally in modern machine learning pipelines due to changes in model family, hyperparameters, random seeds, or optimization paths. Existing multiplicity metrics are mostly global: they quantify \emph{how much} models disagree on average, but they do not reveal whether disagreement is spatially concentrated, what kinds of points form high-multiplicity regions, or how to separate the roles of model family versus hyperparameter variation. As a result, users of automated decision systems cannot assess how reliable a prediction truly is, nor identify which subpopulations are most affected.
 
-The problem addressed in this thesis is to characterize and quantify how predictions vary across sets of equally accurate models, with a focus on the \emph{spatial structure} of this variation in feature space. Specifically, we ask: (i) how much do individual predictions vary across near-optimal models? (ii) does this variation cluster spatially, forming identifiable hotspots? (iii) what are the drivers---model family, hyperparameters---of this instability? and (iv) can the affected regions be described by interpretable rules?
+The problem addressed in this thesis is to characterize and quantify how predictions vary across sets of equally accurate models, with a focus on the \emph{spatial structure} of this variation in feature space.
 
 \subsection{Research Questions}
 
@@ -55,7 +53,7 @@ Building on the problem described above, this thesis investigates the following 
 How much do individual predictions vary across equally accurate models, and which individuals are most affected? Is this variation statistically significant compared to a chance baseline?
 
 \item \textbf{Spatial Structure of Multiplicity.}
-Does predictive variance exhibit spatial autocorrelation in feature space? Can we identify contiguous hotspot regions---localized clusters of high disagreement (formally defined as High--High regions via LISA in Section~\ref{sec:meth-lisa})---where models systematically disagree?
+Does predictive variance exhibit spatial autocorrelation in feature space? Can we identify contiguous hotspot regions---localized clusters of high disagreement---where models systematically disagree?
 
 \item \textbf{Stability of Spatial Patterns.}
 Are the identified hotspot regions stable across different data splits and Rashomon set realizations, or are they artifacts of specific random seeds?
@@ -78,19 +76,15 @@ Can the identified high-multiplicity regions be described by simple, interpretab
 This thesis makes the following contributions:
 
 \begin{enumerate}
-\item \textbf{Spatial multiplicity framework.} We propose a pipeline that combines observation-wise predictive variance with spatial autocorrelation statistics (detailed in Chapter~3) to detect, localize, and test for significance of multiplicity hotspots in feature space.
+\item \textbf{Spatial analysis framework.} We propose a pipeline that combines observation-wise predictive variance with spatial autocorrelation statistics to detect, localize, and test for significance of clustered regions of disagreement in feature space. This is the main methodological contribution.
 
-\item \textbf{Variance decomposition.} We decompose predictive variance into between-family and within-family (hyperparameter) components, identifying which modeling choices drive instability globally and within hotspots specifically.
+\item \textbf{Empirical evidence.} We evaluate the framework on three benchmark datasets (COMPAS, German Credit, Breast Cancer) with 10 outer runs each, five model families, and 250 candidate models per run, providing robust evidence across domains. We further validate on synthetic data with known ambiguous regions, demonstrating that the pipeline recovers ground-truth instability with high precision and recall.
 
-\item \textbf{Comprehensive empirical evaluation.} We evaluate the framework on three benchmark datasets (COMPAS, German Credit, Breast Cancer) with 10 outer runs each, five model families, and 250 candidate models per run, providing robust evidence across domains.
-
-\item \textbf{Validation on synthetic data.} We demonstrate on synthetic datasets with known ambiguous regions that LISA HH hotspots recover the ground-truth instability regions with high precision and recall.
+\item \textbf{Explanatory attribution.} We decompose predictive variance into between-family and within-family (hyperparameter) components, identifying which modeling choices drive instability globally and within localized regions. We show that high-multiplicity regions can be described by compact decision rules with high purity and lift, making the findings actionable for practitioners.
 
 \item \textbf{Robustness analysis.} We show that the findings are robust to the Rashomon set size, neighborhood graph density, and post-hoc calibration, and that spatial structure is not an artifact of probability miscalibration.
-
-\item \textbf{Interpretable rules.} We show that high-multiplicity regions can be described by compact decision rules with high purity and lift, making the spatial findings actionable for practitioners.
 \end{enumerate}
 
 \subsection{Thesis Structure}
 
-The remainder of this thesis is organized as follows. Chapter~2 reviews related work on predictive multiplicity, Rashomon sets, and spatial statistics. Chapter~3 presents the methodology: observation-wise variance, spatial analysis, null models, variance decomposition, and calibration robustness checks. Chapter~4 describes the experimental setup: datasets, model families, training protocol, and analysis parameters. Chapter~5 presents the results, organized by research question. Chapter~6 discusses the findings, limitations, and implications. Chapter~7 concludes and outlines directions for future work.
+The remainder of this thesis is organized as follows. Chapter~2 reviews related work on predictive multiplicity, Rashomon sets, and the gap this thesis addresses: prior work measures multiplicity globally, whereas we study whether multiplicity forms localized regions in feature space and how those regions can be explained. Chapter~3 presents the methodology: observation-wise variance, spatial analysis, null models, and the core pipeline. Chapter~4 describes the experimental design: datasets, model families, training protocol, analysis parameters, and robustness protocols. Chapter~5 presents the results, organized by research question. Chapter~6 discusses the findings, limitations, and implications. Chapter~7 concludes and outlines directions for future work.

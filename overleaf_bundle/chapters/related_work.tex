@@ -1,31 +1,11 @@
 % ===================================================================
-% Background and Related Work — rewritten with thematic structure
-% and citations from Zotero collection (papers/papers.bib).
-%
-% Main themes added:
-%   1. Rashomon sets / predictive multiplicity (core definitions)
-%   2. Disagreement metrics: label-space, probability-space, per-instance
-%   3. Variable importance & source attribution across models
-%   4. Hyperparameter role in multiplicity
-%   5. Local structure and hotspot detection (Moran's I / LISA)
-%   6. Interpretable characterization of instability regions
-%   7. Fairness under model multiplicity
-%   8. Robustness, calibration, and mitigation
-%
-% Key newly cited papers:
-%   black_model_2022, watson-daniels_predictive_2023,
-%   watson-daniels_predictive_2025, fisher_all_2019,
-%   dong_variable_2020, donnelly_rashomon_2024,
-%   cavus_role_2025, sokol_cross-model_2024,
-%   dai_be_2025, long_arbitrariness_2023,
-%   kobylinska_exploration_2023, herbinger_repid_2022,
-%   haghighat_resolving_2026, coker_theory_2021,
-%   frohnapfel_using_2026
+% Background and Related Work — focused on literature that directly
+% motivates the thesis gap and positions our contribution.
 % ===================================================================
 
 Predictive multiplicity refers to the phenomenon whereby multiple models achieve nearly identical performance yet produce meaningfully different predictions for the same individual.
 Recent work shows this behavior is common in realistic pipelines and has direct implications for reliability, fairness, and interpretability \citep{black_model_2022}.
-This chapter reviews the literature most relevant to this thesis, organized by theme, and identifies the methodological gaps that our spatial-variance framework addresses.
+This chapter reviews the literature most relevant to this thesis and identifies the methodological gaps that our spatial-variance framework addresses. Each section concludes with a brief positioning statement on what remains missing and how this thesis fills the gap.
 
 % -------------------------------------------------------------------
 \subsection{Rashomon Sets and Predictive Multiplicity}
@@ -44,11 +24,14 @@ In high-dimensional tabular settings this set can be large and structurally dive
 \cite{rudin_amazing_2024} argue that when many near-optimal models exist, model selection should explicitly weigh secondary criteria---interpretability, fairness, robustness---rather than treating one selected model as uniquely correct.
 \cite{semenova_existence_2022} formalize the \emph{Rashomon ratio} (volume of $\mathcal{R}_\varepsilon$ relative to the hypothesis space) and show that large ratios imply the existence of simpler, interpretable models at little accuracy cost.
 
-\cite{marx_predictive_2020} coined the term \emph{predictive multiplicity} and introduced the first formal measures---\emph{ambiguity} (maximum fraction of individuals whose predicted label can be flipped) and \emph{discrepancy} (maximum pointwise prediction difference)---for linear classifiers.
+\cite{marx_predictive_2020} coined the term \emph{predictive multiplicity} and introduced the first formal measures---\emph{ambiguity} and \emph{discrepancy}---for linear classifiers.
 \cite{black_model_2022} subsequently broadened the scope, framing model multiplicity as a systemic challenge for accountability: if equally valid models disagree on individual decisions, which model's output should govern?
 
+\paragraph{Positioning.}
+Prior work establishes the Rashomon set as the central object for studying multiplicity, but does not address whether disagreement is spatially concentrated in feature space or how to localize and explain it.
+
 % -------------------------------------------------------------------
-\subsection{Disagreement Metrics: From Labels to Probabilities}
+\subsection{Metrics for Predictive Multiplicity}
 \label{sec:metrics-review}
 % -------------------------------------------------------------------
 
@@ -59,7 +42,7 @@ While intuitive, these metrics collapse probability information to a 0/1 thresho
 \paragraph{Probability-space metrics.}
 \cite{watson-daniels_predictive_2023} extend predictive multiplicity to \emph{probabilistic classification}, defining measures that capture variation in risk scores (predicted probabilities) rather than hard labels.
 Their framework quantifies both the prevalence of conflicting risk scores and their severity across near-optimal convex models, and relates multiplicity to dataset characteristics such as separability and outlier structure.
-In parallel, \cite{hsu_rashomon_nodate} propose \emph{Rashomon Capacity}, a global, information-theoretic measure of how broadly the Rashomon set spans prediction space.
+Relatedly, \cite{hsu_rashomon_nodate} propose \emph{Rashomon Capacity}, a global, information-theoretic measure of how broadly the Rashomon set spans prediction space.
 While Rashomon Capacity captures diversity at the dataset level, it does not resolve \emph{where} in feature space disagreement concentrates.
 
 \paragraph{Per-instance metrics and the conflict ratio.}
@@ -68,15 +51,14 @@ Per-instance feasible ranges provide finer resolution.
 The \emph{conflict ratio} $c(x) = \min(q(x), 1-q(x))$, where $q(x)$ is the fraction of models predicting above a decision threshold, measures per-point label disagreement on a $[0, 0.5]$ scale.
 \cite{frohnapfel_using_2026} argue that individual conflict ratios should be reported to comply with the EU AI Act's provisions on per-person accuracy, making the metric directly policy-relevant.
 
-\paragraph{Procedural instability.}
-Orthogonal to the Rashomon-set perspective, \cite{cooper_arbitrariness_2024} study \emph{self-consistency} across repeated training runs of the same pipeline, quantifying disagreement induced by random seeds and stochasticity even within one model family.
-\cite{watson-daniels_predictive_2025} connect this to \emph{predictive churn}---the instability of individual predictions when a deployed model is retrained---showing theoretical and empirical links between churn and Rashomon-set multiplicity.
+\paragraph{Scope.}
+This thesis focuses on predictive multiplicity across near-optimal models in the Rashomon set, not on generic procedural randomness (e.g., self-consistency across repeated training runs with different seeds). The latter is orthogonal: we hold the candidate pool fixed and study how predictions vary within it.
 
-\paragraph{Gap.}
-All of the above metrics are either global summaries or pointwise scalars; none identify \emph{spatially contiguous regions} of instability in feature space, nor do they decompose disagreement by its source (model family vs.\ hyperparameter).
+\paragraph{Positioning.}
+All of the above metrics are either global summaries or pointwise scalars; none identify \emph{spatially contiguous regions} of instability in feature space. Existing work measures \emph{how much} models disagree, but not \emph{where} they disagree in a statistically testable, localized way.
 
 % -------------------------------------------------------------------
-\subsection{Variable Importance and Source Attribution Across Models}
+\subsection{Explaining and Attributing Disagreement Across Models}
 \label{sec:vi-review}
 % -------------------------------------------------------------------
 
@@ -88,13 +70,15 @@ Classical variable importance is model-specific: a feature is ``important'' for 
 These lines of work attribute variation in \emph{explanations} across models to individual features.
 Our thesis pursues a complementary direction: attributing variation in \emph{predictions} (i.e., multiplicity) to model families and, within each family, to hyperparameters---a variance-decomposition approach that quantifies structural sources of disagreement rather than feature-level explanations.
 
-\paragraph{Hyperparameter role.}
 \cite{cavus_role_2025} provide the closest antecedent to our hyperparameter analysis.
 Studying six model families on 21 benchmark datasets, they show that tuning key hyperparameters (e.g., regularization strength, tree depth, learning rate) significantly increases prediction discrepancy within each family.
-Our work builds on this insight by decomposing per-observation variance into between-family and within-family (hyperparameter) components, and by identifying which hyperparameters contribute most to disagreement inside spatial hotspots.
+Our work builds on this insight by decomposing per-observation variance into between-family and within-family (hyperparameter) components, and by identifying which hyperparameters contribute most to disagreement inside localized regions.
+
+\paragraph{Positioning.}
+Prior work does not clearly separate the roles of model family versus hyperparameter variation, nor does it attribute disagreement specifically within localized high-multiplicity regions. This thesis fills that gap.
 
 % -------------------------------------------------------------------
-\subsection{Local Structure and Hotspot Detection}
+\subsection{Localizing Instability in Feature Space}
 \label{sec:spatial-review}
 % -------------------------------------------------------------------
 
@@ -107,10 +91,11 @@ Prior work overwhelmingly quantifies \emph{how much} models disagree, not \emph{
 \cite{watson-daniels_predictive_2023} observe that multiplicity concentrates near decision boundaries and among outliers, but do not formalize localization via spatial statistics.
 \cite{herbinger_repid_2022} detect regions with heterogeneous feature effects (REPID), which is conceptually related---both seek local structure---but targets single-model explanations rather than cross-model disagreement.
 
-This thesis operationalizes the missing localization step: we apply Moran's $I$ and LISA to per-point variance and conflict across the Rashomon set, yielding statistically significant HH hotspots that can be mapped, compared across seeds, and characterized by interpretable rules.
+\paragraph{Positioning.}
+This thesis operationalizes the missing localization step: we apply Moran's $I$ and LISA to per-point variance and conflict across the Rashomon set, yielding statistically significant hotspots that can be mapped, compared across seeds, and characterized by interpretable rules.
 
 % -------------------------------------------------------------------
-\subsection{Interpretable Characterization of Instability Regions}
+\subsection{Interpreting and Auditing Localized Multiplicity}
 \label{sec:interp-review}
 % -------------------------------------------------------------------
 
@@ -120,38 +105,15 @@ Under multiplicity the central object is not one boundary but a \emph{region of 
 Their goal is to flag heterogeneous explanations; our goal is to flag heterogeneous \emph{predictions at the observation level} and characterize the affected subpopulations.
 
 Regional effect methods such as REPID \citep{herbinger_repid_2022} and forward marginal effects \citep{scholbeck_marginal_2024} partition feature space into regions with homogeneous feature effects.
-We draw on a related principle---subgroup discovery via decision rules---but apply it to a different target: the HH mask produced by LISA, rather than a single model's residuals.
+We draw on a related principle---subgroup discovery via decision rules---but apply it to a different target: the localized high-multiplicity regions produced by our spatial analysis, rather than a single model's residuals.
 The resulting rules describe \emph{who} is most subject to model arbitrariness, not why one model predicts a particular label.
 
-% -------------------------------------------------------------------
-\subsection{Fairness Under Model Multiplicity}
-\label{sec:fairness-review}
-% -------------------------------------------------------------------
+Fairness analyses of multiplicity are a growing area. \cite{sokol_cross-model_2024} define \emph{cross-model fairness}: an individual harmed when one predictor is chosen ad hoc from a pool of equally performing models could argue for the model that grants the most favorable outcome. Our thesis does not propose new fairness constraints; instead, it provides a descriptive diagnostic---subgroup exposure analysis---that quantifies whether localized high-multiplicity regions disproportionately affect specific demographic groups.
 
-Fairness analyses of multiplicity are a growing but still nascent area.
-\cite{sokol_cross-model_2024} define \emph{cross-model fairness}: an individual harmed when one predictor is chosen ad hoc from a pool of equally performing models could argue for the model that grants the most favorable outcome.
-Their empirical study on real-world datasets confirms that such unfairness is pervasive and difficult to eliminate by technical means alone.
+Robustness of spatial findings to analyst choices (Rashomon-set size $K$, kNN neighborhood $k$, probability calibration) is essential. If hotspots disappear after calibration, they may reflect miscalibration rather than genuine disagreement. Our calibration-robustness analysis (Section~\ref{sec:results-calibration}) tests this directly.
 
-\cite{long_arbitrariness_2023} demonstrate that optimizing for group-fairness metrics (e.g., statistical parity) while ignoring multiplicity can \emph{increase} individual arbitrariness, masking high predictive multiplicity behind favorable aggregate fairness scores.
-\cite{dai_be_2025} complement this by studying the Rashomon set's properties from a fairness perspective: they derive efficient sampling methods, estimate individual flip probabilities, and show that intentionally searching for fair models within $\mathcal{R}_\varepsilon$ is far more effective than hoping arbitrary selection will suffice.
-\cite{cooper_arbitrariness_2024} make a similar point empirically, finding that most fair-classification benchmarks appear close-to-fair once prediction variance is taken into account.
-
-Our thesis does not propose new fairness constraints; instead, it provides a descriptive diagnostic---subgroup exposure analysis---that quantifies whether HH hotspots disproportionately concentrate in specific demographic groups, adding a practically relevant layer to multiplicity audits.
-
-% -------------------------------------------------------------------
-\subsection{Robustness, Calibration, and Mitigation}
-\label{sec:robust-review}
-% -------------------------------------------------------------------
-
-Robustness of scientific and predictive conclusions to analyst choices is formalized by \cite{coker_theory_2021} through \emph{hacking intervals}---the range of a summary statistic obtainable under plausible data-analysis manipulations.
-In the multiplicity context, the analogous concern is whether spatial patterns (Moran's $I$, HH hotspot locations) are robust to incidental choices such as Rashomon-set size $K$, kNN neighborhood $k$, and probability calibration.
-
-Calibration is particularly relevant because Platt scaling or isotonic regression can alter predicted probabilities without changing model ranking.
-If hotspots disappear after calibration, they may reflect probability miscalibration rather than genuine structural disagreement.
-Our calibration-robustness analysis (Section~\ref{sec:results-calibration}) tests this directly, finding that HH hotspot locations are largely preserved after Platt scaling, with high Jaccard overlap between pre- and post-calibration masks.
-
-\cite{haghighat_resolving_2026} propose three mitigation strategies---outlier correction, local patching, and pairwise reconciliation---to reduce disagreement within the Rashomon set while maintaining accuracy.
-Their approach is complementary to ours: whereas they aim to \emph{resolve} multiplicity (make models agree), we aim to \emph{diagnose} it (identify where and why models disagree) as a prerequisite for informed intervention.
+\paragraph{Positioning.}
+Prior work does not combine spatial localization with interpretable characterization of the affected subpopulations. This thesis connects multiplicity diagnosis to actionable subpopulation descriptions and robustness verification.
 
 % -------------------------------------------------------------------
 \subsection{Positioning of This Thesis}
@@ -162,8 +124,8 @@ Relative to prior work, this thesis contributes by integrating five strands that
     \item \textbf{Rashomon-set predictive multiplicity} \citep{marx_predictive_2020, black_model_2022}, operationalized with both variance and conflict metrics at the per-observation level;
     \item \textbf{Spatial localization} via Moran's $I$ and LISA applied to feature-space kNN graphs, transferring tools from spatial statistics to detect statistically significant hotspots of disagreement;
     \item \textbf{Source attribution} via hierarchical variance decomposition---first between model families, then within each family by hyperparameter---building on the insights of \cite{cavus_role_2025};
-    \item \textbf{Interpretable characterization} of instability regions through decision-rule extraction for HH hotspots, connecting multiplicity diagnosis to actionable subpopulation descriptions;
+    \item \textbf{Interpretable characterization} of instability regions through decision-rule extraction, connecting multiplicity diagnosis to actionable subpopulation descriptions;
     \item \textbf{Robustness diagnostics} covering sensitivity to $K$, $k$, calibration, and cross-seed stability of hotspot locations.
 \end{enumerate}
 
-The resulting perspective treats predictive multiplicity as a \emph{localized, structured phenomenon} rather than a single global nuisance metric, and provides diagnostics that are directly usable for model governance in high-stakes settings.
+The resulting perspective treats predictive multiplicity as a \emph{localized, structured phenomenon} rather than a single global nuisance metric. Existing work mostly measures multiplicity globally; this thesis studies whether multiplicity forms localized regions in feature space and how those regions can be explained, attributed to modeling choices, and characterized for practitioners.
