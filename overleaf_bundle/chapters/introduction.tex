@@ -22,7 +22,7 @@ The auditor identifies contiguous groups of individuals whose predictions are sy
 
 \subsubsection{Example 3: Drivers of Instability}
 
-To understand \emph{why} certain individuals land in instability hotspots, the auditor decomposes the prediction variance. About 39\% of the total prediction variance turns out to be explained by model family (e.g., neural networks vs.\ tree-based models vs.\ logistic regression). Within each family, specific hyperparameters drive additional variance: for neural networks, the learning rate and architecture matter most; for tree-based models, the maximum tree depth dominates.
+To understand \emph{why} certain individuals land in instability hotspots, the auditor decomposes the prediction variance. About 41--62\% of the total prediction variance turns out to be explained by model family (e.g., neural networks vs.\ tree-based models vs.\ logistic regression), rising to 52--69\% inside hotspots. Within each family, specific hyperparameters drive additional variance: for neural networks, the learning rate and architecture matter most; for tree-based models, the maximum tree depth dominates.
 
 Moreover, the drivers differ between hotspot and non-hotspot regions. Inside the instability hotspots, neural network architecture choices explain more variance than they do globally, suggesting that these regions are where architectural decisions have the most consequential impact on predictions.
 

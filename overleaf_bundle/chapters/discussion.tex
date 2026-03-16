@@ -2,20 +2,23 @@ This chapter interprets the empirical results beyond metric reporting, connects 
 
 \subsection{From Global Multiplicity to Local Risk}
 
-The central empirical message is that multiplicity is not uniform across the population. Global disagreement metrics (ambiguity, discrepancy, disagreement rate) are informative but incomplete: they quantify \emph{how much} disagreement exists overall, yet they do not reveal \emph{who} is affected most. By combining observation-wise predictive variance with Moran's $I$ and LISA, we show that disagreement concentrates in contiguous HH regions in feature space.
+The central empirical message is that predictive multiplicity is \emph{localized}: it is not uniform across the population but concentrates in identifiable regions of feature space. Global disagreement metrics (ambiguity, discrepancy, disagreement rate) are informative but incomplete: they quantify \emph{how much} disagreement exists overall, yet they do not reveal \emph{where} it occurs or \emph{who} is affected most. By combining observation-wise predictive variance with Moran's $I$ and LISA, we show that disagreement concentrates in contiguous HH (High--High) regions---multiplicity hotspots---rather than being scattered uniformly.
 
 This result changes the interpretation of model uncertainty in practice. Under a single deployed model, two individuals may receive equally confident probabilities, but one may lie in a high-multiplicity region where many near-optimal models disagree strongly, while the other lies in a stable region. The first prediction is therefore operationally less reliable, even if both scores are numerically similar.
+
+\paragraph{Hotspots form regions, not isolated points.}
+The connected-component analysis (Section~\ref{sec:results-spatial}) confirms that HH points cluster into coherent regions: on COMPAS, $3.7 \pm 2.0$ components per run with a mean largest component of $36.9 \pm 22.7$ points. Multiplicity is thus regional rather than point-wise random.
 
 \subsection{Research Questions Revisited}
 
 \paragraph{RQ1--RQ2 (prediction-level multiplicity and spatial structure).}
-Across datasets, observation-wise variance is nontrivial and spatially clustered, with strong evidence on COMPAS and German Credit and weaker but still present structure on Breast Cancer. The null experiments support that this is not explained by random assignment of variance values to observations.
+Across datasets, observation-wise variance is nontrivial and spatially clustered, with strong evidence on COMPAS and German Credit and weaker but still present structure on Breast Cancer. Multiplicity differs substantially by dataset: COMPAS exhibits the strongest spatial structure (Moran's $I$ $0.20 \pm 0.08$, $\sim$87 HH points per run), German Credit has moderate structure with higher mean variance, and Breast Cancer shows the weakest clustering. The null experiments support that this is not explained by random assignment of variance values to observations.
 
 \paragraph{RQ3 (stability of spatial patterns).}
-At the level of exact HH point sets, overlap across runs is modest. However, at the level of \emph{regions}, unstable areas recur in similar parts of feature space. This distinction is important: pointwise labels are sensitive to finite-sample perturbations, while regional structure is more stable.
+At the level of exact HH point sets, overlap across runs is modest (mean pairwise Jaccard $\sim$0.025 on COMPAS). However, at the level of \emph{regions}, unstable areas recur in similar parts of feature space: about 6\% of COMPAS test points are HH in $\geq$50\% of runs. Region boundaries are unstable---the exact set of HH points shifts with the Rashomon set realization---but the \emph{locations} of multiplicity persist across seeds.
 
 \paragraph{RQ4 (drivers of multiplicity).}
-Variance decomposition shows that model family explains a large share of disagreement globally, and an even larger share inside hotspots. Within families, a small number of hyperparameters dominate (e.g., regularization strength in LogReg, neighborhood size in kNN, depth/rate controls in tree-based models, optimization/architecture controls in MLP).
+Variance decomposition shows that model family explains 41--62\% of disagreement globally, rising to 52--69\% inside HH hotspots. Family choice thus matters more in high-multiplicity regions. Within families, a small number of hyperparameters dominate (e.g., regularization strength in LogReg, neighborhood size in kNN, depth/rate controls in tree-based models, optimization/architecture controls in MLP).
 
 \paragraph{RQ5 (robustness and sensitivity).}
 The core conclusions are robust under changes in $K$, neighborhood size $k$, post-hoc calibration, and alternative graph constructions (PCA and cosine). Robustness across these checks increases confidence that the spatial signal is structural rather than a tuning artifact.

@@ -4,7 +4,7 @@ This chapter presents the main empirical results.  We first summarize predictive
 \subsection{Multiplicity and Spatial Metrics by Dataset}
 \label{sec:results-metrics}
 
-Table~\ref{tab:dataset_summary} summarizes mean predictive variance and global Moran's $I$ of pointwise variance, aggregated over 10 outer runs (mean $\pm$ standard deviation). COMPAS exhibits the highest mean Moran's $I$ ($0.20 \pm 0.08$), indicating strong spatial clustering of predictive instability in feature space. German Credit shows moderate spatial structure (Moran's $I = 0.10 \pm 0.04$) with higher mean variance ($0.005 \pm 0.002$). Breast Cancer has the lowest Moran's $I$ ($0.03 \pm 0.02$) and the highest model accuracy ($0.97 \pm 0.01$). The number of HH LISA hotspots varies substantially: COMPAS averages $80.7 \pm 48.7$ HH points per run, while German Credit and Breast Cancer have fewer than 3 on average.
+Table~\ref{tab:dataset_summary} summarizes mean predictive variance and global Moran's $I$ of pointwise variance, aggregated over 10 outer runs (mean $\pm$ standard deviation). COMPAS exhibits the highest mean Moran's $I$ ($0.20 \pm 0.08$), indicating strong spatial clustering of predictive instability in feature space. German Credit shows moderate spatial structure (Moran's $I = 0.10 \pm 0.04$) with higher mean variance ($0.005 \pm 0.002$). Breast Cancer has the lowest Moran's $I$ ($0.03 \pm 0.02$) and the highest model accuracy ($0.97 \pm 0.01$). The number of HH LISA hotspots varies substantially: COMPAS averages $86.7 \pm 48.7$ HH points per run, while German Credit and Breast Cancer have fewer than 3 on average.
 
 \begin{table}[htbp]
 \centering
@@ -121,12 +121,12 @@ On COMPAS, the observed conflict Moran's $I$ averages $0.17 \pm 0.03$ (cf.\ vari
 
 \subsubsection{Aggregated Null Summary}
 
-Figure~\ref{fig:null_summary} provides a cross-seed summary of the null experiment. The left panel shows boxplots of observed Moran's $I$ (variance-based) versus null mean $\pm$ std for each dataset. The right panel displays z-scores, $z = (\text{observed} - \mu_{\text{null}}) / \sigma_{\text{null}}$, for both variance-based and conflict-based Moran's $I$. All COMPAS and German Credit z-scores exceed the $z = 1.96$ threshold, confirming robust significance across seeds. Breast Cancer z-scores are lower but mostly above the threshold, consistent with weaker but still detectable spatial structure.
+Figure~\ref{fig:null_summary} provides a cross-seed summary of the null experiment. The left panel shows both variance-based and conflict-based Moran's $I$: observed values (boxplots) versus null mean $\pm$ std for each dataset. The right panel displays z-scores, $z = (\text{observed} - \mu_{\text{null}}) / \sigma_{\text{null}}$, for both metrics. All COMPAS and German Credit z-scores exceed the $z = 1.96$ threshold, confirming robust significance across seeds. Breast Cancer z-scores are lower but mostly above the threshold, consistent with weaker but still detectable spatial structure.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.95\textwidth]{null_summary_across_seeds.pdf}
-\caption{Aggregated null summary. Left: observed Moran's $I$ (boxplot) vs.\ null mean $\pm$ std per dataset. Right: z-scores for variance and conflict Moran's $I$ across seeds; the dashed line marks $z = 1.96$.}
+\caption{Aggregated null summary. Left: observed Moran's $I$ (boxplots) vs.\ null mean $\pm$ std for both variance-based and conflict-based metrics per dataset. Right: z-scores for variance and conflict Moran's $I$ across seeds; dashed lines mark $z = \pm 1.96$.}
 \label{fig:null_summary}
 \end{figure}
 
@@ -162,7 +162,7 @@ Per-family HH counts often exceed the global HH count, particularly on COMPAS, b
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.85\textwidth]{global_vs_perfamily_hh.pdf}
+\includegraphics[width=0.85\textwidth]{family_vs_global_spatial_compas.pdf}
 \caption{HH hotspot count: global (dashed line) vs.\ per-family Rashomon sets (bars, mean $\pm$ std over runs) for each dataset. Per-family counts reveal family-specific disagreement patterns, with MLP consistently showing the most hotspots on COMPAS.}
 \label{fig:hh_by_family}
 \end{figure}
@@ -223,7 +223,7 @@ Figure~\ref{fig:spatial_per_run} shows per-run variability in Moran's $I$ and HH
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.85\textwidth]{spatial_patterns_per_run.pdf}
+\includegraphics[width=0.85\textwidth]{hh_moran_per_run_compas.pdf}
 \caption{Moran's $I$ and HH count per outer run (seed) for COMPAS, showing run-to-run variability in spatial multiplicity.}
 \label{fig:spatial_per_run}
 \end{figure}
@@ -238,8 +238,8 @@ Mean variance increases monotonically with $K$ for all datasets (more models $\R
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.95\textwidth]{sensitivity_K.pdf}
-\caption{Sensitivity to Rashomon set size $K$: mean variance (left), Moran's $I$ (center), and HH count (right) versus $K$ (mean $\pm$ std over runs).}
+\includegraphics[width=0.95\textwidth]{sensitivity_K_curves_compas.pdf}
+\caption{Sensitivity to Rashomon set size $K$: mean variance (left), Moran's $I$ (center), and HH count (right) versus $K$ for COMPAS (mean $\pm$ std over runs).}
 \label{fig:sensitivity_K}
 \end{figure}
 
@@ -253,8 +253,8 @@ Mean predictive variance is invariant to $k$ (it does not depend on the graph). 
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.85\textwidth]{sensitivity_kNN.pdf}
-\caption{Sensitivity to kNN neighborhood size $k$: HH count (left) and Moran's $I$ (right) versus $k$ (mean $\pm$ std over runs).}
+\includegraphics[width=0.85\textwidth]{sensitivity_kNN_curves_compas.pdf}
+\caption{Sensitivity to kNN neighborhood size $k$: HH count (left) and Moran's $I$ (right) versus $k$ for COMPAS (mean $\pm$ std over runs).}
 \label{fig:sensitivity_kNN}
 \end{figure}
 
