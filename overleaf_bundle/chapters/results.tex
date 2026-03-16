@@ -28,7 +28,7 @@ Figure~\ref{fig:dataset_comparison_bars} provides a visual comparison of four ke
 \subsection{Conflict Ratio vs Soft Prediction Variance}
 \label{sec:results-conflict}
 
-This thesis reports two complementary per-observation disagreement metrics (defined in Sections~3.3--3.4): \emph{soft prediction variance}~$v_i$, which captures the spread of predicted probabilities across Rashomon models, and the \emph{conflict ratio}~$c_i$, which measures hard-label disagreement (the fraction of models on the minority side of the 0.5 decision threshold).  Both are computed for each test observation on every run.
+This thesis reports two complementary per-observation disagreement metrics (defined in Chapter~3): \emph{soft prediction variance}~$v_i$, which captures the spread of predicted probabilities across Rashomon models, and the \emph{conflict ratio}~$c_i$, which measures hard-label disagreement (the fraction of models on the minority side of the 0.5 decision threshold).  Both are computed for each test observation on every run.
 
 \subsubsection{Why Both Metrics Are Needed}
 
@@ -262,7 +262,7 @@ Mean predictive variance is invariant to $k$ (it does not depend on the graph). 
 \subsection{Hyperparameter and Family Importance}
 \label{sec:results-hp}
 
-To identify which modeling choices drive predictive multiplicity, we apply the variance decomposition described in Section~\ref{sec:meth-hp-decomp}, using the per-family Rashomon set (top-25 per family, up to 125 models total).  Each model's disagreement contribution $V_m$ (Eq.~\ref{eq:Vm}) is decomposed by hyperparameter; HP importance $\rho(h)$ (Eq.~\ref{eq:hp-importance}) measures the fraction of $V_m$ variance explained by that hyperparameter.  We first present a single-seed case study (COMPAS seed 0) for detailed exposition, then report aggregated results across all 10 seeds in Section~\ref{sec:results-agg-drivers}.
+To identify which modeling choices drive predictive multiplicity, we apply the variance decomposition described in Section~\ref{sec:exp-hp-decomp}, using the per-family Rashomon set (top-25 per family, up to 125 models total).  Each model's disagreement contribution $V_m$ (Eq.~\ref{eq:Vm}) is decomposed by hyperparameter; HP importance $\rho(h)$ (Eq.~\ref{eq:hp-importance}) measures the fraction of $V_m$ variance explained by that hyperparameter.  We first present a single-seed case study (COMPAS seed 0) for detailed exposition, then report aggregated results across all 10 seeds in Section~\ref{sec:results-agg-drivers}.
 
 \subsubsection{Family Importance}
 
@@ -335,7 +335,7 @@ Figure~\ref{fig:variance_by_hp_mlp} shows boxplots of per-model disagreement con
 \subsection{Calibration Robustness}
 \label{sec:results-calibration}
 
-To test whether spatial multiplicity is driven by probability miscalibration, Platt scaling was applied as described in Section~\ref{sec:meth-calibration}: a logistic regression is fit on each model's validation-set predictions, then applied to test-set predictions.  Multiplicity metrics (including both variance and conflict ratio) were recomputed on the calibrated predictions.  Table~\ref{tab:calibration_summary} summarizes the changes.
+To test whether spatial multiplicity is driven by probability miscalibration, Platt scaling was applied as described in Section~\ref{sec:exp-calibration}: a logistic regression is fit on each model's validation-set predictions, then applied to test-set predictions.  Multiplicity metrics (including both variance and conflict ratio) were recomputed on the calibrated predictions.  Table~\ref{tab:calibration_summary} summarizes the changes.
 
 \begin{table}[htbp]
 \centering

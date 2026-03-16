@@ -1,4 +1,5 @@
-This chapter describes how the methodology introduced in Chapter~3 is instantiated in the experiments. We specify the datasets, model families, training protocol, Rashomon set construction, and spatial analysis parameters. All design choices are fixed across experiments unless stated otherwise.
+
+This chapter instantiates the methodological framework of Chapter~3 on concrete datasets, model families, and experimental settings. We specify the core setup (datasets, splits, models, preprocessing, Rashomon operationalization, spatial parameters, null configuration), then describe robustness and validation analyses (calibration, alternative graphs, synthetic validation), interpretation and attribution analyses (hyperparameter decomposition, rule extraction), and auxiliary diagnostics (decision-boundary proximity, fairness exposure). All design choices are fixed across experiments unless stated otherwise.
 
 \subsection{Datasets}
 
@@ -15,16 +16,16 @@ All tasks are binary classification with a mix of numeric and categorical featur
 \subsection{Data Splitting}
 \label{sec:exp-splits}
 
-Each dataset is partitioned into training (60\%), validation (20\%), and test (20\%) sets using stratified sampling.  Two splitting modes are used depending on the analysis goal:
+Each dataset is partitioned into training (60\%), validation (20\%), and test (20\%) sets using stratified sampling. Two splitting modes are used depending on the analysis goal:
 
 \begin{description}
-  \item[Primary (independent) splits.]  Each outer seed produces a fully independent stratified split; all three sets differ between seeds.  This mode is used for the main multiplicity and spatial analyses reported in Sections~\ref{sec:results-metrics}--\ref{sec:results-hp}, where we require unbiased variability estimates across runs.
-  \item[Fixed-test-set splits.]  The test set is drawn once (seed 0) and held fixed across all outer seeds; only the train/validation boundary is re-split per seed.  This mode is used for cross-seed HH stability and Jaccard overlap analyses (Section~\ref{sec:results-spatial}), where point-level comparison across seeds is meaningful only if the same individuals appear in every test set.
+  \item[Primary (independent) splits.] Each outer seed produces a fully independent stratified split; all three sets differ between seeds. This mode is used for the main multiplicity and spatial analyses (Sections~\ref{sec:results-metrics}--\ref{sec:results-hp}), where we require unbiased variability estimates across runs.
+  \item[Fixed-test-set splits.] The test set is drawn once (seed 0) and held fixed across all outer seeds; only the train/validation boundary is re-split per seed. This mode is used for cross-seed HH stability and Jaccard overlap analyses (Section~\ref{sec:results-spatial}), where point-level comparison across runs is meaningful only if the same individuals appear in every test set.
 \end{description}
 
-In both modes, the test set is held out from all model training and Rashomon set construction.  It is used only for generating predictions from the selected models, computing observation-wise metrics, and performing spatial and null analyses.
+In both modes, the test set is held out from all model training and Rashomon set construction. It is used only for generating predictions from the selected models, computing observation-wise metrics, and performing spatial and null analyses.
 
-\subsection{Model Families}
+\subsection{Model Families and Training}
 
 Models are trained across five model families to induce diverse predictive multiplicity:
 
@@ -36,13 +37,7 @@ Models are trained across five model families to induce diverse predictive multi
     \item \textbf{Multilayer Perceptron (MLP)}: \texttt{hidden\_layer\_sizes}, \texttt{alpha}, \texttt{learning\_rate\_init}, \texttt{activation} (ReLU/tanh); \texttt{solver='adam'}, \texttt{early\_stopping=True}.
 \end{itemize}
 
-These families span linear, instance-based, tree-based, and neural network models.
-
-\subsection{Hyperparameter Sampling and Training}
-
-For each model family, 50 hyperparameter configurations are sampled uniformly at random from the predefined search spaces. For families with few discrete options (e.g.\ LogReg, kNN), configurations are deduplicated and resampled until 50 unique configurations are obtained. Each configuration is trained with a deterministic seed derived from the run identifier to ensure reproducibility. Training uses the training set only; the validation set is used exclusively for evaluating candidate models.
-
-Model performance is evaluated using the \emph{Brier score} (mean squared error between predicted probabilities and binary labels) on the validation set. No cross-validation is used in the main pipeline: each outer run uses a single train/validation/test split.
+These families span linear, instance-based, tree-based, and neural network models. For each family, 50 hyperparameter configurations are sampled uniformly at random from predefined search spaces. For families with few discrete options, configurations are deduplicated and resampled until 50 unique configurations are obtained. Each configuration is trained with a deterministic seed derived from the run identifier. Training uses the training set only; the validation set is used exclusively for evaluating candidate models. Model performance is evaluated using the \emph{Brier score} on the validation set. No cross-validation is used: each outer run uses a single train/validation/test split.
 
 \subsection{Preprocessing}
 \label{sec:exp-preproc}
@@ -55,87 +50,91 @@ Preprocessing is applied uniformly across all model families via a column-transf
   \item \textbf{Remaining columns:} any column not identified as numeric or categorical is dropped.
 \end{itemize}
 
-The fitted transformer is applied identically to validation and test data without refitting, ensuring no data leakage.  The same transformed feature space is used both for model training and for constructing the $k$NN graph (Section~\ref{sec:exp-knn-graph}), so that spatial neighborhoods reflect the distances models actually operate on.
+The fitted transformer is applied identically to validation and test data without refitting, ensuring no data leakage. The same transformed feature space is used both for model training and for constructing the kNN graph (Section~\ref{sec:exp-knn-graph}), so that spatial neighborhoods reflect the distances models actually operate on.
 
-\subsection{Rashomon Set Construction}
+\subsection{Rashomon Set Operationalization}
 \label{sec:exp-rashomon}
 
-The Rashomon set is operationalized by selecting the \textbf{top-$K$} models by validation Brier score, with $K = 25$ unless otherwise stated. This yields a fixed-size set of near-optimal models per run and ensures comparability across runs and datasets. Two selection modes are supported:
+The Rashomon set is operationalized by selecting the \textbf{top-$K$} models by validation Brier score, with $K = 25$ unless otherwise stated. Three selection modes are supported:
 
 \begin{itemize}
-    \item \textbf{Global}: The 25 models with lowest validation Brier score are selected from the full candidate pool (all families combined).
+    \item \textbf{Global}: The 25 models with lowest validation Brier score from the full candidate pool (all families combined).
     \item \textbf{Per-family (total-$K$)}: For fair global-vs-family comparisons, the total budget $K=25$ is distributed across families (approximately equally, with deterministic tie-breaking by best family-level validation Brier).
     \item \textbf{Per-family ($K$-each)}: For within-family driver analyses, the top 25 models are selected within each family (up to 125 models total) to preserve enough within-family variation for hyperparameter decomposition.
 \end{itemize}
 
-Unless otherwise stated, the global selection mode is used. Sensitivity of multiplicity and spatial metrics to $K$ is examined by varying $K \in \{5, 10, 15, 20, 25, 30, \ldots\}$ in separate analyses. Results are reported for \textbf{both} the global Rashomon set and per-family selections: total-$K$ per-family selection is used for fair head-to-head comparisons with global-$K$, while $K$-each per-family selection is used when the objective is within-family decomposition (see Sections~\ref{sec:results-global-vs-family} and~\ref{sec:results-hp}).
+Unless otherwise stated, the global selection mode is used. Sensitivity to $K$ is examined by varying $K \in \{5, 10, 15, 20, 25, 30, \ldots\}$ in separate analyses. Results are reported for both the global Rashomon set and per-family selections (Sections~\ref{sec:results-global-vs-family} and~\ref{sec:results-hp}).
 
 \subsection{Prediction Matrix and Multiplicity Metrics}
 
-For each run, all models in the Rashomon set are applied to the held-out test set to obtain predicted probabilities. This yields a prediction matrix $P \in \mathbb{R}^{M \times N}$, where $M$ is the number of selected models and $N$ is the number of test observations. Observation-wise predictive variance is computed from $P$ as in Section~3.3. Additional multiplicity metrics include mean variance, ambiguity (mean over observations of $\max_m \hat{p}_m - \min_m \hat{p}_m$), disagreement rate (fraction of test points where two models differ by more than a threshold $\delta = 0.05$), and discrepancy (maximum over model pairs of mean absolute prediction difference). These ambiguity/discrepancy definitions follow the probability-space formulation used in the \emph{Resolving Predictive Multiplicity for the Rashomon Set} framework.
+For each run, all models in the Rashomon set are applied to the held-out test set to obtain predicted probabilities. This yields a prediction matrix $P \in \mathbb{R}^{M \times N}$, where $M$ is the number of selected models and $N$ is the number of test observations. Observation-wise predictive variance $v_i$ and conflict ratio $c_i$ are computed as in Chapter~3. Additional multiplicity metrics include mean variance, ambiguity (mean over observations of $\max_m \hat{p}_m - \min_m \hat{p}_m$), disagreement rate (fraction of test points where two models differ by more than $\delta = 0.05$), and discrepancy (maximum over model pairs of mean absolute prediction difference).
 
-\subsection{Feature-Space Graph and Spatial Analysis}
+\subsection{Spatial Analysis Parameters}
 \label{sec:exp-knn-graph}
 
-The spatial weight matrix $W$ is built from a $k$-nearest-neighbor (kNN) graph in feature space. Features are the preprocessed test-set vectors (same as used for model predictions). The default neighborhood size is $k = 30$; sensitivity to $k$ is examined with $k \in \{10, 20, 30, 50\}$. Distances are Euclidean; the adjacency matrix is row-standardized. Global Moran's $I$ is computed with 999 permutations for significance. Local Moran (LISA) is computed with 999 permutations per observation; the Benjamini--Hochberg procedure is applied at $\alpha = 0.05$ to control the false discovery rate when labeling High--High (HH) and Low--Low (LL) clusters. Observations classified as HH are interpreted as locally unstable regions. Connected components of HH observations are extracted from the restricted kNN graph; a minimum component size may be applied to filter small clusters.
+The kNN graph (Section~\ref{sec:meth-graph}) is built from preprocessed test-set feature vectors. The default neighborhood size is $k = 30$; sensitivity is examined with $k \in \{10, 20, 30, 50\}$. Distances are Euclidean; the adjacency matrix is row-standardized. Global Moran's $I$ significance is assessed with 999 permutations. Local Moran (LISA) uses 999 permutations per observation; the Benjamini--Hochberg procedure is applied at $\alpha = 0.05$ to control the false discovery rate when labeling HH and LL clusters. Connected components of HH observations are extracted from the restricted kNN graph; a minimum component size may be applied to filter small clusters.
 
-\subsection{Null Model Configuration}
+\subsection{Null Experiment Configuration}
 \label{sec:exp-null}
 
-Null distributions are constructed by permuting each model's predictions independently across observations (within-model permutation).  Concretely, for every model $m$ the vector of predicted probabilities $(\hat{p}_{m1}, \dots, \hat{p}_{mN})$ is randomly shuffled so that each $\hat{p}_{mi}$ is reassigned to a different observation.  This preserves the marginal distribution of predictions for each model while destroying any alignment between predictive variance and feature-space location.
-
-For each of $R = 100$ permutations, observation-wise variance (and, separately, conflict ratio) and global Moran's $I$ are recomputed on the permuted data.  The empirical $p$-value for the observed statistic is
-\[
-  p = \frac{1 + \#\{\text{null} \geq \text{observed}\}}{R + 1}.
-\]
-A run is considered to show significant spatial structure if $p < 0.05$.  With $R = 100$ the smallest attainable $p$-value is $1/101 \approx 0.0099$; consequently, observed $p$-values reported as ``$p < 0.01$'' should be interpreted as being at the resolution floor of the permutation test rather than as an exact probability.
-
-\subsection{Hyperparameter Variance Decomposition}
-\label{sec:exp-hp-decomp}
-
-The HP importance analysis described in Section~\ref{sec:meth-hp-decomp} is instantiated as follows.  For each outer seed and each model family, the top-$K = 25$ models by validation Brier score within that family are selected (per-family $K$-each mode; see Section~\ref{sec:exp-rashomon}).  If a family has fewer than $K$ candidates in a given run, all available candidates are used and the effective $K_{\text{actual}}$ is logged.
-
-For each selected model, the disagreement contribution $V_m$ (Eq.~\ref{eq:Vm}) is computed from test-set predictions.  Hyperparameters are parsed from the per-model configuration stored alongside each run; columns with fewer than two unique values within the family are dropped.  HP importance $\rho(h)$ (Eq.~\ref{eq:hp-importance}) is computed for each remaining hyperparameter via one-way variance decomposition of $V_m$.
-
-This procedure is repeated independently for all 10 outer seeds.  Results are aggregated across seeds: we report mean importance $\pm$ standard deviation, and rank stability (frequency with which each hyperparameter appears in the top 3 across seeds).  The analysis can optionally be restricted to observations classified as HH to identify hotspot-specific drivers.
+Null distributions follow the within-model permutation design (Section~\ref{sec:meth-null}). For every model $m$, the vector $(\hat{p}_{m1}, \dots, \hat{p}_{mN})$ is randomly shuffled across observations. For each of $R = 100$ permutations, observation-wise variance (and conflict ratio) and global Moran's $I$ are recomputed. The empirical $p$-value is $p = (1 + \#\{\text{null} \geq \text{observed}\}) / (R + 1)$. A run is considered to show significant spatial structure if $p < 0.05$. With $R = 100$, the smallest attainable $p$-value is $1/101 \approx 0.0099$; reported ``$p < 0.01$'' values are at this resolution floor.
 
 \subsection{Outer Runs and Reproducibility}
 
-For each dataset, 10 outer runs are performed with different random seeds (e.g.\ seeds 0--9). Each outer run corresponds to an independent train/validation/test split and a full training and selection pipeline. Results are aggregated across outer runs (e.g.\ mean and standard deviation of mean variance, Moran's $I$, and fraction of runs with significant Moran's $I$). All random seeds are fixed so that experiments are reproducible. Code and configuration are provided in the electronic appendix.
+For each dataset, 10 outer runs are performed with different random seeds (0--9). Each outer run corresponds to an independent train/validation/test split and a full training and selection pipeline. Results are aggregated across outer runs (mean and standard deviation of mean variance, Moran's $I$, fraction of runs with significant Moran's $I$). All random seeds are fixed for reproducibility. Code and configuration are provided in the electronic appendix.
 
 \subsection{Implementation}
 
-Experiments are implemented in Python using \texttt{scikit-learn} for models and preprocessing, \texttt{libpysal} and \texttt{esda} for spatial weights and Moran statistics, and \texttt{NumPy}/\texttt{SciPy} for numerical computation.  The training pipeline saves per run: split indices, model metadata (family, hyperparameters, validation Brier score), and prediction matrices for validation and test sets.  The analysis layer loads these saved artifacts and performs Rashomon selection, multiplicity metrics, spatial analysis, and null experiments without retraining.  All code and configurations are available in the accompanying repository.
+Experiments are implemented in Python using \texttt{scikit-learn} for models and preprocessing, \texttt{libpysal} and \texttt{esda} for spatial weights and Moran statistics, and \texttt{NumPy}/\texttt{SciPy} for numerical computation. The training pipeline saves per run: split indices, model metadata (family, hyperparameters, validation Brier score), and prediction matrices for validation and test sets. The analysis layer loads these artifacts and performs Rashomon selection, multiplicity metrics, spatial analysis, and null experiments without retraining.
 
-\subsection{Calibration Robustness}
+\subsection{Robustness and Validation Analyses}
 
-For each run on the three benchmark datasets (COMPAS, German Credit, Breast Cancer), we apply Platt scaling to test whether spatial multiplicity is driven by probability miscalibration. For each model in the Rashomon set (top-$K$ by validation Brier), a logistic regression is fitted on validation-set predicted probabilities versus validation labels; this mapping is then applied to that model's test-set predictions. The same multiplicity and spatial pipeline (mean variance, Moran's $I$, LISA with FDR, HH/LL masks, connected components) is run on both uncalibrated and calibrated test predictions. We record before/after metrics (Brier score, mean variance, Moran's $I$, number of HH points, number of components) and the Jaccard similarity between HH masks before and after calibration. Results are aggregated over runs (mean $\pm$ std). Synthetic datasets are excluded from this analysis because they use a different data-generating process.
+\paragraph{Calibration robustness.}
+\label{sec:exp-calibration}
+To test whether spatial multiplicity is driven by probability miscalibration, we apply Platt scaling: for each model in the Rashomon set, a logistic regression is fitted on validation-set predicted probabilities versus validation labels; this mapping is then applied to that model's test-set predictions. The full multiplicity and spatial pipeline (mean variance, Moran's $I$, LISA with FDR, HH/LL masks, connected components) is run on both uncalibrated and calibrated test predictions. We record before/after metrics and the Jaccard similarity between HH masks. Results are aggregated over runs. Synthetic datasets are excluded because they use a different data-generating process.
 
-\subsection{Synthetic Datasets}
+\paragraph{Alternative graph constructions.}
+To verify that spatial results are not artifacts of the Euclidean distance metric on the full one-hot-encoded feature space, we compare the baseline kNN graph with two alternatives: (1) kNN in PCA-reduced space (retaining 15 components), and (2) kNN using cosine distance on L2-normalized features. All other pipeline parameters remain fixed; Moran's $I$ and HH counts are compared across methods.
 
-Two synthetic data designs are used to validate that LISA HH regions recover known ambiguous regions:
-
+\paragraph{Synthetic validation.}
+Two synthetic data designs validate that LISA HH regions recover known ambiguous regions:
 \begin{itemize}
-    \item \textbf{Single-island}: A mixture of two well-separated Gaussian blobs (stable region) and one ``ambiguous island''---points drawn uniformly in a disk around the origin with a weak XOR-like conditional probability $P(y=1|x) = 0.5 \pm \delta$. Labels are sampled from this probability.  Ground truth distinguishes island observations from stable-region observations.
-    \item \textbf{Three-islands + outliers}: Two stable blobs, three ambiguous islands (each with weak XOR signal around a center), and a small fraction of isolated outliers.  Ground truth labels each point as belonging to one of the three islands, the stable region, or the outlier set.
+    \item \textbf{Single-island}: A mixture of two well-separated Gaussian blobs (stable region) and one ``ambiguous island''---points drawn uniformly in a disk with weak XOR-like conditional probability $P(y=1|x) = 0.5 \pm \delta$. Ground truth distinguishes island from stable-region observations.
+    \item \textbf{Three-islands + outliers}: Two stable blobs, three ambiguous islands, and a small fraction of isolated outliers. Ground truth labels each point by region.
 \end{itemize}
+The same training pipeline (60/20/20 split, same model families, top-$K$ by validation Brier) is applied. Recovery of ground-truth islands by LISA HH classification is evaluated via precision, recall, and Jaccard overlap. The null experiment (Section~\ref{sec:exp-null}) confirms that observed Moran's $I$ is significant.
 
-The same training pipeline (60/20/20 split, same model families, top-$K$ by validation Brier) is applied.  Multiplicity and spatial analysis are run on the test set.  Recovery of ground-truth islands by the LISA HH classification is evaluated via precision, recall, and Jaccard overlap; sensitivity to FDR $\alpha$ can be examined.  The null experiment (permutation of predictions, Section~\ref{sec:exp-null}) is also run to confirm that observed Moran's $I$ is significant.
+\subsection{Interpretation and Attribution Analyses}
 
-\subsection{Hyperparameter and Family Importance}
+\paragraph{Hyperparameter variance decomposition.}
+\label{sec:exp-hp-decomp}
+To attribute predictive multiplicity to hyperparameters, we decompose disagreement among Rashomon models within each family. The analysis requires per-family Rashomon selection (top-$K$ within each family; Section~\ref{sec:exp-rashomon}) so that hyperparameters are family-specific.
+
+Let $P^{(j)} \in \mathbb{R}^{K_j \times N_{\text{test}}}$ denote the test predictions of the within-family Rashomon set for family $j$, and let $\bar{p}_i^{(j)}$ be the family-ensemble mean for observation~$i$. The \emph{disagreement contribution} of model $m$ is
+\begin{equation}
+  V_m = \frac{1}{N_{\text{test}}} \sum_{i=1}^{N_{\text{test}}} \bigl(\hat{p}_{mi}^{(j)} - \bar{p}_i^{(j)}\bigr)^2.
+  \label{eq:Vm}
+\end{equation}
+For a hyperparameter $h$ with $G$ distinct values, we partition the $K_j$ models into groups $\{S_1,\dots,S_G\}$ by their value of $h$. One-way variance decomposition yields the between-group component $\mathrm{Var}_{\text{between}}(h)$ and within-group component $\mathrm{Var}_{\text{within}}(h)$. The \emph{importance} of hyperparameter $h$ is
+\begin{equation}
+  \rho(h) = \frac{\mathrm{Var}_{\text{between}}(h)}{\mathrm{Var}_{\text{total}}}.
+  \label{eq:hp-importance}
+\end{equation}
+Hyperparameter columns with fewer than two unique values are excluded. The procedure is repeated for all 10 outer seeds; results are aggregated (mean importance $\pm$ std, rank stability). The analysis can be restricted to HH observations to identify hotspot-specific drivers.
+
+\paragraph{Family importance.}
 \label{sec:exp-hp-family}
+For each benchmark dataset across all 10 outer seeds, we conduct: (i) per-family Rashomon set (top-25 within each family); (ii) between-family vs.\ within-family variance decomposition; (iii) within-family HP importance $\rho(h)$ (Eq.~\ref{eq:hp-importance}); (iv) HH-specific HP importance; and (v) family importance computed on all test points, HH points only, and non-HH points only.
 
-To attribute predictive multiplicity to model family and hyperparameters, the following analyses are conducted for each benchmark dataset across all 10 outer seeds:
-
-\begin{itemize}
-    \item \textbf{Per-family Rashomon set:} The top-$K = 25$ models \emph{within each} model family by validation Brier are selected (up to 125 models total, 25 per family).  Observation-wise variance is decomposed into between-family and within-family components; the ratio of between-family variance to total variance (``family importance'') is computed per observation and summarized (mean, median, 90th percentile).
-    \item \textbf{Within-family HP importance:} For each family, the model-level disagreement contribution $V_m$ (Section~\ref{sec:meth-hp-decomp}) is decomposed by hyperparameter using the between-group/total ratio $\rho(h)$ (Eq.~\ref{eq:hp-importance}).  Results are reported per family per seed and aggregated across seeds.
-    \item \textbf{HH-specific importance:} The same within-family HP importance is computed \emph{restricted to HH observations} (Section~\ref{sec:meth-lisa}) to identify hotspot-specific drivers.
-    \item \textbf{Family importance by subset:} Family importance is computed on three subsets---all test points, HH points only, and non-HH points only---to compare how much model family explains multiplicity in hotspot versus non-hotspot regions.
-\end{itemize}
-
-\subsection{Interpretable Rule Extraction}
-
+\paragraph{Interpretable rule extraction.}
 To characterize high-multiplicity regions in terms of original features, interpretable rules are extracted on each benchmark dataset. Two target labels are defined per run: (1) \textbf{HV} (high variance), the top 10\% of test points by pointwise variance; and (2) \textbf{HH}, the LISA High--High hotspot points.
 
-Four extraction methods are applied as described in Section~3.12: shallow decision trees (max depth 3), L1-regularized logistic regression ($C = 0.1$), beam search (beam width 10, max conjuncts 3, minimum support 10), and cluster-describe (DBSCAN with neighborhood radius $\varepsilon_{\text{DB}} = 1.0$, min samples 5). Rules are evaluated by purity, support, lift, and recall. Out-of-bag stability is assessed via 200 bootstrap iterations. Permutation enrichment tests (100 permutations) assess whether observed purity exceeds chance. Results are reported for COMPAS, German Credit, and Breast Cancer (seed 0 in each case).
+Four extraction methods are applied: (i) shallow decision trees (max depth 3), with rules evaluated by purity and support; (ii) L1-regularized logistic regression ($C = 0.1$) to identify features with nonzero coefficients; (iii) beam search (beam width 10, max conjuncts 3, minimum support 10) maximizing lift; and (iv) cluster-describe: DBSCAN clustering of high-multiplicity points ($\varepsilon_{\text{DB}} = 1.0$, min samples 5), with a decision tree fitted per cluster. Rules are evaluated by purity, support, lift, and recall. Out-of-bag stability is assessed via 200 bootstrap iterations. Permutation enrichment tests (100 permutations) assess whether observed purity exceeds chance. Results are reported for COMPAS, German Credit, and Breast Cancer (seed 0).
+
+\subsection{Auxiliary Diagnostic Analyses}
+
+\paragraph{Decision-boundary proximity.}
+To test whether high-multiplicity regions are simply those near the decision boundary, we compute the margin $m_i = |\bar{p}_i - 0.5|$ for each test observation, where $\bar{p}_i$ is the ensemble mean predicted probability. We compute Pearson and Spearman correlations between pointwise variance and margin, and compare mean margins for HH vs.\ non-HH points using the Mann--Whitney U test.
+
+\paragraph{Fairness exposure.}
+To assess whether HH regions disproportionately affect demographic subgroups, we compute group-wise exposure rates: the fraction of each group's test points classified as HH, with bootstrap confidence intervals across runs. Per-run subgroup minimum size filtering and minimum cross-run support are applied. Significance is evaluated with a stratified permutation test: labels are shuffled within each run, run-level rates are recomputed, and the aggregated inter-group disparity (max--min HH rate across eligible groups) is compared to its null distribution.
