@@ -17,7 +17,7 @@ TAB_DIR = ROOT / "overleaf_bundle" / "presentation_assets" / "tab"
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 TAB_DIR.mkdir(parents=True, exist_ok=True)
 
-SUPPORTED_DATASETS = ("compas", "german", "breast_cancer")
+SUPPORTED_DATASETS = ("compas", "german", "adult")
 
 
 def main():
@@ -92,7 +92,7 @@ def main():
     if rows:
         big = pd.concat(rows, ignore_index=True)
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
-        colors = {"Compas": "C0", "German": "C1", "Breast Cancer": "C2"}
+        colors = {"Compas": "C0", "German": "C1", "Adult": "C2"}
         x_offset = 0
         xticks, xlabels = [], []
         for ds in big["dataset"].unique():

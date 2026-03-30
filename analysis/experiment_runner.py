@@ -35,6 +35,7 @@ from analysis.run_analysis import (  # noqa: E402
     quadrant_analysis,
 )
 from analysis.preprocessing import get_transformed_test_features  # noqa: E402
+from analysis.knn_defaults import default_k_nn  # noqa: E402
 
 try:
     from sklearn.metrics import brier_score_loss  # noqa: E402
@@ -183,7 +184,7 @@ def run_dataset_experiment(
     *,
     K: int = 25,
     epsilon: float = 0.05,
-    k_nn: int = 30,
+    k_nn: Optional[int] = None,
     R_null: int = 100,
     seed: Optional[int] = 42,
     verbose: bool = True,
@@ -201,7 +202,7 @@ def run_dataset_experiment(
     dataset_name : name for load_dataset (default: dataset_dir.name)
     K : Rashomon top-K
     epsilon : for disagreement_rate
-    k_nn : k for kNN graph
+    k_nn : k for kNN graph (None = dataset default from ``analysis.knn_defaults``)
     R_null : null permutations
     seed : for spatial LISA
     verbose : print progress
@@ -217,6 +218,7 @@ def run_dataset_experiment(
     """
     dataset_dir = Path(dataset_dir)
     name = dataset_name if dataset_name is not None else dataset_dir.name
+    k_resolved = k_nn if k_nn is not None else default_k_nn(name)
 
     run_dirs = _get_run_dirs(dataset_dir)
     if not run_dirs:
@@ -260,7 +262,7 @@ def run_dataset_experiment(
             X_test,
             K=K_actual,
             epsilon=epsilon,
-            k_nn=k_nn,
+            k_nn=k_resolved,
             R_null=R_null,
             seed=seed,
             dataset_name=name,
@@ -396,7 +398,7 @@ def run_all_experiments(
     datasets: Optional[List[str]] = None,
     K: int = 25,
     epsilon: float = 0.05,
-    k_nn: int = 30,
+    k_nn: Optional[int] = None,
     R_null: int = 100,
     seed: Optional[int] = 42,
     verbose: bool = True,
@@ -418,12 +420,13 @@ def run_all_experiments(
     for dataset_dir in to_run:
         if verbose:
             print(f"Dataset: {dataset_dir.name}")
+        k_resolved = k_nn if k_nn is not None else default_k_nn(dataset_dir.name)
         df = run_dataset_experiment(
             dataset_dir,
             dataset_name=dataset_dir.name,
             K=K,
             epsilon=epsilon,
-            k_nn=k_nn,
+            k_nn=k_resolved,
             R_null=R_null,
             seed=seed,
             verbose=verbose,
