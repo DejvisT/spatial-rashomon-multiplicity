@@ -9,8 +9,11 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 ROOT = Path(__file__).resolve().parent.parent
+import sys
+sys.path.insert(0, str(ROOT))
+from thesis_layout import resolve_csv  # noqa: E402
+
 RESULTS_DIR = ROOT / "results"
-TABLES_DIR = ROOT / "tables"
 FIG_DIR = ROOT / "overleaf_bundle" / "presentation_assets" / "fig"
 TAB_DIR = ROOT / "overleaf_bundle" / "presentation_assets" / "tab"
 
@@ -21,6 +24,7 @@ SUPPORTED_DATASETS = ("compas", "german", "adult")
 
 
 def main():
+    path_fam = None
     # ----- global_summary.tex -----
     rows = []
     for name in SUPPORTED_DATASETS:
@@ -59,9 +63,9 @@ def main():
         print("Wrote", TAB_DIR / "global_summary.tex")
 
     # ----- family_summary.tex -----
-    path = TABLES_DIR / "family_hv_hh_summary_compas.csv"
-    if path.exists():
-        df = pd.read_csv(path)
+    path_fam = resolve_csv("family_hv_hh_summary_compas.csv", "nb06")
+    if path_fam is not None:
+        df = pd.read_csv(path_fam)
         df["frac_sig"] = (df["moran_p"] < 0.05).astype(int)
         out = []
         out.append(r"% Per-family (top-K=25 per family). Compas, single run.")
@@ -120,8 +124,8 @@ def main():
         print("Wrote", FIG_DIR / "spatial_patterns_per_run.pdf")
 
     # ----- hh_by_family.pdf -----
-    if path.exists():
-        df = pd.read_csv(path)
+    if path_fam is not None:
+        df = pd.read_csv(path_fam)
         fig, ax = plt.subplots(figsize=(6, 4))
         ax.bar(df["family"], df["hh_count"], color="steelblue", edgecolor="white")
         ax.set_ylabel("HH count")

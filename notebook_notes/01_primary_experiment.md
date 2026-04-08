@@ -15,11 +15,11 @@
 
 - `results/{dataset}/summary_per_run.csv` — per-run diagnostics (25 columns)
 - `results/{dataset}/seed=*/per_point/var_p.npy`, `conflict.npy`, `var_hard.npy`
-- `results/_thesis_tables/dataset_summary.csv` — consolidated aggregate
-- `results/_thesis_tables/dataset_summary_formatted.csv` — mean ± std for thesis
-- `results/_thesis_tables/per_family_summary.csv`
-- `results/_thesis_tables/global_vs_perfamily_comparison.csv`
-- `figures/nb01/dataset_comparison_bars.pdf` — 2×2 bar charts
+- `thesis_outputs/tables/nb01/dataset_summary.csv` — consolidated aggregate
+- `thesis_outputs/tables/nb01/dataset_summary_formatted.csv` — mean ± std for thesis
+- `thesis_outputs/tables/nb01/per_family_summary.csv` (when generated)
+- `thesis_outputs/tables/nb01/global_vs_perfamily_comparison.csv`
+- `thesis_outputs/figures/nb01/dataset_comparison_bars.pdf` — 2×2 bar charts
 - Dashboard plots: performance boxplots, predictive-multiplicity bars, spatial dashboard (Moran bar, LISA HH/LL, neighborhood agreement, LCAE)
 
 ## Parameters

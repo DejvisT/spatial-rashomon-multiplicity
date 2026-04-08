@@ -37,6 +37,12 @@ This project investigates **predictive multiplicity** in machine learning — th
 5. Run **Moran's I** (global spatial autocorrelation of variance) and **LISA** (local clusters: HH = high-variance-surrounded-by-high-variance, LL = low-low).
 6. Analyze what *drives* the hotspots: model family, hyperparameters, decision boundary proximity, fairness implications.
 
+### Where outputs live
+
+- **Raw training and experiment-runner artifacts:** `results/<dataset>/seed=*` (predictions, meta, `summary_per_run.csv`, `per_point/`, etc.).
+- **Derived tables and PDFs from each analysis notebook:** `thesis_outputs/tables/nbNN/` and `thesis_outputs/figures/nbNN/` (see `thesis_outputs/README.md` for the full map). Paths are defined in `thesis_layout.py` at the repo root.
+- **Legacy:** older runs may still have files in top-level `tables/` and `figures/`; `resolve_csv()` and export scripts check those after the new locations.
+
 ---
 
 ## Code Architecture
@@ -135,11 +141,11 @@ Load all training runs for each dataset, perform global Rashomon selection (K=25
 
 ### Output Files
 
-- `results/_thesis_tables/dataset_summary.csv` — raw aggregate numbers
-- `results/_thesis_tables/dataset_summary_formatted.csv` — formatted mean +/- std
-- `results/_thesis_tables/per_family_summary.csv` — per-family metrics
-- `results/_thesis_tables/global_vs_perfamily_comparison.csv`
-- `results/_thesis_tables/global_vs_perfamily_hh.pdf`
+- `thesis_outputs/tables/nb01/dataset_summary.csv` — raw aggregate numbers
+- `thesis_outputs/tables/nb01/dataset_summary_formatted.csv` — formatted mean +/- std
+- `thesis_outputs/tables/nb01/per_family_summary.csv` — per-family metrics (when generated)
+- `thesis_outputs/tables/nb01/global_vs_perfamily_comparison.csv`
+- `thesis_outputs/figures/nb01/global_vs_perfamily_hh.pdf`
 
 ### How to Interpret
 
@@ -179,11 +185,11 @@ Test the statistical significance of spatial clustering. Under the null hypothes
 
 ### Plots
 
-- **Per-run histogram**: For each (dataset, seed), a histogram of null Moran's I values with a vertical dashed line at the observed value. Saved as `figures/null_moran_{dataset}_seed{seed}.pdf`.
+- **Per-run histogram**: For each (dataset, seed), a histogram of null Moran's I values with a vertical dashed line at the observed value. Saved as `thesis_outputs/figures/nb02/null_moran_{dataset}_seed{seed}.pdf`.
 
 ### Output Files
 
-- `tables/null_significance_summary.csv` — dataset, n_runs, frac_significant, mean_moran +/- std, mean_p
+- `thesis_outputs/tables/nb02/null_significance_summary.csv` — dataset, n_runs, frac_significant, mean_moran +/- std, mean_p
 
 ### How to Interpret
 
@@ -223,9 +229,9 @@ Visualize HH and LL clusters, examine HH frequency and stability across seeds, a
 
 ### Output Files
 
-- `figures/hh_frequency_{dataset}.pdf`, `hh_jaccard_{dataset}.pdf`, `hh_location_{dataset}.pdf`
-- `figures/hh_moran_per_run_{dataset}.pdf`, `figures/variance_vs_moran_{dataset}.pdf`
-- `tables/hh_component_summary_{dataset}.csv`
+- `thesis_outputs/figures/nb03/hh_freq_histogram_{dataset}.pdf`, `hh_stability_freq_{dataset}.pdf`, `hh_location_{dataset}.pdf`
+- `thesis_outputs/figures/nb03/hh_moran_per_run_{dataset}.pdf`, `variance_vs_moran_{dataset}.pdf`
+- `thesis_outputs/tables/nb03/hh_component_summary_{dataset}.csv`
 
 ### How to Interpret
 
@@ -316,10 +322,10 @@ Decompose predictive variance into **between-family** and **within-family** comp
 
 ### Output Files
 
-- `tables/family_importance_{dataset}_seed{seed}.csv`
-- `tables/hp_importance_{dataset}_seed{seed}_{family}.csv`
-- `tables/hp_importance_HH_{dataset}_seed{seed}_{family}.csv`
-- `figures/family_between_ratio_hist_*.pdf`, `within_family_hp_importance_*.pdf`, `hh_delta_hp_importance_*.pdf`
+- `thesis_outputs/tables/nb06/family_importance_{dataset}_seed{seed}.csv`
+- `thesis_outputs/tables/nb06/hp_importance_{dataset}_seed{seed}_{family}.csv`
+- `thesis_outputs/tables/nb06/hp_importance_HH_{dataset}_seed{seed}_{family}.csv`
+- `thesis_outputs/figures/nb06/hp_importance_bar_*`, `hp_rank_stability_*`, `hp_marginal_effect_*` (PDFs)
 
 ### How to Interpret
 
@@ -454,11 +460,11 @@ Find interpretable feature-based rules that **describe** HH and high-variance re
 
 ### Output Files
 
-- `tables/rules_summary_{dataset}.csv` — all extracted rules with metrics
-- `tables/rules_oob_summary_{dataset}.csv` — bootstrap OOB evaluation
-- `tables/rules_permutation_pvals_{dataset}.csv` — permutation p-values
-- `tables/rule_feature_stability_{dataset}.csv` — feature appearance frequency
-- `tables/final_rules_{dataset}.csv` — filtered rules (support >= 30, conditions <= 3)
+- `thesis_outputs/tables/nb09/rules_summary_{dataset}.csv` — all extracted rules with metrics
+- `thesis_outputs/tables/nb09/rules_oob_summary_{dataset}.csv` — bootstrap OOB evaluation
+- `thesis_outputs/tables/nb09/rules_permutation_pvals_{dataset}.csv` — permutation p-values
+- `thesis_outputs/tables/nb09/rule_feature_stability_{dataset}.csv` — feature appearance frequency
+- `thesis_outputs/tables/nb09/final_rules_{dataset}.csv` — filtered rules (support >= 30, conditions <= 3)
 
 ### How to Interpret
 
@@ -489,7 +495,7 @@ Four add-on studies that extend the core analysis with robustness checks and fai
 - Aggregates within-family HP importance across seeds (top 5 HPs per family).
 - Extracts feature frequencies from interpretable rules across seeds.
 
-**Output:** `tables/family_importance_aggregated.csv`, `tables/hp_importance_aggregated_top5.csv`, `tables/rule_feature_frequency_compas.csv`
+**Output:** `thesis_outputs/tables/nb10/family_importance_aggregated.csv`, `hp_importance_aggregated_top5.csv`, `rule_feature_frequency_compas.csv`
 
 **How to interpret:** Shows whether the drivers identified in notebook 06 (for a single seed) are stable across seeds. If the same HPs and families dominate across seeds, the findings are robust.
 
@@ -504,7 +510,7 @@ Four add-on studies that extend the core analysis with robustness checks and fai
 
 **Plots:** Scatter plot of variance vs margin (COMPAS seed=0), colored by HH/HV/other.
 
-**Output:** `tables/variance_vs_margin_summary.csv`, `tables/margin_hh_wilcoxon.csv`
+**Output:** `thesis_outputs/tables/nb10/variance_vs_margin_summary.csv`, `margin_hh_wilcoxon.csv`
 
 **How to interpret:**
 
@@ -523,7 +529,7 @@ Four add-on studies that extend the core analysis with robustness checks and fai
 
 **Plots:** Bar charts of HH rate by race and sex with error bars.
 
-**Output:** `tables/fairness_subgroup_rates_compas.csv`, `tables/fairness_permutation_test_compas.csv`, `tables/knn_excl_protected_compas.csv`
+**Output:** `thesis_outputs/tables/nb10/fairness_subgroup_rates_compas.csv`, `fairness_permutation_test_compas.csv`, `knn_excl_protected_compas.csv`
 
 **How to interpret:**
 
@@ -539,7 +545,7 @@ Four add-on studies that extend the core analysis with robustness checks and fai
 - Builds an overlap matrix (Jaccard similarity) of HH masks across families.
 - Correlates per-family pointwise variance vectors (Pearson r) to assess whether families produce similar variance patterns.
 
-**Output:** `tables/cross_family_hh_overlap.csv`, `tables/cross_family_variance_corr.csv`
+**Output:** `thesis_outputs/tables/nb10/cross_family_hh_overlap.csv`, `cross_family_variance_corr.csv`
 
 **How to interpret:**
 
@@ -568,7 +574,7 @@ Four add-on studies that extend the core analysis with robustness checks and fai
 - For each ablation: recomputes spatial metrics (Moran's I, HH count) and compares to the full-set baseline.
 - Reports which families, when removed, cause the largest drop in detected multiplicity.
 
-**Output:** `tables/bootstrap_ablation_summary.csv`
+**Output:** `thesis_outputs/tables/nb10/bootstrap_ablation_summary.csv`
 
 **How to interpret:**
 
@@ -585,7 +591,7 @@ Four add-on studies that extend the core analysis with robustness checks and fai
 
 **Plots:** Grouped bar plot of Moran's I and HH count by method and dataset.
 
-**Output:** `tables/alternative_knn_comparison.csv`
+**Output:** `thesis_outputs/tables/nb10/alternative_knn_comparison.csv`
 
 **How to interpret:**
 
@@ -605,6 +611,6 @@ To reproduce all results from scratch:
 2. **Train fixed-test models**: `python run_training_pipeline_fixed_test.py` (for notebook 03)
 3. **Run notebooks in order**: 01 through 10
 4. **Notebook 08** (synthetic) is self-contained — it trains its own models inline
-5. **Check thesis tables**: `results/_thesis_tables/` and `tables/`
-6. **Check figures**: `figures/`
+5. **Check thesis tables**: `thesis_outputs/tables/nb01/` (primary aggregates), `thesis_outputs/tables/nb10/` (robustness), and raw `results/<dataset>/summary_per_run.csv`
+6. **Check figures**: `thesis_outputs/figures/nb*/` (and legacy `figures/` if present)
 
