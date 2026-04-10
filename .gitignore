@@ -6,3 +6,6 @@ __pycache__/
 results/*/seed*
 results_fixed_test/
 papers/
+
+# Legacy duplicate figure staging (canonical exports: presentation_assets/fig/)
+overleaf_bundle/figures/

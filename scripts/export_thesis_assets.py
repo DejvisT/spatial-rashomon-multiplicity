@@ -1,6 +1,12 @@
 """
 Export thesis assets from results: dataset summary table, null significance table,
 and sensitivity figures (K and kNN). Writes into overleaf_bundle/presentation_assets/.
+
+Notebook PDFs are copied into presentation_assets/fig/ only if they are referenced
+by \\includegraphics in thesis.tex and overleaf_bundle/chapters/*.tex (use
+--copy-all-figures for the old behaviour). Use --prune-presentation-figs to remove
+PDFs in that folder that are not thesis- or export-generated.
+
 Run from repo root: python scripts/export_thesis_assets.py
 """
 from pathlib import Path
@@ -9,13 +15,15 @@ import sys
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "scripts"))
 
 from thesis_layout import (  # noqa: E402
     LEGACY_TABLES,
     THESIS_TABLES_ROOT,
-    iter_derived_figure_pdfs,
     resolve_csv,
 )
+
+from thesis_presentation_figures import copy_notebook_figures  # noqa: E402
 
 import numpy as np
 import pandas as pd
@@ -24,7 +32,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 RESULTS_DIR = ROOT / "results"
-OUT_DIR = ROOT / "overleaf_bundle" / "presentation_assets"
+OVERLEAF_BUNDLE = ROOT / "overleaf_bundle"
+OUT_DIR = OVERLEAF_BUNDLE / "presentation_assets"
 FIG_DIR = OUT_DIR / "fig"
 TAB_DIR = OUT_DIR / "tab"
 
@@ -526,22 +535,20 @@ def write_hh_component_summary_tex():
     print("Wrote", TAB_DIR / "hh_component_summary.tex")
 
 
-def copy_notebook_figures():
-    """Copy figures from thesis_outputs/figures/nb* and legacy figures/ into the Overleaf fig directory."""
-    import shutil
-    copied = 0
-    for pdf in iter_derived_figure_pdfs():
-        dst = FIG_DIR / pdf.name
-        shutil.copy2(pdf, dst)
-        copied += 1
-        print(f"  Copied {pdf.name}")
-    print(f"Copied {copied} notebook figures to {FIG_DIR}")
-
-
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Export thesis assets")
     parser.add_argument("--quick", action="store_true", help="Skip slow sensitivity analysis (K, kNN)")
+    parser.add_argument(
+        "--copy-all-figures",
+        action="store_true",
+        help="Copy every PDF from thesis_outputs/figures and legacy figures/ (ignore thesis allowlist).",
+    )
+    parser.add_argument(
+        "--prune-presentation-figs",
+        action="store_true",
+        help="Remove PDFs under presentation_assets/fig/ not referenced by the thesis or this export script.",
+    )
     args = parser.parse_args()
 
     write_dataset_summary_tex()
@@ -558,7 +565,12 @@ def main():
         run_sensitivity_kNN_and_save_figure()
     else:
         print("Skipping sensitivity figures (--quick). Run without --quick for sensitivity_K_curves_*.pdf and sensitivity_kNN_curves_*.pdf")
-    copy_notebook_figures()
+    copy_notebook_figures(
+        FIG_DIR,
+        copy_all=args.copy_all_figures,
+        prune_orphans=args.prune_presentation_figs,
+        overleaf_bundle=OVERLEAF_BUNDLE,
+    )
     print("Done.")
 
 

@@ -1,7 +1,10 @@
 """Generate only global_summary, family_summary, spatial_patterns_per_run.pdf, hh_by_family.pdf.
-Run from repo root: python scripts/export_thesis_assets_quick.py
+Optionally copy thesis-referenced notebook PDFs into presentation_assets/fig/ (same allowlist as full export).
+
+Run from repo root: python scripts/export_thesis_assets_quick.py [--copy-thesis-figs] [--prune-presentation-figs]
 """
 from pathlib import Path
+import argparse
 import pandas as pd
 import numpy as np
 import matplotlib
@@ -11,11 +14,14 @@ import matplotlib.pyplot as plt
 ROOT = Path(__file__).resolve().parent.parent
 import sys
 sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "scripts"))
 from thesis_layout import resolve_csv  # noqa: E402
+from thesis_presentation_figures import copy_notebook_figures  # noqa: E402
 
 RESULTS_DIR = ROOT / "results"
-FIG_DIR = ROOT / "overleaf_bundle" / "presentation_assets" / "fig"
-TAB_DIR = ROOT / "overleaf_bundle" / "presentation_assets" / "tab"
+OVERLEAF_BUNDLE = ROOT / "overleaf_bundle"
+FIG_DIR = OVERLEAF_BUNDLE / "presentation_assets" / "fig"
+TAB_DIR = OVERLEAF_BUNDLE / "presentation_assets" / "tab"
 
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 TAB_DIR.mkdir(parents=True, exist_ok=True)
@@ -24,6 +30,24 @@ SUPPORTED_DATASETS = ("compas", "german", "adult")
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Quick export of selected thesis tables/figures")
+    parser.add_argument(
+        "--copy-thesis-figs",
+        action="store_true",
+        help="Copy thesis-referenced PDFs from thesis_outputs/figures (and legacy figures/) into presentation_assets/fig/",
+    )
+    parser.add_argument(
+        "--copy-all-figures",
+        action="store_true",
+        help="With --copy-thesis-figs: copy every derived PDF, not only thesis \\includegraphics references",
+    )
+    parser.add_argument(
+        "--prune-presentation-figs",
+        action="store_true",
+        help="Remove orphan PDFs under presentation_assets/fig/ (thesis + export script allowlist only)",
+    )
+    args = parser.parse_args()
+
     path_fam = None
     # ----- global_summary.tex -----
     rows = []
@@ -169,6 +193,14 @@ def main():
         fig.savefig(FIG_DIR / "hh_by_family.pdf", bbox_inches="tight")
         plt.close()
         print("Wrote", FIG_DIR / "hh_by_family.pdf")
+
+    if args.copy_thesis_figs or args.prune_presentation_figs:
+        copy_notebook_figures(
+            FIG_DIR,
+            copy_all=args.copy_all_figures,
+            prune_orphans=args.prune_presentation_figs,
+            overleaf_bundle=OVERLEAF_BUNDLE,
+        )
 
     print("Done.")
 
