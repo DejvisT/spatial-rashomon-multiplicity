@@ -1,9 +1,8 @@
 .venv/
 .other/
-figures/
 .RData
 .Rhistory
 __pycache__/
-results/
+results/*/seed*
 results_fixed_test/
 papers/
