@@ -156,15 +156,9 @@ Overall, these results demonstrate that the observed spatial clustering of predi
 \subsection{Global vs Per-Family Rashomon Sets}
 \label{sec:results-global-vs-family}
 
-We compare the \textbf{global Rashomon set} (top-$K=25$ across all families; Section~\ref{sec:meth-rashomon}) with \textbf{per-family Rashomon sets} ($K$-each mode: top-$K=25$ within each model family, up to 125 models total). The global set reflects the full near-optimal model class, while the per-family analysis isolates disagreement patterns attributable to individual model families.
+We compare the \textbf{global Rashomon set} (top-$K=25$ across all families; Section~\ref{sec:meth-rashomon}) with \textbf{per-family Rashomon sets} ($K$-each mode: top-$K=25$ within each model family, up to 125 models total). The global set pools near-optimal models across families; the per-family construction isolates disagreement within each model class.
 
-Tables~\ref{tab:global_summary} and~\ref{tab:family_summary} summarize the corresponding multiplicity and spatial metrics.
-
-Across datasets, the per-family analysis reveals substantial heterogeneity in how different model families contribute to predictive multiplicity. On COMPAS, neural networks (MLP) exhibit the strongest spatial clustering (Moran's $I = 0.42 \pm 0.05$) and the largest number of HH hotspots ($207.3 \pm 40.8$), indicating highly structured disagreement. In contrast, logistic regression produces minimal variance and weak spatial structure, reflecting more stable predictions across its Rashomon set. kNN displays the highest overall variance ($0.011 \pm 0.001$) but relatively low Moran's $I$, suggesting that its disagreement is dispersed rather than spatially concentrated.
-
-A similar pattern holds for German Credit, where MLP again exhibits the strongest clustering, while linear and tree-based models show comparatively weak spatial structure. On Breast Cancer, all model families display low levels of multiplicity, consistent with the overall simplicity of the dataset, though small differences between families remain visible.
-
-A key observation is that per-family HH counts often exceed those of the global Rashomon set, particularly on COMPAS. This indicates that aggregating models across families can obscure family-specific disagreement patterns: when multiple model classes are combined, their distinct spatial patterns partially cancel out, leading to weaker observed clustering.
+Tables~\ref{tab:global_summary} and~\ref{tab:family_summary} report mean variance, Moran's $I$, mean HH counts, and the fraction of runs with significant Moran's $I$. Table~\ref{tab:global_summary} lists these quantities for the global set on German Credit, Adult, and COMPAS. Table~\ref{tab:family_summary} gives the per-family breakdown for COMPAS (aggregated over outer seeds).
 
 \begin{table}[htbp]
 \centering
@@ -175,21 +169,36 @@ A key observation is that per-family HH counts often exceed those of the global 
 
 \begin{table}[htbp]
 \centering
-\caption{Per-family Rashomon sets (top-25 per family): multiplicity and spatial metrics by model family (mean $\pm$ std over runs).}
+\caption{Per-family Rashomon sets (top-25 per family; COMPAS): multiplicity and spatial metrics by model family (mean $\pm$ std over runs).}
 \label{tab:family_summary}
 \input{presentation_assets/tab/family_summary.tex}
 \end{table}
 
-Figure~\ref{fig:hh_by_family} visualizes these differences for COMPAS, comparing the global HH count to per-family values. The substantially higher counts for individual families, especially MLP, highlight that multiplicity is not uniform across model classes but driven by specific families that produce structured disagreement patterns.
-
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.85\textwidth]{family_vs_global_spatial_compas.pdf}
-\caption{HH hotspot count: global (dashed line) vs.\ per-family Rashomon sets (bars, mean $\pm$ std over runs). Per-family counts reveal family-specific disagreement patterns, with MLP consistently showing the strongest spatial clustering on COMPAS.}
+{\small\textbf{(a)} COMPAS}\\[-0.2em]
+\includegraphics[width=0.92\textwidth]{family_vs_global_spatial_compas.pdf}\\[0.55em]
+{\small\textbf{(b)} German Credit}\\[-0.2em]
+\includegraphics[width=0.92\textwidth]{family_vs_global_spatial_german.pdf}\\[0.55em]
+{\small\textbf{(c)} Adult}\\[-0.2em]
+\includegraphics[width=0.92\textwidth]{family_vs_global_spatial_adult.pdf}
+\caption{Per-family vs.\ global Rashomon sets (mean $\pm$ std over runs). Each row: mean HH count (left) and Moran's $I$ (right) for top-$K{=}25$ models within each family (bars), with the global top-$K{=}25$ mean as a horizontal dashed line. \textbf{(a)}~COMPAS---Table~\ref{tab:family_summary} gives the corresponding numerical values. \textbf{(b)}~German Credit---same layout with much smaller absolute HH counts (Table~\ref{tab:global_summary}). \textbf{(c)}~Adult---wide spread across families; MLP and RF attain the largest Moran's $I$ and HH counts among families, while logistic regression is comparatively low on both panels.}
 \label{fig:hh_by_family}
 \end{figure}
 
-Overall, these results show that predictive multiplicity is not only dataset-dependent but also strongly model-dependent. Different model families induce distinct spatial patterns of disagreement, and aggregating them into a single Rashomon set can mask these structures. This motivates the variance decomposition analysis in the following section.
+\paragraph{COMPAS (main case study).}
+On COMPAS, Table~\ref{tab:family_summary} shows clear heterogeneity across families. MLP attains the strongest spatial clustering (Moran's $I = 0.422 \pm 0.049$) and the largest mean HH count ($208.5 \pm 39.8$), in each case well above the global-set averages in Table~\ref{tab:global_summary} ($0.199 \pm 0.077$ and $86.7$). kNN carries the highest mean variance ($0.0107 \pm 0.0014$) but the lowest Moran's $I$ among families ($0.090 \pm 0.027$), which is consistent with large disagreement that is not strongly concentrated in feature space. Logistic regression has the smallest mean variance ($0.00006 \pm 0.00013$) and, on average, fewer HH points than MLP ($57.7 \pm 77.4$ vs.\ $208.5 \pm 39.8$), though its Moran's $I$ estimate is more variable across seeds ($0.172 \pm 0.198$). Random forest and GBM fall between these extremes on Moran's $I$ and HH counts.
+
+Figure~\ref{fig:hh_by_family}(a) mirrors Table~\ref{tab:family_summary}: several families lie above the global dashed line in one or both panels, with MLP the most pronounced example for HH count and Moran's $I$. Thus pooling into a single global Rashomon set can \emph{understate} the hotspot intensity and clustering visible within a single high-multiplicity family.
+
+\paragraph{German Credit and Adult (supporting comparisons).}
+Table~\ref{tab:global_summary} already separates the datasets in scale: global mean HH counts are very small on German Credit ($2.7$) compared with COMPAS ($86.7$) and Adult ($286.1$), while global Moran's $I$ is largest on COMPAS.
+
+For German Credit, Figure~\ref{fig:hh_by_family}(b) uses the same bar-vs.-dashed layout as COMPAS. The relative ordering of families still varies across the two panels, so one cannot reduce multiplicity to a single family-independent spatial summary; however, the absolute magnitudes are modest, in line with the tiny global HH totals. Any parallel to COMPAS is therefore qualitative and scale-dependent, not a claim of identical effect sizes.
+
+For Adult, Figure~\ref{fig:hh_by_family}(c) shows a wide spread across families on both panels. MLP and random forest stand out with the strongest Moran's $I$ and HH counts among families, whereas logistic regression sits toward the lower end of both metrics. The ordering and gaps are not a carbon copy of COMPAS---for instance, kNN is not the highest-variance family on Adult in the same way Table~\ref{tab:family_summary} highlights for COMPAS---but the figure supports the same substantive point: predictive multiplicity remains \emph{model-dependent}, and a globally pooled set compresses family-level structure.
+
+Taken together, the three panels reinforce two conclusions. First, which families drive structured disagreement is not fixed across datasets. Second, aggregating across families can mask pronounced per-family spatial signals (most visibly for COMPAS and Adult, where per-family bars often exceed the global reference in at least one panel). This motivates the variance decomposition analysis in the following section.
 
 %% ---------------------------------------------------------------------------
 \subsection{Spatial Patterns and Hotspot Structure}
