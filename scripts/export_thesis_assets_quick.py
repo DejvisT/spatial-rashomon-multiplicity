@@ -63,12 +63,31 @@ def main():
         print("Wrote", TAB_DIR / "global_summary.tex")
 
     # ----- family_summary.tex -----
+    agg_fam = RESULTS_DIR / "compas" / "per_family_spatial_aggregated.csv"
     path_fam = resolve_csv("family_hv_hh_summary_compas.csv", "nb06")
-    if path_fam is not None:
+    if agg_fam.is_file():
+        df = pd.read_csv(agg_fam)
+        out = []
+        out.append(r"% Per-family COMPAS; mean $\pm$ std over outer seeds (experiment runner).")
+        out.append(r"\begin{tabular}{lcccc}")
+        out.append(r"\hline")
+        out.append(r"Family & Mean variance (mean $\pm$ std) & Moran's $I$ (mean $\pm$ std) & Mean HH count (mean $\pm$ std) & Frac.\ sig. \\")
+        out.append(r"\hline")
+        for _, r in df.iterrows():
+            mv = f"{r['mean_variance_mean']:.6f} $\\pm$ {r['mean_variance_std']:.6f}"
+            mi = f"{r['moran_i_mean']:.3f} $\\pm$ {r['moran_i_std']:.3f}"
+            hh = f"{r['n_hh_mean']:.1f} $\\pm$ {r['n_hh_std']:.1f}"
+            fs = f"{float(r['frac_significant_moran']):.2f}"
+            out.append(f"{r['family']} & {mv} & {mi} & {hh} & {fs} \\\\")
+        out.append(r"\hline")
+        out.append(r"\end{tabular}")
+        (TAB_DIR / "family_summary.tex").write_text("\n".join(out), encoding="utf-8")
+        print("Wrote", TAB_DIR / "family_summary.tex")
+    elif path_fam is not None:
         df = pd.read_csv(path_fam)
         df["frac_sig"] = (df["moran_p"] < 0.05).astype(int)
         out = []
-        out.append(r"% Per-family (top-K=25 per family). Compas, single run.")
+        out.append(r"% Per-family (top-K=25 per family). Legacy single-run CSV.")
         out.append(r"\begin{tabular}{lcccc}")
         out.append(r"\hline")
         out.append(r"Family & Mean variance (mean $\pm$ std) & Moran's $I$ (mean $\pm$ std) & Mean HH count (mean $\pm$ std) & Frac.\ sig. \\")
@@ -124,7 +143,21 @@ def main():
         print("Wrote", FIG_DIR / "spatial_patterns_per_run.pdf")
 
     # ----- hh_by_family.pdf -----
-    if path_fam is not None:
+    if agg_fam.is_file():
+        df = pd.read_csv(agg_fam)
+        fig, ax = plt.subplots(figsize=(6, 4))
+        x = np.arange(len(df))
+        ax.bar(x, df["n_hh_mean"], yerr=df["n_hh_std"], capsize=3, color="steelblue", edgecolor="white")
+        ax.set_xticks(x)
+        ax.set_xticklabels(df["family"].values, rotation=45, ha="right")
+        ax.set_ylabel("HH count")
+        ax.set_xlabel("Model family")
+        ax.set_title("HH count by family (Compas, per-family top-25, mean ± std)")
+        plt.tight_layout()
+        fig.savefig(FIG_DIR / "hh_by_family.pdf", bbox_inches="tight")
+        plt.close()
+        print("Wrote", FIG_DIR / "hh_by_family.pdf")
+    elif path_fam is not None:
         df = pd.read_csv(path_fam)
         fig, ax = plt.subplots(figsize=(6, 4))
         ax.bar(df["family"], df["hh_count"], color="steelblue", edgecolor="white")

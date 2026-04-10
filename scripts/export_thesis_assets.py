@@ -10,7 +10,12 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
-from thesis_layout import iter_derived_figure_pdfs, resolve_csv  # noqa: E402
+from thesis_layout import (  # noqa: E402
+    LEGACY_TABLES,
+    THESIS_TABLES_ROOT,
+    iter_derived_figure_pdfs,
+    resolve_csv,
+)
 
 import numpy as np
 import pandas as pd
@@ -106,27 +111,42 @@ def write_global_summary_tex():
 
 
 def write_family_summary_tex():
-    """Per-family (top-25 per family): from family_hv_hh_summary_*.csv if available (single run)."""
-    path = resolve_csv("family_hv_hh_summary_compas.csv", "nb06")
-    if path is None:
-        print("Missing family_hv_hh_summary_compas.csv. Skipping family_summary.tex")
-        return
-    df = pd.read_csv(path)
-    # One run: no std; report single values. Frac sig from moran_p < 0.05.
-    df["frac_sig"] = (df["moran_p"] < 0.05).astype(int)
+    """Per-family (top-25 per family): prefer aggregated CSV over seeds; else legacy single-run CSV."""
+    agg_path = RESULTS_DIR / "compas" / "per_family_spatial_aggregated.csv"
     out = []
-    out.append(r"% Per-family Rashomon (top-K=25 per family). Compas, single run; fill mean$\pm$std when multi-run available.")
+    out.append(r"% Per-family Rashomon (top-K=25 per family), COMPAS. Mean $\pm$ std over outer seeds from experiment runner.")
     out.append(r"\begin{tabular}{lcccc}")
     out.append(r"\hline")
     out.append(r"Family & Mean variance (mean $\pm$ std) & Moran's $I$ (mean $\pm$ std) & Mean HH count (mean $\pm$ std) & Frac.\ sig. \\")
     out.append(r"\hline")
-    for _, r in df.iterrows():
-        fam = r["family"]
-        mv = f"{r['mean_var']:.6f}"
-        mi = f"{r['moran_I']:.3f}"
-        hh = str(int(r["hh_count"]))
-        fs = "1.00" if r["frac_sig"] else "0.00"
-        out.append(f"{fam} & {mv} & {mi} & {hh} & {fs} \\\\")
+
+    if agg_path.is_file():
+        df = pd.read_csv(agg_path)
+        for _, r in df.iterrows():
+            fam = r["family"]
+            mv = f"{r['mean_variance_mean']:.6f} $\\pm$ {r['mean_variance_std']:.6f}"
+            mi = f"{r['moran_i_mean']:.3f} $\\pm$ {r['moran_i_std']:.3f}"
+            hh = f"{r['n_hh_mean']:.1f} $\\pm$ {r['n_hh_std']:.1f}"
+            fs = f"{float(r['frac_significant_moran']):.2f}"
+            out.append(f"{fam} & {mv} & {mi} & {hh} & {fs} \\\\")
+    else:
+        path = resolve_csv("family_hv_hh_summary_compas.csv", "nb06")
+        if path is None:
+            print("Missing per_family_spatial_aggregated.csv and family_hv_hh_summary_compas.csv. Skipping family_summary.tex")
+            return
+        df = pd.read_csv(path)
+        df["frac_sig"] = (df["moran_p"] < 0.05).astype(int)
+        out[0] = (
+            r"% Per-family Rashomon (top-K=25 per family). Legacy single-run CSV; re-run notebook 01 to get mean$\pm$std."
+        )
+        for _, r in df.iterrows():
+            fam = r["family"]
+            mv = f"{r['mean_var']:.6f}"
+            mi = f"{r['moran_I']:.3f}"
+            hh = str(int(r["hh_count"]))
+            fs = "1.00" if r["frac_sig"] else "0.00"
+            out.append(f"{fam} & {mv} & {mi} & {hh} & {fs} \\\\")
+
     out.append(r"\hline")
     out.append(r"\end{tabular}")
     (TAB_DIR / "family_summary.tex").write_text("\n".join(out), encoding="utf-8")
@@ -236,18 +256,28 @@ def write_spatial_patterns_figure():
 
 
 def write_hh_by_family_figure():
-    """HH count by family (Compas per-family run) -> hh_by_family.pdf."""
-    path = resolve_csv("family_hv_hh_summary_compas.csv", "nb06")
-    if path is None:
-        print("Missing family_hv_hh_summary_compas.csv. Skipping hh_by_family.pdf")
-        return
-    df = pd.read_csv(path)
-    fig, ax = plt.subplots(figsize=(6, 4))
-    ax.bar(df["family"], df["hh_count"], color="steelblue", edgecolor="white")
+    """HH count by family (COMPAS, per-family top-K) -> hh_by_family.pdf."""
+    agg_path = RESULTS_DIR / "compas" / "per_family_spatial_aggregated.csv"
+    if agg_path.is_file():
+        df = pd.read_csv(agg_path)
+        yerr = df["n_hh_std"].values if "n_hh_std" in df.columns else None
+        fig, ax = plt.subplots(figsize=(6, 4))
+        x = np.arange(len(df))
+        ax.bar(x, df["n_hh_mean"], yerr=yerr, capsize=3, color="steelblue", edgecolor="white")
+        ax.set_xticks(x)
+        ax.set_xticklabels(df["family"].values, rotation=45, ha="right")
+    else:
+        path = resolve_csv("family_hv_hh_summary_compas.csv", "nb06")
+        if path is None:
+            print("Missing per_family_spatial_aggregated.csv and family_hv_hh_summary_compas.csv. Skipping hh_by_family.pdf")
+            return
+        df = pd.read_csv(path)
+        fig, ax = plt.subplots(figsize=(6, 4))
+        ax.bar(df["family"], df["hh_count"], color="steelblue", edgecolor="white")
+        plt.xticks(rotation=45, ha="right")
     ax.set_ylabel("HH count")
     ax.set_xlabel("Model family")
-    ax.set_title("HH count by family (Compas, per-family top-25)")
-    plt.xticks(rotation=45, ha="right")
+    ax.set_title("HH count by family (Compas, per-family top-25, mean ± std over runs)")
     plt.tight_layout()
     fig.savefig(FIG_DIR / "hh_by_family.pdf", bbox_inches="tight")
     plt.close()
@@ -454,6 +484,48 @@ def run_sensitivity_kNN_and_save_figure():
         print("Wrote", FIG_DIR / out_name)
 
 
+def write_hh_component_summary_tex():
+    """
+    HH connected-component summary (notebook 03, min component size 5).
+    Reads thesis_outputs/tables/nb03/hh_component_summary_<dataset>.csv (fallback: tables/).
+    """
+    out = []
+    out.append(
+        r"% Auto-generated from notebook 03 CSVs: hh_component_summary_{compas,german,adult}.csv"
+    )
+    out.append(r"\begin{tabular}{lcccc}")
+    out.append(r"\hline")
+    out.append(
+        r"Dataset & Mean $n$ components & Mean max comp.\ size & Median max comp.\ size & Max (over runs) \\"
+    )
+    out.append(r"\hline")
+    for ds in ("compas", "german", "adult"):
+        label = ds.replace("_", " ").title()
+        name = f"hh_component_summary_{ds}.csv"
+        path = THESIS_TABLES_ROOT / "nb03" / name
+        if not path.is_file():
+            path = LEGACY_TABLES / name
+        if not path.is_file():
+            print(f"Missing {name}; using --- row for {label}")
+            out.append(f"{label} & --- & --- & --- & --- \\\\")
+            continue
+        df = pd.read_csv(path)
+        if df.empty or "n_components" not in df.columns or "max_component_size" not in df.columns:
+            out.append(f"{label} & --- & --- & --- & --- \\\\")
+            continue
+        mn_c = float(df["n_components"].mean())
+        mn_mx = float(df["max_component_size"].mean())
+        med_mx = float(df["max_component_size"].median())
+        max_mx = int(df["max_component_size"].max())
+        out.append(
+            f"{label} & {mn_c:.2f} & {mn_mx:.2f} & {int(med_mx)} & {max_mx} \\\\"
+        )
+    out.append(r"\hline")
+    out.append(r"\end{tabular}")
+    (TAB_DIR / "hh_component_summary.tex").write_text("\n".join(out), encoding="utf-8")
+    print("Wrote", TAB_DIR / "hh_component_summary.tex")
+
+
 def copy_notebook_figures():
     """Copy figures from thesis_outputs/figures/nb* and legacy figures/ into the Overleaf fig directory."""
     import shutil
@@ -476,6 +548,7 @@ def main():
     write_global_summary_tex()
     write_family_summary_tex()
     write_null_significance_tex()
+    write_hh_component_summary_tex()
     write_dataset_comparison_bars_figure()
     write_hh_moran_per_run_compas()
     write_spatial_patterns_figure()

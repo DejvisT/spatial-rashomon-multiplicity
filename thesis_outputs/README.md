@@ -9,7 +9,7 @@ Training and experiment-runner artifacts live under `results/` (gitignored by de
 | Content | Path pattern |
 |--------|----------------|
 | Saved predictions, meta, splits | `results/<dataset>/seed=<n>/` (`P_test.npy`, `meta.csv`, `split.npz`, …) |
-| Per-run analysis after the runner | `results/<dataset>/summary_per_run.csv`, `results/<dataset>/seed=<n>/per_point/` |
+| Per-run analysis after the runner | `results/<dataset>/summary_per_run.csv`, `results/<dataset>/seed=<n>/per_point/` (`quadrant_summary.csv` per seed), `results/<dataset>/quadrant_breakdown_aggregated.csv` (mean ± std over seeds for Table 3–style quadrants), `quadrant_thresholds_per_run.csv`, `per_family_spatial_per_run.csv`, `per_family_spatial_aggregated.csv` (per-family Rashomon mean ± std; thesis Table 6 uses COMPAS) |
 | Optional fixed-test replication | `results_fixed_test/<dataset>/seed=<n>/` (see notebook 03) |
 | Optional bootstrap / alternate training | `results_fixed/` (see notebook 10) |
 

@@ -8,6 +8,7 @@ observations.
 
 Usage:
   python run_training_pipeline_fixed_test.py --dataset compas
+  python run_training_pipeline_fixed_test.py --dataset adult
 """
 import argparse
 import sys
@@ -31,7 +32,12 @@ def parse_args():
     p = argparse.ArgumentParser(
         description="Training pipeline with a fixed test split across outer seeds"
     )
-    p.add_argument("--dataset", type=str, required=True, choices=["compas", "german", "breast_cancer"])
+    p.add_argument(
+        "--dataset",
+        type=str,
+        required=True,
+        choices=["compas", "german", "breast_cancer", "adult"],
+    )
     p.add_argument("--out_dir", type=str, default="results_fixed_test", help="Base output directory")
     p.add_argument("--n_outer", type=int, default=10, help="Number of outer runs (seeds)")
     p.add_argument("--n_candidates", type=int, default=50, help="Candidates per model family per run")

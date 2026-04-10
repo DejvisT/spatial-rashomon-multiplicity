@@ -29,6 +29,7 @@ from analysis.run_analysis import (  # noqa: E402
     run_multiplicity,
     run_spatial,
     run_null,
+    run_spatial_per_family,
     select_rashomon_global,
     pointwise_conflict,
     hard_vote_variance,
@@ -60,6 +61,168 @@ def _get_run_dirs(dataset_dir: PathLike) -> List[Path]:
                 continue
     run_dirs.sort(key=lambda x: x[0])
     return [p for _, p in run_dirs]
+
+
+def _aggregate_quadrant_breakdown(
+    records: List[Dict[str, Any]],
+    *,
+    dataset_name: str,
+) -> Optional[pd.DataFrame]:
+    """
+    Mean ± std of quadrant counts/fractions and within-quadrant means across outer runs.
+    Matches thesis-style Table: variance vs conflict quadrants (default 90th pct thresholds).
+    """
+    rows_long: List[Dict[str, Any]] = []
+    for r in records:
+        qdf = r.get("_quadrant_summary")
+        if qdf is None or getattr(qdf, "empty", True):
+            continue
+        for _, row in qdf.iterrows():
+            d = row.to_dict()
+            d["outer_seed"] = r["outer_seed"]
+            rows_long.append(d)
+    if not rows_long:
+        return None
+    long = pd.DataFrame(rows_long)
+    agg_rows: List[Dict[str, Any]] = []
+    for grp in ["A", "B", "C", "D"]:
+        sub = long[long["quadrant"] == grp]
+        if sub.empty:
+            continue
+
+        def _ms(col: str) -> Tuple[float, float]:
+            v = pd.to_numeric(sub[col], errors="coerce").to_numpy(dtype=float)
+            v = v[np.isfinite(v)]
+            if v.size == 0:
+                return float("nan"), float("nan")
+            m = float(np.nanmean(v))
+            s = float(np.nanstd(v, ddof=1)) if v.size > 1 else 0.0
+            return m, s
+
+        cm, cs = _ms("count")
+        fm, fs = _ms("fraction")
+        vm, vs = _ms("mean_var_p")
+        ccm, ccs = _ms("mean_conflict")
+        out: Dict[str, Any] = {
+            "dataset": dataset_name,
+            "quadrant": grp,
+            "n_runs": int(len(sub)),
+            "count_mean": cm,
+            "count_std": cs,
+            "fraction_mean": fm,
+            "fraction_std": fs,
+            "mean_var_p_mean": vm,
+            "mean_var_p_std": vs,
+            "mean_conflict_mean": ccm,
+            "mean_conflict_std": ccs,
+        }
+        if "error_rate" in sub.columns:
+            em, es = _ms("error_rate")
+            out["error_rate_mean"], out["error_rate_std"] = em, es
+        if "brier" in sub.columns:
+            bm, bs = _ms("brier")
+            out["brier_mean"], out["brier_std"] = bm, bs
+        agg_rows.append(out)
+    if not agg_rows:
+        return None
+    return pd.DataFrame(agg_rows)
+
+
+def _run_per_family_spatial_across_seeds(
+    dataset_dir: Path,
+    dataset_name: str,
+    run_dirs: List[Path],
+    *,
+    K: int,
+    k_nn: int,
+    seed: Optional[int],
+    verbose: bool,
+) -> None:
+    """
+    For each outer seed, run spatial analysis on per-family Rashomon sets (K per family).
+    Writes:
+      - results/<dataset>/per_family_spatial_per_run.csv
+      - results/<dataset>/per_family_spatial_aggregated.csv (mean ± std over seeds per family)
+    """
+    rows: List[Dict[str, Any]] = []
+    for run_dir in run_dirs:
+        config = load_config(run_dir)
+        outer_seed = config.get("outer_seed")
+        if outer_seed is None and run_dir.name.startswith("seed="):
+            try:
+                outer_seed = int(run_dir.name.split("=")[1])
+            except (IndexError, ValueError):
+                outer_seed = None
+        if outer_seed is None:
+            outer_seed = 0
+        X_test = get_transformed_test_features(run_dir, dataset_name)
+        n_cand = len(load_meta(run_dir))
+        k_use = min(K, n_cand)
+        fam_sp = run_spatial_per_family(
+            run_dir,
+            X_test,
+            K=k_use,
+            k=k_nn,
+            seed=seed,
+        )
+        for family, res in fam_sp.items():
+            rows.append(
+                {
+                    "outer_seed": outer_seed,
+                    "family": family,
+                    "mean_variance": res["mean_variance"],
+                    "moran_i": float(res["moran_i"]),
+                    "moran_p_sim": float(res["moran_p_sim"]),
+                    "n_hh": int(res["n_hh"]),
+                    "n_ll": int(res["n_ll"]),
+                    "n_models": int(res["n_models"]),
+                }
+            )
+
+    if not rows:
+        return
+
+    df_run = pd.DataFrame(rows)
+    pr_path = dataset_dir / "per_family_spatial_per_run.csv"
+    df_run.to_csv(pr_path, index=False)
+    if verbose:
+        print(f"  Wrote {pr_path}")
+
+    def _ms(arr: np.ndarray) -> Tuple[float, float]:
+        v = np.asarray(arr, dtype=float)
+        v = v[np.isfinite(v)]
+        if v.size == 0:
+            return float("nan"), float("nan")
+        m = float(np.nanmean(v))
+        s = float(np.nanstd(v, ddof=1)) if v.size > 1 else 0.0
+        return m, s
+
+    agg_rows: List[Dict[str, Any]] = []
+    for family in sorted(df_run["family"].unique()):
+        grp = df_run[df_run["family"] == family]
+        mv_m, mv_s = _ms(grp["mean_variance"].values)
+        mi_m, mi_s = _ms(grp["moran_i"].values)
+        hh_m, hh_s = _ms(grp["n_hh"].astype(float).values)
+        frac_sig = float(np.mean(grp["moran_p_sim"].values < 0.05))
+        agg_rows.append(
+            {
+                "dataset": dataset_name,
+                "family": family,
+                "n_runs": int(len(grp)),
+                "mean_variance_mean": mv_m,
+                "mean_variance_std": mv_s,
+                "moran_i_mean": mi_m,
+                "moran_i_std": mi_s,
+                "n_hh_mean": hh_m,
+                "n_hh_std": hh_s,
+                "frac_significant_moran": frac_sig,
+            }
+        )
+    df_agg = pd.DataFrame(agg_rows)
+    ag_path = dataset_dir / "per_family_spatial_aggregated.csv"
+    df_agg.to_csv(ag_path, index=False)
+    if verbose:
+        print(f"  Wrote {ag_path}")
 
 
 def _run_single(
@@ -192,7 +355,13 @@ def run_dataset_experiment(
     """
     For all runs in dataset_dir: select Rashomon (K=25), compute multiplicity,
     spatial (Moran's I + HH count), and null (empirical p-value). Saves
-    results/{dataset}/summary_per_run.csv with per-run diagnostics. Aggregate
+    results/{dataset}/summary_per_run.csv with per-run diagnostics; per run also
+    results/{dataset}/seed=*/per_point/quadrant_summary.csv (variance vs conflict
+    quadrants, default 90th percentile thresholds). Aggregates quadrants to
+    results/{dataset}/quadrant_breakdown_aggregated.csv and saves per-run
+    thresholds to results/{dataset}/quadrant_thresholds_per_run.csv.
+    Per-family Rashomon (K per family): results/{dataset}/per_family_spatial_per_run.csv
+    and per_family_spatial_aggregated.csv (mean ± std over seeds). Aggregate
     to one row per dataset: mean ± std of mean_variance, mean ± std of Moran's I,
     average number of HH points, fraction of runs with significant Moran.
 
@@ -231,7 +400,7 @@ def run_dataset_experiment(
                 "moran_i_mean", "moran_i_std",
                 "n_hh_mean", "n_ll_mean", "n_ll_std",
                 "conflict_moran_i_mean", "conflict_n_hh_mean",
-                "hh_jaccard_var_conflict_mean",
+                "hh_jaccard_var_conflict_mean", "hh_jaccard_var_conflict_std",
                 "neighborhood_agreement_mean", "neighborhood_agreement_std",
                 "lcae_mean", "lcae_std",
                 "frac_significant_moran",
@@ -319,6 +488,30 @@ def run_dataset_experiment(
         if "_quadrant_summary" in rec:
             rec["_quadrant_summary"].to_csv(pp_dir / "quadrant_summary.csv", index=False)
 
+    thr_df = pd.DataFrame(
+        [
+            {
+                "outer_seed": r["outer_seed"],
+                "quadrant_var_thresh": r.get("quadrant_var_thresh"),
+                "quadrant_conflict_thresh": r.get("quadrant_conflict_thresh"),
+            }
+            for r in records
+        ]
+    )
+    thr_path = dataset_dir / "quadrant_thresholds_per_run.csv"
+    thr_df.to_csv(thr_path, index=False)
+    if verbose:
+        print(f"  Wrote {thr_path}")
+
+    q_agg = _aggregate_quadrant_breakdown(records, dataset_name=name)
+    if q_agg is not None and not q_agg.empty:
+        q_agg["var_quantile"] = 0.9
+        q_agg["conflict_quantile"] = 0.9
+        q_path = dataset_dir / "quadrant_breakdown_aggregated.csv"
+        q_agg.to_csv(q_path, index=False)
+        if verbose:
+            print(f"  Wrote {q_path}")
+
     mean_var = np.array([r["mean_variance"] for r in records])
     ambiguity_arr = np.array([r["ambiguity"] for r in records])
     disagree_arr = np.array([r["disagreement_rate"] for r in records])
@@ -346,6 +539,8 @@ def run_dataset_experiment(
             float(np.nanstd(arr, ddof=1)) if len(arr) > 1 else 0.0,
         )
 
+    hh_jaccard_mean, hh_jaccard_std = _mean_std(hh_jaccard_vc)
+
     row = {
         "dataset": name,
         "n_runs": len(records),
@@ -368,7 +563,8 @@ def run_dataset_experiment(
         "n_ll_std": _mean_std(n_ll)[1],
         "conflict_moran_i_mean": _mean_std(conflict_moran)[0],
         "conflict_n_hh_mean": float(np.nanmean(conflict_n_hh)),
-        "hh_jaccard_var_conflict_mean": _mean_std(hh_jaccard_vc)[0],
+        "hh_jaccard_var_conflict_mean": hh_jaccard_mean,
+        "hh_jaccard_var_conflict_std": hh_jaccard_std,
         "neighborhood_agreement_mean": _mean_std(na)[0],
         "neighborhood_agreement_std": _mean_std(na)[1],
         "lcae_mean": _mean_std(lcae)[0],
@@ -388,6 +584,16 @@ def run_dataset_experiment(
         row["brier_mean_mean"], row["brier_mean_std"] = _mean_std(brier_mean)
         row["acc_ensemble_mean"] = float(np.mean(acc_ens))
         row["brier_ensemble_mean"] = float(np.mean(brier_ens))
+
+    _run_per_family_spatial_across_seeds(
+        dataset_dir,
+        name,
+        run_dirs,
+        K=K,
+        k_nn=k_resolved,
+        seed=seed,
+        verbose=verbose,
+    )
 
     return pd.DataFrame([row])
 
