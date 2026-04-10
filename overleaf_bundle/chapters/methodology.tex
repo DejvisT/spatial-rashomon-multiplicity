@@ -58,6 +58,8 @@ A $k$-nearest-neighbor (kNN) graph is constructed using (preprocessed) feature v
 \]
 Each row sums to one, so the spatial lag of a variable $\mathbf{v}$ at observation $i$ is the weighted average of its neighbors' values: $[W\mathbf{v}]_i = \sum_j W_{ij} v_j$. This lag enters both global Moran's $I$ and the local LISA statistics.
 
+The neighborhood size $k$ is treated as a dataset-specific parameter and is chosen to ensure graph connectivity and meaningful local structure.
+
 \paragraph{Global Moran's $I$.}
 \label{sec:meth-moran}
 Global Moran's $I$ tests whether predictive variance is spatially structured: do observations with similar variance tend to be neighbors? Let $\mathbf{v} = (v_1, \dots, v_N)^\top$ and $\bar{v}$ its mean. Moran's $I$ is

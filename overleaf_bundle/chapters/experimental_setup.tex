@@ -72,7 +72,9 @@ For each run, all models in the Rashomon set are applied to the held-out test se
 \subsection{Spatial Analysis Parameters}
 \label{sec:exp-knn-graph}
 
-The kNN graph (Section~\ref{sec:meth-graph}) is built from preprocessed test-set feature vectors. The default neighborhood size is $k = 30$; sensitivity is examined with $k \in \{10, 20, 30, 50\}$. Distances are Euclidean; the adjacency matrix is row-standardized. Global Moran's $I$ significance is assessed with 999 permutations. Local Moran (LISA) uses 999 permutations per observation; the Benjamini--Hochberg procedure is applied at $\alpha = 0.05$ to control the false discovery rate when labeling HH and LL clusters. Connected components of HH observations are extracted from the restricted kNN graph; a minimum component size may be applied to filter small clusters.
+The kNN graph (Section~\ref{sec:meth-graph}) is built from preprocessed test-set feature vectors. Rather than using a single fixed neighborhood size across all datasets, we select dataset-specific values of $k$ to ensure that the resulting graph is sufficiently connected and captures meaningful local structure. In particular, we use $k = 30$ for COMPAS and German Credit, and a larger value of $k = 60$ for Adult, where smaller values lead to disconnected components in the kNN graph. This choice ensures that spatial statistics are computed on a well-defined neighborhood structure rather than being affected by graph fragmentation.
+
+Distances are Euclidean; the adjacency matrix is row-standardized. Global Moran's $I$ significance is assessed with 999 permutations. Local Moran (LISA) uses 999 permutations per observation; the Benjamini--Hochberg procedure is applied at $\alpha = 0.05$ to control the false discovery rate when labeling HH and LL clusters. Connected components of HH observations are extracted from the restricted kNN graph; a minimum component size may be applied to filter small clusters.
 
 \subsection{Null Experiment Configuration}
 \label{sec:exp-null}
