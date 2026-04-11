@@ -83,14 +83,17 @@ def write_dataset_summary_tex():
         print("No dataset summary (missing summary_per_run.csv). Skipping dataset_summary.tex")
         return
     out = []
-    out.append(r"\begin{tabular}{lccccc}")
+    out.append(r"\begin{tabular}{lccc}")
     out.append(r"\hline")
-    out.append(r"Dataset & $n$ runs & Mean variance (mean $\pm$ std) & Moran's $I$ (mean $\pm$ std) & Mean HH count & Frac.\ sig. \\")
+    out.append(r"Dataset & Mean variance (mean $\pm$ std) & Moran's $I$ (mean $\pm$ std) & HH count (mean $\pm$ std) \\")
     out.append(r"\hline")
     for _, r in df.iterrows():
         mv = f"{r['mean_variance_mean']:.4f} $\\pm$ {r['mean_variance_std']:.4f}"
         mi = f"{r['moran_i_mean']:.3f} $\\pm$ {r['moran_i_std']:.3f}"
-        out.append(f"{r['dataset']} & {int(r['n_runs'])} & {mv} & {mi} & {r['n_hh_mean']:.1f} & {r['frac_significant']:.2f} \\\\")
+        hh = f"{r['n_hh_mean']:.1f} $\\pm$ {r['n_hh_std']:.1f}"
+        out.append(
+            f"{r['dataset']} & {mv} & {mi} & {hh} \\\\"
+        )
     out.append(r"\hline")
     out.append(r"\end{tabular}")
     (TAB_DIR / "dataset_summary.tex").write_text("\n".join(out), encoding="utf-8")

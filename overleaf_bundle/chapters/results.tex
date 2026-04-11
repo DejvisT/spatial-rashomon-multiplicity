@@ -153,56 +153,7 @@ Overall, these results demonstrate that the observed spatial clustering of predi
 \end{figure}
 
 %% ---------------------------------------------------------------------------
-\subsection{Global vs Per-Family Rashomon Sets}
-\label{sec:results-global-vs-family}
-
-We compare the \textbf{global Rashomon set} (top-$K=25$ across all families; Section~\ref{sec:meth-rashomon}) with \textbf{per-family Rashomon sets} ($K$-each mode: top-$K=25$ within each model family, up to 125 models total). The global set pools near-optimal models across families; the per-family construction isolates disagreement within each model class.
-
-Tables~\ref{tab:global_summary} and~\ref{tab:family_summary} report mean variance, Moran's $I$, mean HH counts, and the fraction of runs with significant Moran's $I$. Table~\ref{tab:global_summary} lists these quantities for the global set on German Credit, Adult, and COMPAS. Table~\ref{tab:family_summary} gives the per-family breakdown for COMPAS (aggregated over outer seeds).
-
-\begin{table}[htbp]
-\centering
-\caption{Global Rashomon set (top-25 overall): multiplicity and spatial metrics by dataset (mean $\pm$ std over runs).}
-\label{tab:global_summary}
-\input{presentation_assets/tab/global_summary.tex}
-\end{table}
-
-\begin{table}[htbp]
-\centering
-\caption{Per-family Rashomon sets (top-25 per family; COMPAS): multiplicity and spatial metrics by model family (mean $\pm$ std over runs).}
-\label{tab:family_summary}
-\input{presentation_assets/tab/family_summary.tex}
-\end{table}
-
-\begin{figure}[htbp]
-\centering
-{\small\textbf{(a)} COMPAS}\\[-0.2em]
-\includegraphics[width=0.92\textwidth]{family_vs_global_spatial_compas.pdf}\\[0.55em]
-{\small\textbf{(b)} German Credit}\\[-0.2em]
-\includegraphics[width=0.92\textwidth]{family_vs_global_spatial_german.pdf}\\[0.55em]
-{\small\textbf{(c)} Adult}\\[-0.2em]
-\includegraphics[width=0.92\textwidth]{family_vs_global_spatial_adult.pdf}
-\caption{Per-family vs.\ global Rashomon sets (mean $\pm$ std over runs). Each row: mean HH count (left) and Moran's $I$ (right) for top-$K{=}25$ models within each family (bars), with the global top-$K{=}25$ mean as a horizontal dashed line. \textbf{(a)}~COMPAS---Table~\ref{tab:family_summary} gives the corresponding numerical values. \textbf{(b)}~German Credit---same layout with much smaller absolute HH counts (Table~\ref{tab:global_summary}). \textbf{(c)}~Adult---wide spread across families; MLP and RF attain the largest Moran's $I$ and HH counts among families, while logistic regression is comparatively low on both panels.}
-\label{fig:hh_by_family}
-\end{figure}
-
-\paragraph{COMPAS (main case study).}
-On COMPAS, Table~\ref{tab:family_summary} shows clear heterogeneity across families. MLP attains the strongest spatial clustering (Moran's $I = 0.422 \pm 0.049$) and the largest mean HH count ($208.5 \pm 39.8$), in each case well above the global-set averages in Table~\ref{tab:global_summary} ($0.199 \pm 0.077$ and $86.7$). kNN carries the highest mean variance ($0.0107 \pm 0.0014$) but the lowest Moran's $I$ among families ($0.090 \pm 0.027$), which is consistent with large disagreement that is not strongly concentrated in feature space. Logistic regression has the smallest mean variance ($0.00006 \pm 0.00013$) and, on average, fewer HH points than MLP ($57.7 \pm 77.4$ vs.\ $208.5 \pm 39.8$), though its Moran's $I$ estimate is more variable across seeds ($0.172 \pm 0.198$). Random forest and GBM fall between these extremes on Moran's $I$ and HH counts.
-
-Figure~\ref{fig:hh_by_family}(a) mirrors Table~\ref{tab:family_summary}: several families lie above the global dashed line in one or both panels, with MLP the most pronounced example for HH count and Moran's $I$. Thus pooling into a single global Rashomon set can \emph{understate} the hotspot intensity and clustering visible within a single high-multiplicity family.
-
-\paragraph{German Credit and Adult (supporting comparisons).}
-Table~\ref{tab:global_summary} already separates the datasets in scale: global mean HH counts are very small on German Credit ($2.7$) compared with COMPAS ($86.7$) and Adult ($286.1$), while global Moran's $I$ is largest on COMPAS.
-
-For German Credit, Figure~\ref{fig:hh_by_family}(b) uses the same bar-vs.-dashed layout as COMPAS. The relative ordering of families varies across the two metrics, so multiplicity cannot be reduced to a single family-independent spatial summary; however, the absolute magnitudes are modest, in line with the tiny global HH totals. Any parallel to COMPAS is therefore qualitative and scale-dependent, not a claim of identical effect sizes.
-
-For Adult, Figure~\ref{fig:hh_by_family}(c) shows a wide spread across families on both panels. MLP and random forest stand out with the strongest Moran's $I$ and HH counts among families, whereas logistic regression sits toward the lower end of both metrics. The ordering and gaps are not a carbon copy of COMPAS; in particular, the families that stand out most strongly on Adult differ from those emphasized by the COMPAS per-family summary. Nonetheless, the figure supports the same substantive point: predictive multiplicity remains \emph{model-dependent}, and a globally pooled set compresses family-level structure.
-
-Taken together, the three panels reinforce two conclusions. First, which families drive structured disagreement is not fixed across datasets. Second, aggregating across families can mask pronounced per-family spatial signals (most visibly for COMPAS and Adult, where per-family bars often exceed the global reference in at least one panel). This motivates the variance decomposition analysis in the following section.
-
-
-%% ---------------------------------------------------------------------------
-\subsection{Spatial Patterns and Hotspot Structure}
+\subsection{Spatial Structure and Stability of Hotspots}
 \label{sec:results-spatial}
 
 This section examines the spatial organization of predictive multiplicity on COMPAS, focusing on the location, stability, and internal structure of HH hotspots. While previous sections establish the existence of spatial clustering, we now analyze how this structure manifests in feature space.
@@ -285,6 +236,55 @@ Figure~\ref{fig:spatial_per_run} shows per-run variability in Moran's $I$ and HH
 \label{fig:spatial_per_run}
 \end{figure}
 
+
+%% ---------------------------------------------------------------------------
+\subsection{Global vs Per-Family Rashomon Sets}
+\label{sec:results-global-vs-family}
+
+We compare the \textbf{global Rashomon set} (top-$K=25$ across all families; Section~\ref{sec:meth-rashomon}) with \textbf{per-family Rashomon sets} ($K$-each mode: top-$K=25$ within each model family, up to 125 models total). The global set pools near-optimal models across families; the per-family construction isolates disagreement within each model class.
+
+Tables~\ref{tab:global_summary} and~\ref{tab:family_summary} report mean variance, Moran's $I$, mean HH counts, and the fraction of runs with significant Moran's $I$. Table~\ref{tab:global_summary} lists these quantities for the global set on German Credit, Adult, and COMPAS. Table~\ref{tab:family_summary} gives the per-family breakdown for COMPAS (aggregated over outer seeds).
+
+\begin{table}[htbp]
+\centering
+\caption{Global Rashomon set (top-25 overall): multiplicity and spatial metrics by dataset (mean $\pm$ std over runs).}
+\label{tab:global_summary}
+\input{presentation_assets/tab/global_summary.tex}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Per-family Rashomon sets (top-25 per family; COMPAS): multiplicity and spatial metrics by model family (mean $\pm$ std over runs).}
+\label{tab:family_summary}
+\input{presentation_assets/tab/family_summary.tex}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+{\small\textbf{(a)} COMPAS}\\[-0.2em]
+\includegraphics[width=0.92\textwidth]{family_vs_global_spatial_compas.pdf}\\[0.55em]
+{\small\textbf{(b)} German Credit}\\[-0.2em]
+\includegraphics[width=0.92\textwidth]{family_vs_global_spatial_german.pdf}\\[0.55em]
+{\small\textbf{(c)} Adult}\\[-0.2em]
+\includegraphics[width=0.92\textwidth]{family_vs_global_spatial_adult.pdf}
+\caption{Per-family vs.\ global Rashomon sets (mean $\pm$ std over runs). Each row: mean HH count (left) and Moran's $I$ (right) for top-$K{=}25$ models within each family (bars), with the global top-$K{=}25$ mean as a horizontal dashed line. \textbf{(a)}~COMPAS---Table~\ref{tab:family_summary} gives the corresponding numerical values. \textbf{(b)}~German Credit---same layout with much smaller absolute HH counts (Table~\ref{tab:global_summary}). \textbf{(c)}~Adult---wide spread across families; MLP and RF attain the largest Moran's $I$ and HH counts among families, while logistic regression is comparatively low on both panels.}
+\label{fig:hh_by_family}
+\end{figure}
+
+\paragraph{COMPAS (main case study).}
+On COMPAS, Table~\ref{tab:family_summary} shows clear heterogeneity across families. MLP attains the strongest spatial clustering (Moran's $I = 0.422 \pm 0.049$) and the largest mean HH count ($208.5 \pm 39.8$), in each case well above the global-set averages in Table~\ref{tab:global_summary} ($0.199 \pm 0.077$ and $86.7$). kNN carries the highest mean variance ($0.0107 \pm 0.0014$) but the lowest Moran's $I$ among families ($0.090 \pm 0.027$), which is consistent with large disagreement that is not strongly concentrated in feature space. Logistic regression has the smallest mean variance ($0.00006 \pm 0.00013$) and, on average, fewer HH points than MLP ($57.7 \pm 77.4$ vs.\ $208.5 \pm 39.8$), though its Moran's $I$ estimate is more variable across seeds ($0.172 \pm 0.198$). Random forest and GBM fall between these extremes on Moran's $I$ and HH counts.
+
+Figure~\ref{fig:hh_by_family}(a) mirrors Table~\ref{tab:family_summary}: several families lie above the global dashed line in one or both panels, with MLP the most pronounced example for HH count and Moran's $I$. Thus pooling into a single global Rashomon set can \emph{understate} the hotspot intensity and clustering visible within a single high-multiplicity family.
+
+\paragraph{German Credit and Adult (supporting comparisons).}
+Table~\ref{tab:global_summary} already separates the datasets in scale: global mean HH counts are very small on German Credit ($2.7$) compared with COMPAS ($86.7$) and Adult ($286.1$), while global Moran's $I$ is largest on COMPAS.
+
+For German Credit, Figure~\ref{fig:hh_by_family}(b) uses the same bar-vs.-dashed layout as COMPAS. The relative ordering of families varies across the two metrics, so multiplicity cannot be reduced to a single family-independent spatial summary; however, the absolute magnitudes are modest, in line with the tiny global HH totals. Any parallel to COMPAS is therefore qualitative and scale-dependent, not a claim of identical effect sizes.
+
+For Adult, Figure~\ref{fig:hh_by_family}(c) shows a wide spread across families on both panels. MLP and random forest stand out with the strongest Moran's $I$ and HH counts among families, whereas logistic regression sits toward the lower end of both metrics. The ordering and gaps are not a carbon copy of COMPAS; in particular, the families that stand out most strongly on Adult differ from those emphasized by the COMPAS per-family summary. Nonetheless, the figure supports the same substantive point: predictive multiplicity remains \emph{model-dependent}, and a globally pooled set compresses family-level structure.
+
+Taken together, the three panels reinforce two conclusions. First, which families drive structured disagreement is not fixed across datasets. Second, aggregating across families can mask pronounced per-family spatial signals (most visibly for COMPAS and Adult, where per-family bars often exceed the global reference in at least one panel). This motivates the variance decomposition analysis in the following section.
+
 %% ---------------------------------------------------------------------------
 \subsection{Sensitivity to Rashomon Set Size $K$}
 \label{sec:results-sensitivity-K}
@@ -327,6 +327,26 @@ For moderate neighborhood sizes, the curves begin to flatten, supporting the use
 \caption{Sensitivity to kNN neighborhood size $k$ on COMPAS (mean $\pm$ std over runs). Top row: mean variance, Moran's $I$ (variance), and variance-HH count. Bottom row: Moran's $I$ (conflict) and conflict-HH count. Mean predictive variance remains flat, whereas both variance-based and conflict-based Moran's $I$ decrease with increasing $k$.}
 \label{fig:sensitivity_kNN}
 \end{figure}
+
+%% ---------------------------------------------------------------------------
+\subsection{Calibration Robustness}
+\label{sec:results-calibration}
+
+To assess whether the observed spatial multiplicity is driven by probability miscalibration, we apply Platt scaling as described in Section~\ref{sec:exp-calibration}. A logistic regression model is fitted on validation-set predictions for each model and then applied to test-set predictions. Multiplicity metrics (including both variance and conflict ratio) are recomputed after calibration. Table~\ref{tab:calibration_summary} summarizes the resulting changes.
+
+\begin{table}[htbp]
+\centering
+\caption{Calibration robustness: change in key metrics after Platt scaling (mean $\pm$ std over runs).}
+\label{tab:calibration_summary}
+\input{presentation_assets/tab/calibration_summary.tex}
+\end{table}
+
+Calibration has only a limited effect on spatial multiplicity. On average, Moran's $I$ decreases slightly ($\Delta \approx -0.02$), indicating that a small fraction of spatial structure may be attributable to miscalibration. However, the overall clustering pattern remains clearly present.
+
+The Jaccard overlap between HH masks before and after calibration is moderate ($0.47 \pm 0.14$ on COMPAS, $0.42 \pm 0.37$ on German Credit, and $0.78 \pm 0.37$ on Breast Cancer), showing that hotspot regions shift but do not disappear. Brier score changes are negligible ($< 0.001$ on average), indicating that calibration does not materially affect predictive performance.
+
+Overall, these results demonstrate that spatial multiplicity is predominantly structural. While calibration slightly alters the magnitude and exact location of hotspots, it does not eliminate the underlying spatial patterns, confirming that multiplicity reflects genuine model disagreement rather than artifacts of probability miscalibration.
+
 
 %% ---------------------------------------------------------------------------
 \subsection{Hyperparameter and Family Importance}
@@ -415,24 +435,6 @@ This provides a more fine-grained view of multiplicity: while family choice expl
 \label{fig:variance_by_hp_mlp}
 \end{figure}
 
-%% ---------------------------------------------------------------------------
-\subsection{Calibration Robustness}
-\label{sec:results-calibration}
-
-To assess whether the observed spatial multiplicity is driven by probability miscalibration, we apply Platt scaling as described in Section~\ref{sec:exp-calibration}. A logistic regression model is fitted on validation-set predictions for each model and then applied to test-set predictions. Multiplicity metrics (including both variance and conflict ratio) are recomputed after calibration. Table~\ref{tab:calibration_summary} summarizes the resulting changes.
-
-\begin{table}[htbp]
-\centering
-\caption{Calibration robustness: change in key metrics after Platt scaling (mean $\pm$ std over runs).}
-\label{tab:calibration_summary}
-\input{presentation_assets/tab/calibration_summary.tex}
-\end{table}
-
-Calibration has only a limited effect on spatial multiplicity. On average, Moran's $I$ decreases slightly ($\Delta \approx -0.02$), indicating that a small fraction of spatial structure may be attributable to miscalibration. However, the overall clustering pattern remains clearly present.
-
-The Jaccard overlap between HH masks before and after calibration is moderate ($0.47 \pm 0.14$ on COMPAS, $0.42 \pm 0.37$ on German Credit, and $0.78 \pm 0.37$ on Breast Cancer), showing that hotspot regions shift but do not disappear. Brier score changes are negligible ($< 0.001$ on average), indicating that calibration does not materially affect predictive performance.
-
-Overall, these results demonstrate that spatial multiplicity is predominantly structural. While calibration slightly alters the magnitude and exact location of hotspots, it does not eliminate the underlying spatial patterns, confirming that multiplicity reflects genuine model disagreement rather than artifacts of probability miscalibration.
 
 %% ---------------------------------------------------------------------------
 \subsection{Synthetic Data Validation}
