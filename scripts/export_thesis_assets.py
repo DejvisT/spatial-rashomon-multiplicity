@@ -1,6 +1,7 @@
 """
-Export thesis assets from results: dataset summary table, null significance table,
-and sensitivity figures (K and kNN). Writes into overleaf_bundle/presentation_assets/.
+Export thesis assets from results: dataset summary, null significance, calibration
+summary, HH component summary, and sensitivity figures (K and kNN). Writes into
+overleaf_bundle/presentation_assets/.
 
 Notebook PDFs are copied into presentation_assets/fig/ only if they are referenced
 by \\includegraphics in thesis.tex and overleaf_bundle/chapters/*.tex (use
@@ -538,6 +539,95 @@ def write_hh_component_summary_tex():
     print("Wrote", TAB_DIR / "hh_component_summary.tex")
 
 
+def write_calibration_summary_tex():
+    """
+    Platt scaling: changes after calibration (mean ± std over runs), per dataset.
+
+    Reads ``thesis_outputs/tables/nb07/calibration_summary.csv`` (notebook 07),
+    then legacy ``tables/calibration_summary.csv``. Expects long-format rows with
+    ``method``, ``metric``, ``mean``, ``std``, and ``dataset`` columns; only
+    ``method == platt`` is used to match Section~\\ref{sec:exp-calibration}.
+    """
+    path = resolve_csv("calibration_summary.csv", "nb07")
+    if path is None or not path.is_file():
+        print(
+            "Missing calibration_summary.csv (nb07). "
+            "Writing placeholder calibration_summary.tex"
+        )
+        out = [
+            r"% Placeholder: run notebook 07 and export nb07/calibration_summary.csv, then re-run.",
+            r"\begin{tabular}{lccccc}",
+            r"\hline",
+            r"Dataset & $\Delta$ mean var.\ & $\Delta$ Moran's $I$ & $\Delta$ $n_{\mathrm{HH}}$ "
+            r"& Jaccard HH & $\Delta$ Brier \\",
+            r"\hline",
+        ]
+        for name in SUPPORTED_DATASETS:
+            label = name.replace("_", " ").title()
+            out.append(
+                f"{label} & --- & --- & --- & --- & --- \\\\"
+            )
+        out.extend([r"\hline", r"\end{tabular}"])
+        (TAB_DIR / "calibration_summary.tex").write_text("\n".join(out), encoding="utf-8")
+        print("Wrote", TAB_DIR / "calibration_summary.tex (placeholder)")
+        return
+
+    df = pd.read_csv(path)
+    required = {"method", "metric", "mean", "std"}
+    if df.empty or not required.issubset(df.columns):
+        print("calibration_summary.csv empty or missing columns. Skipping calibration_summary.tex")
+        return
+
+    if "dataset" not in df.columns:
+        print(
+            "calibration_summary.csv has no 'dataset' column (expected combined nb07 export). "
+            "Skipping calibration_summary.tex"
+        )
+        return
+
+    platt = df[df["method"].astype(str).str.lower() == "platt"].copy()
+    metrics_order = [
+        ("delta_mean_variance", 4, 4),
+        ("delta_moran_i", 4, 4),
+        ("delta_n_HH", 1, 1),
+        ("jaccard_HH_before_after", 4, 4),
+        ("brier_improvement", 4, 4),
+    ]
+
+    def cell_for(dataset_key: str, metric: str, dm: int, ds: int) -> str:
+        sub = platt[
+            (platt["dataset"].astype(str).str.lower() == dataset_key)
+            & (platt["metric"] == metric)
+        ]
+        if sub.empty:
+            return "---"
+        mn = float(sub["mean"].iloc[0])
+        st = float(sub["std"].iloc[0])
+        if pd.isna(st):
+            st = 0.0
+        return f"{mn:.{dm}f} $\\pm$ {st:.{ds}f}"
+
+    out = []
+    out.append(
+        r"% Auto-generated from nb07/calibration_summary.csv (Platt scaling rows only)."
+    )
+    out.append(r"\begin{tabular}{lccccc}")
+    out.append(r"\hline")
+    out.append(
+        r"Dataset & $\Delta$ mean var.\ & $\Delta$ Moran's $I$ & $\Delta$ $n_{\mathrm{HH}}$ "
+        r"& Jaccard HH & $\Delta$ Brier \\"
+    )
+    out.append(r"\hline")
+    for name in SUPPORTED_DATASETS:
+        label = name.replace("_", " ").title()
+        cells = [cell_for(name, m, dm, ds) for m, dm, ds in metrics_order]
+        out.append(f"{label} & " + " & ".join(cells) + r" \\")
+    out.append(r"\hline")
+    out.append(r"\end{tabular}")
+    (TAB_DIR / "calibration_summary.tex").write_text("\n".join(out), encoding="utf-8")
+    print("Wrote", TAB_DIR / "calibration_summary.tex")
+
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Export thesis assets")
@@ -559,6 +649,7 @@ def main():
     write_family_summary_tex()
     write_null_significance_tex()
     write_hh_component_summary_tex()
+    write_calibration_summary_tex()
     write_dataset_comparison_bars_figure()
     write_hh_moran_per_run_compas()
     write_spatial_patterns_figure()
