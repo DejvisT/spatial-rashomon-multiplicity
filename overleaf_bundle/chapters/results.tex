@@ -156,48 +156,46 @@ Overall, these results demonstrate that the observed spatial clustering of predi
 \subsection{Spatial Structure and Stability of Hotspots}
 \label{sec:results-spatial}
 
-This section examines the spatial organization of predictive multiplicity on COMPAS, focusing on the location, stability, and internal structure of HH hotspots. While previous sections establish the existence of spatial clustering, we now analyze how this structure manifests in feature space.
+This section addresses two related questions about high--high (HH) hotspots on COMPAS, after Section~\ref{sec:results-metrics}--\ref{sec:results-global-vs-family} have established that predictive variance is spatially clustered. First, \textbf{point-level stability:} for a fixed test observation, how often is it classified as HH across random training seeds? Second, \textbf{regional stability:} do the same \emph{hotspot patches}---coherent groups of HH points in the $k$NN graph---reappear across seeds, even when the exact HH set changes? All cross-seed comparisons below use the \emph{fixed-test-set} protocol (Section~\ref{sec:exp-splits}) so observation identities align across runs; see notebook~03 for the corresponding frequency histograms, Jaccard heatmaps, and component-matching diagnostics.
 
-\subsubsection{HH Location and Frequency}
+\subsubsection{Point-level stability: HH selection frequency}
 
-Figure~\ref{fig:hh_location} shows HH hotspots projected onto the first two principal components of COMPAS test features (seed 2, global top-$K = 25$). HH points (red) concentrate in a distinct region of feature space rather than being scattered uniformly, indicating that multiplicity is localized to specific subpopulations.
+Let $f_i$ denote the fraction of outer seeds (out of 10) in which test point $i$ is HH under the global Rashomon set (top-$K=25$) and default $k$. Figure~\ref{fig:hh_stability_freq} maps $\{f_i\}$ in PCA space; Figure~\ref{fig:hh_location} shows HH membership in one representative run (median HH count among seeds).
 
-The stability analyses in this subsection use the \emph{fixed-test-set} splitting mode (Section~\ref{sec:exp-splits}), ensuring that the same observations are compared across runs.
-
-Figure~\ref{fig:hh_stability_freq} shows the HH selection frequency across 10 seeds. Only 2.24\% of test points are classified as HH in $\geq 80$\% of runs, and 6.26\% in $\geq 50$\% of runs, indicating limited pointwise stability. However, the frequency map reveals that these unstable points consistently lie within the same region of feature space, suggesting that instability is structured at the region level rather than tied to specific observations.
+Most points are rarely HH: only about $2.0$\% of the fixed test set satisfies $f_i \geq 0.8$, and about $4.5$\% satisfy $f_i \geq 0.5$ (notebook~03, COMPAS). Thus, \textbf{individual observations are not stably tagged as hotspots} under resampled Rashomon sets: being HH is a high-frequency event for a small minority of points and an occasional event for a slightly larger minority. The spatial pattern is nevertheless informative: elevated $f_i$ concentrates in a contiguous band of the PCA plane rather than sprinkling uniformly, so ``who'' is HH fluctuates while ``where'' multiplicity concentrates is more repeatable.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.55\textwidth]{hh_location_compas.pdf}
-\caption{HH hotspots (red) vs.\ other points (gray) in PCA space for COMPAS (representative run; selected by median HH count). HH points concentrate in a specific region rather than being scattered uniformly.}
+\caption{HH hotspots (red) vs.\ other points (gray) in PCA space for COMPAS (representative run; median HH count among 10 seeds). Concentration in a limited part of the plane motivates region-level analyses even when point labels are unstable.}
 \label{fig:hh_location}
 \end{figure}
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.55\textwidth]{hh_stability_freq_compas.pdf}
-\caption{HH selection frequency across 10 seeds for COMPAS. Color intensity encodes how often each point is classified as HH.}
+\caption{Per-point HH frequency $f_i$ across 10 seeds (fixed test set). Color encodes how often each observation is HH; most mass lies at low $f_i$, with a high-$f_i$ tail localized in feature space.}
 \label{fig:hh_stability_freq}
 \end{figure}
 
-\subsubsection{Pairwise Overlap of HH Masks}
+\subsubsection{Overlap of exact HH sets (pointwise Jaccard)}
 
-Figure~\ref{fig:hh_jaccard} shows the Jaccard similarity of HH masks between all pairs of seeds. The mean pairwise Jaccard is 0.025 (max 0.084), indicating that the exact set of HH points varies substantially across runs. 
+Comparing the \emph{full} HH indicator masks between two seeds measures agreement on the exact hotspot set. Figure~\ref{fig:hh_jaccard} displays pairwise Jaccard indices $J_{ss'} = |H_s \cap H_{s'}| / |H_s \cup H_{s'}|$ for variance-based HH masks. The mean off-diagonal Jaccard is about $0.025$ (maximum about $0.08$ in this ensemble): two independent seeds rarely agree on the same HH pixels.
 
-Crucially, this low pointwise overlap does not imply instability of the spatial phenomenon itself. Combined with the frequency maps, it shows that predictive multiplicity is stable at the \emph{region level} but unstable at the \emph{point level}: the same areas of feature space repeatedly exhibit elevated disagreement, while the specific points classified as HH fluctuate across runs.
+\textbf{Interpretation:} the answer to ``is point $x$ always HH?'' is usually \emph{no}, and the answer to ``do two runs flag exactly the same HH points?'' is also \emph{no}. This is consistent with the frequency summary above. It does \emph{not} imply absence of structure: low set overlap can coexist with recurring \emph{regions} if membership shifts at the boundary of a hotspot.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.5\textwidth]{hh_jaccard_heatmap_compas.pdf}
-\caption{Jaccard similarity of HH masks across seed pairs for COMPAS. Low overlap reflects sensitivity at the point level.}
+\caption{Pairwise Jaccard overlap of variance-HH masks between seeds (COMPAS, fixed test). Near-diagonal values are one by construction; off-diagonal values are small, reflecting unstable pixel-level HH membership.}
 \label{fig:hh_jaccard}
 \end{figure}
 
-\subsubsection{Regional Structure of Hotspots}
+\subsubsection{Regional structure: connected components and cross-seed recurrence}
 
-Table~\ref{tab:hh_component_summary} summarizes HH connected-component statistics (minimum component size 5). On average, COMPAS exhibits $3.5$ connected components per run, with a mean maximum component size of $43.8$ points (median $34$).
+HH regions are summarized by extracting connected components of HH nodes in the same $k$NN graph used for LISA (minimum component size 5; isolated small groups discarded). Table~\ref{tab:hh_component_summary} reports run-level counts: on COMPAS, one typically sees on the order of $3$--$4$ components per run, with a dominant largest component (mean maximum size $\approx 44$ test points, median $34$). Hotspots are therefore \textbf{patchy but low-dimensional in the graph sense}: a few spatially contiguous bundles rather than a spray of singletons.
 
-These results indicate that multiplicity hotspots form a small number of coherent regions rather than many small fragments. In representative runs, a single dominant component typically contains the majority of HH points, with additional smaller components representing secondary regions of instability. This suggests that predictive multiplicity is regionally concentrated rather than uniformly distributed.
+To ask whether \textbf{the same patches} reappear, notebook~03 maps each component to the set of stable dataset row IDs it contains and, for every pair of runs, records the best Jaccard between a component in one run and \emph{any} component in the other. Pooling these best-match values yields a mean of about $0.35$ (standard deviation $\approx 0.28$) on COMPAS---much larger than the $\approx 0.025$ mean overlap of raw HH masks. A complementary \emph{persistence} statistic fixes a reference run and asks, for each of its components, in what fraction of the other runs there exists a partner component with Jaccard at least $0.3$; averaging over components in the reference run gives roughly two-thirds ($\approx 67\%$) in the reported notebook configuration. These magnitudes are stochastic (they depend on the reference run and the threshold), but the qualitative conclusion is robust: \textbf{region-level objects are more stable than pixel-level HH labels.} Notebook~03 also evaluates graph-based ``thickening'' of masks (one-hop dilation on $W$) and centroid dispersion of the largest component in PCA; both support the same picture---overlap increases when hotspots are treated as neighborhoods rather than as exact pixel sets.
 
 \begin{table}[htbp]
 \centering
@@ -293,7 +291,7 @@ To assess how the choice of Rashomon set size affects the results, we vary $K \i
 
 Mean predictive variance increases monotonically with $K$ for all datasets, reflecting the inclusion of additional near-optimal models and thus greater prediction diversity. This trend is clearly visible for COMPAS, German Credit, and Adult, where variance grows steadily with $K$ (see Figure~\ref{fig:sensitivity_K} and corresponding dataset-specific plots).
 
-In contrast, Moran's $I$ stabilizes beyond $K \approx 20$--25 for COMPAS (remaining around 0.18--0.21), and shows only gradual changes for German Credit and Adult. Similarly, the number of HH hotspots remains relatively stable for COMPAS ($\sim$77--91) and remains low for German Credit, while increasing more strongly for Adult due to its larger dataset size and more diffuse hotspot structure (see ).
+In contrast, Moran's $I$ stabilizes beyond $K \approx 20$--25 for COMPAS (remaining around 0.18--0.21), and shows only gradual changes for German Credit and Adult. Similarly, the number of HH hotspots remains relatively stable for COMPAS ($\sim$77--91) and remains low for German Credit, while increasing more strongly for Adult due to its larger dataset size and more diffuse hotspot structure (dataset-specific $K$-sensitivity curves in notebook~03).
 
 Conflict-based metrics show a similar qualitative pattern: mean conflict increases with $K$, while conflict Moran's $I$ and conflict-HH counts stabilize once moderately sized Rashomon sets are reached. This indicates that both probability-level and label-level disagreement increase in magnitude but maintain similar spatial organization.
 
