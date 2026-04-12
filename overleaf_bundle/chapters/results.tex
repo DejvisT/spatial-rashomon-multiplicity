@@ -162,7 +162,9 @@ This section addresses two related questions about high--high (HH) hotspots on C
 
 Let $f_i$ denote the fraction of outer seeds (out of 10) in which test point $i$ is HH under the global Rashomon set (top-$K=25$) and default $k$. Figure~\ref{fig:hh_stability_freq} maps $\{f_i\}$ in PCA space; Figure~\ref{fig:hh_location} shows HH membership in one representative run (median HH count among seeds).
 
-Most points are rarely HH: only about $2.0$\% of the fixed test set satisfies $f_i \geq 0.8$, and about $4.5$\% satisfy $f_i \geq 0.5$ (notebook~03, COMPAS). Thus, \textbf{individual observations are not stably tagged as hotspots} under resampled Rashomon sets: being HH is a high-frequency event for a small minority of points and an occasional event for a slightly larger minority. The spatial pattern is nevertheless informative: elevated $f_i$ concentrates in a contiguous band of the PCA plane rather than sprinkling uniformly, so ``who'' is HH fluctuates while ``where'' multiplicity concentrates is more repeatable.
+Most points are rarely HH: only about $2.0$\% of the fixed test set satisfies $f_i \geq 0.8$, and about $4.5$\% satisfies $f_i \geq 0.5$. More broadly, the total \emph{HH support}---the set of observations that are classified as HH in at least one seed---covers about $17.2$\% of the fixed test set. Within this support, HH membership is typically infrequent: the mean frequency is $0.33$ and the median is $0.20$, and about $60.1$\% of support points lie in the lowest frequency bucket $(0,0.2]$. Defining a recurrent \emph{HH core} as points with $f_i \geq 0.5$, the core-to-support ratio is about $26.2$\%, so only about one quarter of points ever identified as HH recur in at least half of the seeds.
+
+Taken together, these results show that \textbf{individual observations are not stably tagged as hotspots} under resampled Rashomon sets. Exact HH membership is unstable at the observation level, but this instability is confined to a limited subset of the test set rather than being dispersed uniformly. The spatial pattern remains informative: elevated $f_i$ values concentrate in a contiguous region of the PCA plane rather than being uniformly dispersed. Thus, while the specific observations classified as HH vary across runs, the location of multiplicity remains comparatively stable.
 
 \begin{figure}[htbp]
 \centering
@@ -180,22 +182,32 @@ Most points are rarely HH: only about $2.0$\% of the fixed test set satisfies $f
 
 \subsubsection{Overlap of exact HH sets (pointwise Jaccard)}
 
-Comparing the \emph{full} HH indicator masks between two seeds measures agreement on the exact hotspot set. Figure~\ref{fig:hh_jaccard} displays pairwise Jaccard indices $J_{ss'} = |H_s \cap H_{s'}| / |H_s \cup H_{s'}|$ for variance-based HH masks. The mean off-diagonal Jaccard is about $0.025$ (maximum about $0.08$ in this ensemble): two independent seeds rarely agree on the same HH pixels.
+To quantify agreement on the exact set of hotspot observations, we compare the full HH indicator masks between pairs of seeds using the Jaccard index
+\[
+J_{ss'} = \frac{|H_s \cap H_{s'}|}{|H_s \cup H_{s'}|}.
+\]
+Figure~\ref{fig:hh_jaccard} shows the resulting pairwise overlap matrix for variance-based HH masks on COMPAS. The mean off-diagonal Jaccard is about $0.025$ (with a maximum of about $0.08$), indicating that two independent runs rarely identify the same observations as HH.
 
-\textbf{Interpretation:} the answer to ``is point $x$ always HH?'' is usually \emph{no}, and the answer to ``do two runs flag exactly the same HH points?'' is also \emph{no}. This is consistent with the frequency summary above. It does \emph{not} imply absence of structure: low set overlap can coexist with recurring \emph{regions} if membership shifts at the boundary of a hotspot.
+Exact agreement at the observation level is low. In most cases, a given point is not consistently classified as HH across seeds, and different runs select substantially different HH sets. This is consistent with the frequency-based analysis above.
+
+Importantly, low overlap of the full HH sets does \emph{not} imply the absence of spatial structure. Jaccard overlap is sensitive to boundary variation: even small shifts at the edges of a hotspot can lead to large differences in the exact set of HH observations. As a result, low pointwise overlap can coexist with recurring hotspot \emph{regions}, which motivates the region-level analysis in the following subsection.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.5\textwidth]{hh_jaccard_heatmap_compas.pdf}
-\caption{Pairwise Jaccard overlap of variance-HH masks between seeds (COMPAS, fixed test). Near-diagonal values are one by construction; off-diagonal values are small, reflecting unstable pixel-level HH membership.}
+\caption{Pairwise Jaccard overlap of variance-based HH masks between seeds (COMPAS, fixed test). Diagonal entries equal one by construction; off-diagonal values are small, reflecting low agreement in exact HH membership across runs.}
 \label{fig:hh_jaccard}
 \end{figure}
 
 \subsubsection{Regional structure: connected components and cross-seed recurrence}
 
-HH regions are summarized by extracting connected components of HH nodes in the same $k$NN graph used for LISA (minimum component size 5; isolated small groups discarded). Table~\ref{tab:hh_component_summary} reports run-level counts: on COMPAS, one typically sees on the order of $3$--$4$ components per run, with a dominant largest component (mean maximum size $\approx 44$ test points, median $34$). Hotspots are therefore \textbf{patchy but low-dimensional in the graph sense}: a few spatially contiguous bundles rather than a spray of singletons.
+To characterize hotspot regions beyond individual HH points, we extract connected components of HH nodes in the same $k$NN graph used for LISA, discarding components smaller than 5 points. Table~\ref{tab:hh_component_summary} summarizes these component statistics across runs. On COMPAS, HH points typically form about $3$--$4$ connected components per run, with one dominant component whose maximum size averages about $44$ test points (median $34$). Thus, hotspots do not appear as isolated singletons, but as a small number of spatially contiguous regions in the feature-space graph.
 
-To ask whether \textbf{the same patches} reappear, notebook~03 maps each component to the set of stable dataset row IDs it contains and, for every pair of runs, records the best Jaccard between a component in one run and \emph{any} component in the other. Pooling these best-match values yields a mean of about $0.35$ (standard deviation $\approx 0.28$) on COMPAS---much larger than the $\approx 0.025$ mean overlap of raw HH masks. A complementary \emph{persistence} statistic fixes a reference run and asks, for each of its components, in what fraction of the other runs there exists a partner component with Jaccard at least $0.3$; averaging over components in the reference run gives roughly two-thirds ($\approx 67\%$) in the reported notebook configuration. These magnitudes are stochastic (they depend on the reference run and the threshold), but the qualitative conclusion is robust: \textbf{region-level objects are more stable than pixel-level HH labels.} Notebook~03 also evaluates graph-based ``thickening'' of masks (one-hop dilation on $W$) and centroid dispersion of the largest component in PCA; both support the same picture---overlap increases when hotspots are treated as neighborhoods rather than as exact pixel sets.
+We next examine whether these regions recur across seeds. For each pair of runs, each component in one run is matched to the most similar component in the other run using Jaccard overlap on the corresponding sets of fixed test observations. The resulting best-match overlaps are substantially larger than the overlap of the raw HH masks: on COMPAS, the mean best-match Jaccard is about $0.35$ (standard deviation $\approx 0.28$), compared with only about $0.025$ for the full HH masks. This indicates that while exact HH membership changes considerably across runs, the broader hotspot regions recur more consistently.
+
+A complementary persistence analysis leads to the same conclusion. Taking the components from one run as a reference, we ask for each component whether a matching component with Jaccard overlap at least $0.3$ appears in the other runs. In the reported COMPAS analysis, this yields an average persistence of roughly two-thirds ($\approx 67\%$). Although the exact value depends on the chosen reference run and matching threshold, the qualitative finding is stable: \textbf{hotspot regions are considerably more stable than exact HH labels.}
+
+Additional region-aware diagnostics reinforce this interpretation. When HH masks are dilated by one graph hop before overlap is computed, overlap increases noticeably, showing that nearby hotspot neighborhoods are more stable than exact pointwise assignments. Likewise, the centroid of the largest hotspot component exhibits only moderate dispersion in PCA space across seeds. Taken together, these results suggest that cross-seed instability is driven primarily by boundary variation within recurring hotspot areas, rather than by complete relocation of the hotspots themselves.
 
 \begin{table}[htbp]
 \centering
@@ -330,20 +342,26 @@ For moderate neighborhood sizes, the curves begin to flatten, supporting the use
 \subsection{Calibration Robustness}
 \label{sec:results-calibration}
 
-To assess whether the observed spatial multiplicity is driven by probability miscalibration, we apply Platt scaling as described in Section~\ref{sec:exp-calibration}. A logistic regression model is fitted on validation-set predictions for each model and then applied to test-set predictions. Multiplicity metrics (including both variance and conflict ratio) are recomputed after calibration. Table~\ref{tab:calibration_summary} summarizes the resulting changes.
+To assess whether the observed spatial multiplicity is driven by probability miscalibration, we apply post-hoc calibration as described in Section~\ref{sec:exp-calibration}. For each model in the global Rashomon set, a calibrator is fitted on validation-set predictions and labels and then applied to the corresponding test-set predictions. We then recompute the multiplicity and spatial metrics on the calibrated prediction matrix. Figure~\ref{fig:calibration-delta-boxplots} summarizes the run-level changes for the three datasets, showing distributions of the change in mean predictive variance, the change in Moran's $I$, the change in the number of HH hotspot points, and the Jaccard overlap between HH masks before and after calibration.
 
-\begin{table}[htbp]
-\centering
-\caption{Calibration robustness: change in key metrics after Platt scaling (mean $\pm$ std over runs).}
-\label{tab:calibration_summary}
-\input{presentation_assets/tab/calibration_summary.tex}
-\end{table}
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{figures/nb07/calibration_delta_metrics_compas.pdf}
+    \hfill
+    \includegraphics[width=1\textwidth]{figures/nb07/calibration_delta_metrics_german.pdf}
+    \hfill
+    \includegraphics[width=1\textwidth]{figures/nb07/calibration_delta_metrics_adult.pdf}
+    \caption{Calibration robustness across runs. From left to right: COMPAS, German Credit, and Adult. For each dataset, the panels show the change after calibration in mean variance, Moran's $I$, and HH count, together with the Jaccard overlap between HH masks before and after calibration.}
+    \label{fig:calibration-delta-boxplots}
+\end{figure}
 
-Calibration has only a limited effect on spatial multiplicity. On average, Moran's $I$ decreases slightly ($\Delta \approx -0.02$), indicating that a small fraction of spatial structure may be attributable to miscalibration. However, the overall clustering pattern remains clearly present.
+Overall, post-hoc calibration has only a limited effect on the spatial structure of predictive multiplicity. On COMPAS, the boxplots indicate that Platt scaling tends to slightly reduce mean predictive variance and Moran's $I$, while also shifting the HH count downward in most runs. The Jaccard overlap between pre- and post-calibration HH masks is moderate, indicating that hotspot membership changes, but that the same general regions remain implicated. Isotonic calibration produces more variable changes: it tends to increase mean variance, often reduces Moran's $I$ more strongly, and yields larger run-to-run variation in HH counts and hotspot overlap than Platt scaling.
 
-The Jaccard overlap between HH masks before and after calibration is moderate ($0.47 \pm 0.14$ on COMPAS, $0.42 \pm 0.37$ on German Credit, and $0.78 \pm 0.37$ on Breast Cancer), showing that hotspot regions shift but do not disappear. Brier score changes are negligible ($< 0.001$ on average), indicating that calibration does not materially affect predictive performance.
+German Credit shows a similar qualitative pattern. Under Platt scaling, changes in mean variance and Moran's $I$ are centered slightly below zero, while the change in HH count remains small overall. The Jaccard overlap is low and highly variable, which is consistent with the fact that HH sets on German are often very small and therefore sensitive to even minor changes. Isotonic calibration again induces more heterogeneous effects, with positive shifts in mean variance, mixed changes in HH count, and wide variation in hotspot overlap across runs.
 
-Overall, these results demonstrate that spatial multiplicity is predominantly structural. While calibration slightly alters the magnitude and exact location of hotspots, it does not eliminate the underlying spatial patterns, confirming that multiplicity reflects genuine model disagreement rather than artifacts of probability miscalibration.
+On Adult, calibration changes the magnitudes somewhat differently, but still does not alter the main conclusion. Both calibration methods tend to increase the HH count, while the effect on Moran's $I$ remains small in absolute terms. Mean variance also shifts only modestly. The hotspot overlap remains moderate for Platt scaling and noticeably higher for isotonic calibration, suggesting that although the exact boundaries of HH regions move, the broader hotspot structure is preserved.
+
+Taken together, Figure~\ref{fig:calibration-delta-boxplots} supports the conclusion that the observed spatial multiplicity is predominantly structural rather than an artifact of probability miscalibration. Calibration can shift the overall magnitude of disagreement and modify exact hotspot membership, but it does not remove the presence of spatial clustering. The main qualitative pattern---localized multiplicity that persists after recalibration---therefore remains intact across datasets.
 
 
 %% ---------------------------------------------------------------------------
