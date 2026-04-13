@@ -499,3 +499,112 @@ __all__ = [
     "plot_hotspot_hp_delta",
     "run_dataset_all_seeds",
 ]
+
+
+def plot_vm_hp_compare_bars(
+    df_agg: pd.DataFrame,
+    *,
+    dataset: str,
+    family: str,
+    subset: str = "all",
+    top_n: int = 10,
+    fig_path: Optional[Path] = None,
+) -> None:
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    sub = df_agg[(df_agg["dataset"] == dataset) & (df_agg["family"] == family)]
+    if "subset" in sub.columns:
+        sub = sub[sub["subset"] == subset]
+    if sub.empty or "pool_type" not in sub.columns:
+        return
+
+    hp_order = (
+        sub.groupby("hp_name")["mean_importance"]
+        .max()
+        .sort_values(ascending=False)
+        .head(top_n)
+        .index.tolist()
+    )
+    sub = sub[sub["hp_name"].isin(hp_order)].copy()
+
+    pool_types = list(sub["pool_type"].dropna().unique())
+    x = np.arange(len(hp_order))
+    width = 0.8 / max(len(pool_types), 1)
+
+    fig, ax = plt.subplots(figsize=(7, max(3, 0.45 * len(hp_order))))
+    for i, pt in enumerate(pool_types):
+        s = (
+            sub[sub["pool_type"] == pt]
+            .set_index("hp_name")
+            .reindex(hp_order)
+            .reset_index()
+        )
+        ax.bar(
+            x + (i - (len(pool_types) - 1) / 2) * width,
+            s["mean_importance"],
+            width=width,
+            yerr=s["std_importance"],
+            capsize=2,
+            label=str(pt),
+        )
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(hp_order, rotation=45, ha="right")
+    ax.set_ylabel("V_m-based HP importance")
+    ax.set_title(f"{dataset} — {family} — subset={subset}")
+    ax.legend()
+    fig.tight_layout()
+    if fig_path is not None:
+        fig.savefig(fig_path, bbox_inches="tight")
+    plt.show()
+
+
+def plot_family_importance_compare_bars(
+    fam_agg: pd.DataFrame,
+    *,
+    fig_path: Optional[Path] = None,
+) -> None:
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    if fam_agg.empty or "pool_type" not in fam_agg.columns:
+        return
+
+    ds_list = list(fam_agg["dataset"].unique())
+    fig, axes = plt.subplots(1, len(ds_list), figsize=(4.5 * len(ds_list), 3.5), squeeze=False)
+
+    for ax, ds in zip(axes[0], ds_list):
+        g = fam_agg[fam_agg["dataset"] == ds].copy()
+        subsets = list(g["subset"].unique())
+        pool_types = list(g["pool_type"].unique())
+
+        x = np.arange(len(subsets))
+        width = 0.8 / max(len(pool_types), 1)
+
+        for i, pt in enumerate(pool_types):
+            s = (
+                g[g["pool_type"] == pt]
+                .set_index("subset")
+                .reindex(subsets)
+                .reset_index()
+            )
+            ax.bar(
+                x + (i - (len(pool_types) - 1) / 2) * width,
+                s["mean_ratio"],
+                width=width,
+                yerr=s["std_ratio"],
+                capsize=3,
+                label=str(pt),
+            )
+
+        ax.set_xticks(x)
+        ax.set_xticklabels(subsets, rotation=20, ha="right")
+        ax.set_ylabel("Family importance")
+        ax.set_title(str(ds))
+        ax.legend()
+
+    fig.tight_layout()
+    if fig_path is not None:
+        fig.savefig(fig_path, bbox_inches="tight")
+    plt.show()

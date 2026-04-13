@@ -1,0 +1,9 @@
+dataset,pool_type,subset,family,hp,mean_importance,std_importance,n_seeds,mean_rank,rank_freq_top1,rank_freq_top3
+adult,Rashomon,all,GBM,max_depth,0.22528314757592788,0.04323528137114132,10,1.1,0.9,1.0
+adult,Rashomon,all,GBM,learning_rate,0.13794416873773296,0.06286339181326973,10,2.9,0.1,0.6
+adult,Rashomon,all,GBM,subsample,0.11610427728909496,0.017056391090190432,10,2.9,0.0,0.8
+adult,Rashomon,all,GBM,n_estimators,0.11463457991242995,0.024364417468281434,10,3.1,0.0,0.6
+adult,full_pool,all,GBM,learning_rate,0.5092613708357545,0.0664672829545253,10,1.0,1.0,1.0
+adult,full_pool,all,GBM,n_estimators,0.16041118025422887,0.05493835094438352,10,2.4,0.0,1.0
+adult,full_pool,all,GBM,max_depth,0.1355445953517139,0.06152730650424824,10,2.6,0.0,1.0
+adult,full_pool,all,GBM,subsample,0.04059201934360074,0.021577115944839804,10,4.0,0.0,0.0

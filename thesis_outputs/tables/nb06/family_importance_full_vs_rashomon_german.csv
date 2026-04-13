@@ -1,0 +1,3 @@
+dataset,pool_type,subset,mean_ratio,std_ratio,n_seeds
+german,Rashomon,all,0.530622075934085,0.04249877732775051,10
+german,full_pool,all,0.29887255831541987,0.023141041964242305,10
