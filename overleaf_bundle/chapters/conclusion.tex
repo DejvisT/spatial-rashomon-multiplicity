@@ -1,43 +1,61 @@
-This thesis set out to investigate whether predictive multiplicity---the disagreement among near-optimal models---exhibits spatial structure in feature space, what drives it, and whether the resulting patterns are robust. The proposed framework combines Rashomon-set construction, observation-wise variance decomposition, and spatial autocorrelation analysis (Moran's $I$, LISA) to move beyond aggregate multiplicity metrics and toward a fine-grained, spatially explicit characterization of model instability.
+This thesis investigated whether predictive multiplicity---the disagreement among near-optimal models---exhibits spatial structure in feature space, what drives that structure, and whether it remains stable under reasonable analytical variations. To answer these questions, it introduced a framework that combines Rashomon-set construction, observation-wise multiplicity metrics, and spatial autocorrelation analysis through Moran's $I$ and LISA. The resulting perspective moves beyond aggregate disagreement summaries and instead treats multiplicity as a localized property of the data-model interaction.
 
 \subsection{Summary of Findings}
 
-Across three real-world datasets and five model families, the evidence consistently supports four main conclusions.
+Across the benchmark datasets and model families considered in this thesis, five main findings emerge.
 
 \begin{enumerate}
-    \item \textbf{Multiplicity is spatially clustered.} Global Moran's $I$ is positive and statistically significant in the vast majority of experimental runs, confirming that observations with high predictive variance tend to neighbor other high-variance observations in feature space. LISA analysis further localizes these patterns into compact hotspot (HH) and coldspot (LL) clusters.
+    \item \textbf{Predictive multiplicity is spatially structured.} Observation-wise disagreement is not distributed uniformly across the test set. Instead, high-variance observations tend to cluster with other high-variance observations, producing statistically significant local hotspot regions in feature space. This means that predictive multiplicity is not only a global property of a model class, but also a localized property of specific subpopulations.
 
-    \item \textbf{Family choice is the dominant driver.} Between-family variance accounts for 41--62\% of total observation-wise variance globally and rises to 52--69\% inside hotspots, indicating that the choice of model family (e.g., gradient boosting vs.\ logistic regression) matters more than hyperparameter tuning for explaining which individuals receive unstable predictions.
+    \item \textbf{Hotspots are more informative than global averages alone.} Global disagreement metrics remain useful, but they do not identify \emph{where} instability occurs. The spatial analysis shows that two observations can be associated with similarly confident predictions while differing substantially in multiplicity exposure: one may lie in a stable region where near-optimal models agree, while the other lies in a hotspot where equally accurate models disagree strongly. Localizing multiplicity therefore changes the practical interpretation of predictive reliability.
 
-    \item \textbf{Hotspots are robust.} Spatial clustering patterns persist under changes to the Rashomon set size $K$, the kNN neighborhood parameter, post-hoc Platt calibration, PCA-reduced feature representations, and cosine distance metrics. The core spatial signal is not an artifact of any single analytical choice.
+    \item \textbf{Model family is the dominant driver, with hyperparameters adding further structure.} Between-family differences explain a substantial share of predictive variance, and this share typically increases inside hotspots. Within families, a relatively small number of hyperparameters account for much of the remaining disagreement. Multiplicity is therefore not random noise induced by training instability alone, but is systematically shaped by concrete modeling choices.
 
-    \item \textbf{Hotspots are interpretable.} Shallow decision trees and L1-regularized logistic regression produce compact rules (2--4 features) that describe high-multiplicity regions with high purity and lift. On COMPAS, these rules consistently involve age and prior criminal history, identifying subpopulations for whom automated predictions are least reliable.
+    \item \textbf{The main spatial findings are robust.} The detected hotspot structure persists under changes to the Rashomon set size $K$, the neighborhood size $k$, post-hoc calibration, and alternative graph constructions based on PCA or cosine distance. These robustness checks do not imply that every numerical value is invariant, but they do show that the core substantive conclusion---that multiplicity is spatially organized---does not depend on a single arbitrary specification.
+
+    \item \textbf{High-multiplicity regions can be interpreted.} The rule-based analyses show that hotspots are not arbitrary statistical artifacts. They can be described by compact feature conditions with meaningful purity and lift, especially on COMPAS, where age and prior criminal history recur as important descriptors. Synthetic validation further confirms that the pipeline recovers known ambiguous regions with high precision and recall, which strengthens confidence that the real-data hotspots reflect genuine structure.
 \end{enumerate}
 
-Additionally, a synthetic validation experiment with ground-truth ambiguous regions confirms that the pipeline recovers known instability zones with precision 0.99 and recall 0.91, providing methodological assurance that the detected hotspots on real data reflect genuine structure rather than statistical noise.
+Taken together, these results support the central claim of the thesis: predictive multiplicity is not merely a global nuisance metric, but a structured and localized phenomenon that can be detected, quantified, and described.
 
 \subsection{Interpretation}
 
-These results reframe predictive multiplicity from a global model-selection nuisance into a spatially structured, observation-level phenomenon. The practical implication is that multiplicity does not affect all individuals equally: certain subpopulations---identifiable through their features---are systematically more exposed to the arbitrariness of model choice. For deployment contexts such as recidivism prediction or credit scoring, this means that a single model's prediction may be especially unreliable for the very individuals who are most affected by automated decisions.
+The broader implication of these findings is that not all predictions produced by an accurate model should be treated as equally reliable. Standard evaluation focuses on whether a selected model performs well on average. The results of this thesis show that average performance is only part of the picture. Even when a model is chosen from a set of near-optimal alternatives, its predictions may be much less stable for some individuals than for others because equally good models would have produced materially different outputs.
 
-The variance decomposition further suggests that reducing multiplicity is partly a matter of model-family selection. If between-family variance dominates, then restricting the hypothesis class to a single family can substantially reduce disagreement, at the cost of forgoing the diversity that makes Rashomon-set analysis informative. This trade-off is inherent and should be made explicit in any deployment decision.
+This perspective also clarifies the difference between predictive multiplicity and more familiar notions of uncertainty. Classical uncertainty analyses often ask whether a model is uncertain because the data are noisy, the sample is limited, or the fitted parameters vary. Rashomon multiplicity addresses a different source of unreliability: the existence of many acceptable models that disagree in behavior. The contribution of this thesis is to show that this form of instability can itself have spatial structure. In other words, model choice matters more in some parts of the feature space than in others.
+
+From an applied perspective, this suggests a different deployment logic. Rather than treating all predictions from the selected model as equally trustworthy, practitioners can distinguish between stable regions and multiplicity hotspots. Predictions in hotspot regions may warrant caution, additional review, or abstention, especially in high-stakes settings such as criminal justice or credit scoring. The contribution of the thesis is therefore not only descriptive, but also diagnostic: it identifies where arbitrary model choice is most consequential.
+
+At the same time, the results highlight an important trade-off. Restricting the hypothesis space to a narrower family may reduce multiplicity, but it also removes part of the diversity that makes Rashomon-set analysis informative in the first place. A system designer must therefore decide whether the goal is to minimize disagreement, to characterize it, or to make it visible for downstream governance decisions.
 
 \subsection{Limitations}
 
-Several limitations should be acknowledged. First, the Rashomon set is constructed by training a finite pool of models (250 per run) and selecting the top-$K$; this discrete approximation may not capture the full continuous Rashomon set, particularly for model families with large hyperparameter spaces. Second, the spatial analysis relies on Euclidean kNN graphs in the original (or PCA-reduced) feature space; while we show robustness to cosine distance and dimensionality reduction, feature spaces with complex manifold structure may require more sophisticated graph constructions. Third, the fairness analysis on COMPAS is descriptive rather than causal: elevated hotspot rates in certain demographic groups indicate differential exposure to multiplicity but do not establish a causal mechanism. Fourth, the interpretable rule extraction depends on the expressiveness of the rule learner; more complex hotspot boundaries may require richer rule languages.
+Several limitations should be acknowledged.
+
+First, the Rashomon set is approximated through a finite candidate pool and top-$K$ selection. This is a practical and reproducible operationalization, but it cannot fully capture the potentially continuous set of all near-optimal models. The observed multiplicity structure therefore depends on the chosen model families and hyperparameter search spaces.
+
+Second, the spatial analysis depends on the graph used to represent local structure in feature space. Although the main conclusions are robust across several alternatives, the exact size and shape of hotspot regions still reflect design choices in graph construction and distance representation.
+
+Third, the local hotspot assignments are more stable at the region level than at the exact point level. The same broader parts of feature space tend to recur across runs, but the precise HH membership can shift. The method is therefore better interpreted as identifying unstable \emph{areas} rather than assigning an immutable hotspot label to each individual observation.
+
+Fourth, the fairness analysis is descriptive rather than causal. Differences in subgroup exposure indicate that some groups may be more affected by multiplicity, but these results do not establish why such disparities arise.
+
+Finally, the empirical study is based on a limited number of benchmark datasets and binary classification tasks. Although the pattern is consistent across the settings studied here, broader validation on additional domains would strengthen the generality of the conclusions.
 
 \subsection{Future Work}
 
-Several directions emerge naturally from this work.
+Several extensions follow naturally from this work.
 
 \begin{itemize}
-    \item \textbf{Continuous Rashomon sets.} Replacing the discrete model pool with continuous relaxations~\cite{hsu_rashomongb_2024} could yield tighter characterizations of multiplicity and enable gradient-based spatial analysis.
+    \item \textbf{Continuous Rashomon approximations.} Replacing the discrete model pool with continuous or optimization-based approximations could provide a tighter view of multiplicity and reduce dependence on sampled candidate sets.
 
-    \item \textbf{Multiplicity-aware deployment.} The identified hotspot regions could inform selective prediction abstention or human-in-the-loop referral strategies, where the system flags individuals in high-variance zones for manual review rather than issuing an automated decision.
+    \item \textbf{Multiplicity-aware deployment policies.} Hotspot information could be incorporated into selective prediction, abstention, or human-in-the-loop review workflows, so that especially model-contingent cases are handled differently from stable ones.
 
-    \item \textbf{Longitudinal and temporal extensions.} Studying how hotspot locations shift as the data distribution evolves over time would connect spatial multiplicity analysis with the broader problem of distribution shift and concept drift.
+    \item \textbf{Temporal analysis under distribution shift.} Studying whether hotspot locations remain stable over time would connect multiplicity analysis to drift monitoring and deployment reliability.
 
-    \item \textbf{Causal analysis of fairness disparities.} Moving from descriptive group-wise hotspot rates to causal modeling of why certain groups are more exposed to multiplicity could inform targeted interventions in model design.
+    \item \textbf{Stronger fairness analysis.} Future work could move from descriptive subgroup exposure to hierarchical or causal analyses that investigate why some groups are more exposed to multiplicity than others.
+
+    \item \textbf{Extensions beyond binary classification.} The framework could be generalized to multiclass classification, regression, or ranking settings, where disagreement may take different geometric forms.
 \end{itemize}
 
-In summary, this thesis demonstrates that taking a spatial perspective on predictive multiplicity reveals meaningful structure that aggregate metrics obscure. The tools and findings presented here offer a foundation for more transparent, robust, and equitable deployment of machine learning in high-stakes settings.
+In summary, this thesis shows that a spatial perspective reveals structure in predictive multiplicity that aggregate metrics alone cannot capture. By localizing disagreement, identifying its drivers, and characterizing the affected regions, the proposed framework provides a foundation for treating multiplicity as a practical reliability and governance issue rather than as a purely abstract property of model classes.

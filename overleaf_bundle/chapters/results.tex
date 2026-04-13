@@ -368,90 +368,98 @@ Taken together, Figure~\ref{fig:calibration-delta-boxplots} supports the conclus
 \subsection{Hyperparameter and Family Importance}
 \label{sec:results-hp}
 
-To identify which modeling choices drive predictive multiplicity, we apply the variance decomposition described in Section~\ref{sec:exp-hp-decomp}, using the per-family Rashomon set (top-25 per family, up to 125 models total). Each model's disagreement contribution $V_m$ (Eq.~\ref{eq:Vm}) is decomposed by hyperparameter; HP importance $\rho(h)$ (Eq.~\ref{eq:hp-importance}) measures the fraction of variance explained by that hyperparameter.
-
-We first present a detailed case study on COMPAS (seed 0), followed by aggregated results across all seeds in Section~\ref{sec:results-agg-drivers}.
+To identify which modeling choices drive predictive multiplicity, we apply the variance decomposition described in Section~\ref{sec:exp-hp-decomp} using the per-family Rashomon set (top-25 per family, up to 125 models total). For each dataset and each outer seed, we compute family importance, within-family hyperparameter importance, hotspot-specific hyperparameter effects, and marginal $V_m$ patterns; results are then aggregated across seeds. We further compare these results to the full candidate pool and fit simple model-level meta-models to assess whether the observed hyperparameter effects persist after accounting for validation performance. The analysis is therefore multi-seed by default and reflects robust patterns rather than single-run behavior.
 
 \subsubsection{Family Importance}
 
-Model family (GBM, LogReg, MLP, RF, kNN) explains a substantial portion of predictive multiplicity. On COMPAS, family choice accounts for approximately 41\% of total prediction variance ($0.41 \pm 0.03$), increasing to 52\% within HH hotspots ($0.52 \pm 0.04$). This indicates that the relative importance of model class is even stronger in regions of high disagreement.
+Model family (GBM, LogReg, MLP, RF, kNN) explains a substantial portion of predictive multiplicity across all datasets. Figure~\ref{fig:family_importance_agg} shows the aggregated family importance (mean $\pm$ std over seeds) for all test points, HH hotspots, and non-HH observations.
 
-Across datasets, family importance is consistently high, reaching $0.62 \pm 0.05$ on Breast Cancer and $0.53 \pm 0.04$ on German Credit. In all cases, the contribution increases within HH regions, suggesting that multiplicity hotspots are particularly sensitive to model-family differences.
+Within the Rashomon set, family importance is consistently high and typically increases within HH regions. On Adult, family importance reaches approximately 0.71 on all points and about 0.79 within HH regions, while on COMPAS it is around 0.41 globally and increases to roughly 0.52 in hotspots. German Credit shows a similar pattern on the full test set, with family importance around 0.53; however, the HH-specific estimate is based on fewer seeds and should therefore be interpreted more cautiously. In all datasets, the family contribution is lower outside hotspots than within them, indicating that model-family differences are particularly consequential in regions of concentrated disagreement.
 
-Table~\ref{tab:family_importance} provides a detailed breakdown for COMPAS seed 0, and Figure~\ref{fig:family_importance_by_subset} illustrates the difference between global, HH-only, and non-HH subsets.
-
-\begin{table}[htbp]
-\centering
-\caption{Family importance (between-family variance / total variance) on COMPAS seed 0, by observation subset.}
-\label{tab:family_importance}
-\input{presentation_assets/tab/family_importance.tex}
-\end{table}
+Comparing the Rashomon set to the full candidate pool strengthens this interpretation. On COMPAS, family importance is slightly higher in the full pool on all points but no longer increases in HH regions, whereas in the Rashomon set the HH increase is clear. On Adult and German Credit, family importance is markedly larger in the Rashomon set than in the full pool. This suggests that among near-optimal models, disagreement is more strongly structured by model family than in the broader candidate pool.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.65\textwidth]{family_importance_by_subset_compas_seed0.pdf}
-\caption{Family importance (ratio of between-family to total variance) on all test points, HH hotspots, and non-HH points for COMPAS seed 0.}
-\label{fig:family_importance_by_subset}
+\includegraphics[width=0.85\textwidth]{figures/nb06/family_importance_agg.pdf}
+\caption{Family importance (mean $\pm$ std over seeds) across datasets and subsets (all, HH, non-HH).}
+\label{fig:family_importance_agg}
 \end{figure}
 
 \subsubsection{Within-Family Hyperparameter Importance}
 
-Within each model family, the variance decomposition identifies which hyperparameters drive disagreement. Table~\ref{tab:hp_importance} summarizes the most influential hyperparameters per family.
+Within each model family, a small number of hyperparameters consistently drive disagreement. The aggregated $V_m$-based importance results show stable rankings across seeds.
 
-Regularization strength dominates for LogReg ($C$, 87\%) and kNN (number of neighbors, 86\%), indicating that model complexity controls are the primary drivers of variability in these families. For tree-based models, structural parameters such as depth are most important (RF: 67\%), while GBM is primarily influenced by learning rate (34\%). 
+For logistic regression, regularization strength $C$ dominates across all datasets, with near-maximal importance and perfect rank stability. For kNN, the number of neighbors is the primary driver, with other parameters contributing only marginally. These results indicate that model-complexity controls are the main source of variability in simpler model families.
 
-For MLP, multiple hyperparameters contribute, including weight decay $\alpha$ (25\%), learning rate (19\%), and architecture (14\%), indicating a more distributed source of variability.
+For tree-based and neural models, the drivers are more distributed. In GBM, learning rate and tree depth are consistently the most important hyperparameters. In random forests, the dominant parameter varies somewhat by dataset, with depth, number of estimators, and feature subsampling all contributing. MLP exhibits the most distributed sensitivity, with learning-rate initialization, architecture, and regularization ($\alpha$) all playing significant roles.
+
+Figure~\ref{fig:hp_importance_mlp} illustrates this for MLP on COMPAS, showing the relative contribution of different hyperparameters aggregated across seeds.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/nb06/hp_importance_bar_rashomon_compas_MLP.pdf}
+\caption{Within-family hyperparameter importance for MLP on COMPAS (mean $\pm$ std over seeds, Rashomon set).}
+\label{fig:hp_importance_mlp}
+\end{figure}
+
+\subsubsection{Hotspot-Specific Drivers}
+
+Restricting the analysis to HH observations reveals that the drivers of multiplicity are not spatially uniform. The hotspot-delta analysis compares hyperparameter importance in HH regions to the full dataset.
+
+On COMPAS, MLP learning-rate initialization becomes more important inside hotspots, while hidden-layer size decreases slightly in importance. This indicates that optimization-related choices play a particularly strong role in the most unstable regions. More generally, across datasets, some hyperparameters become more influential inside HH regions while others become less important, implying that the mechanisms generating localized disagreement differ from those governing disagreement globally.
+
+This demonstrates that different modeling choices drive disagreement in different regions of feature space. Hyperparameters that are only moderately important on average can become critical within localized regions of instability.
+
+\subsubsection{Predictive Variance by Hyperparameter Value}
+
+To further analyze how hyperparameters affect disagreement, we examine the marginal relationship between hyperparameter values and model-level disagreement contribution $V_m$.
+
+These results show that predictive multiplicity is not only driven by model family, but also by specific regions of hyperparameter space. For logistic regression, smaller values of $C$ are associated with substantially higher disagreement. For kNN, certain neighborhood sizes lead to increased variability. For GBM and MLP, disagreement varies across learning-rate settings and architectural choices.
+
+This pattern is also visible in the meta-model partial-dependence analysis. Figure~\ref{fig:hp_pdp_mlp_adult} shows that, within the Rashomon set, the MLP learning-rate initialization is associated with systematic changes in $V_m$, confirming that disagreement concentrates in specific regions of the hyperparameter space rather than varying randomly.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.72\textwidth]{figures/nb06/hp_meta_pdp_adult_MLP_Rashomon_hp_learning_rate_init.pdf}
+\caption{Marginal relationship between learning-rate initialization and model-level disagreement contribution $V_m$ for MLP on Adult within the Rashomon set.}
+\label{fig:hp_pdp_mlp_adult}
+\end{figure}
+
+Table~\ref{tab:hp_compare_compas_mlp} and Figure~\ref{fig:hp_compare} compare hyperparameter importance between the Rashomon set and the full candidate pool for MLP on COMPAS. The same hyperparameters remain dominant in both settings, but their importance is substantially larger inside the Rashomon set. For example, learning-rate initialization has mean importance 0.266 in the Rashomon set compared with 0.116 in the full pool, and similar reductions are observed for hidden-layer size and $\alpha$. Thus, these drivers are not merely properties of the broad search space; they are especially relevant among near-optimal models.
 
 \begin{table}[htbp]
 \centering
-\caption{Top hyperparameters per model family by variance decomposition of $V_m$ (COMPAS seed 0). $\rho(h)$ denotes HP importance.}
-\label{tab:hp_importance}
+\caption{Comparison of $V_m$-based hyperparameter importance for MLP on COMPAS between the Rashomon set and the full candidate pool (mean over seeds, subset = all).}
+\label{tab:hp_compare_compas_mlp}
 \small
-\begin{tabular}{llcc}
+\begin{tabular}{lccc}
 \hline
-Family & Hyperparameter & $\rho(h)$ & Groups \\
+Hyperparameter & Rashomon & Full pool & $\Delta$ (Rashomon $-$ Full) \\
 \hline
-LogReg & C & 0.865 & 22 \\
-kNN & n\_neighbors & 0.855 & 6 \\
-RF & max\_depth & 0.667 & 5 \\
-GBM & learning\_rate & 0.337 & 5 \\
-GBM & max\_depth & 0.258 & 3 \\
-MLP & alpha & 0.250 & 20 \\
-MLP & learning\_rate\_init & 0.189 & 20 \\
-MLP & hidden\_layer\_sizes & 0.140 & 15 \\
+learning\_rate\_init & 0.266 & 0.116 & 0.150 \\
+hidden\_layer\_sizes & 0.181 & 0.071 & 0.109 \\
+alpha & 0.159 & 0.058 & 0.100 \\
+activation & 0.028 & 0.031 & -0.004 \\
 \hline
 \end{tabular}
 \end{table}
 
-\subsubsection{Hotspot-Specific Drivers}
-
-When restricting the analysis to HH observations, the importance of hyperparameters changes. Figure~\ref{fig:hh_delta_hp} shows the difference in HP importance between HH regions and the full dataset.
-
-On COMPAS, the importance of MLP learning rate initialization increases by approximately $+0.15$ within hotspots, indicating that optimization dynamics play a particularly strong role in high-multiplicity regions. In contrast, GBM hyperparameters such as learning rate and depth decrease slightly in importance, suggesting that disagreement in GBM is more uniformly distributed across the dataset.
-
-This shift highlights that the drivers of multiplicity are not uniform: different modeling choices become more or less influential depending on the region of feature space.
-
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.65\textwidth]{hh_delta_hp_importance_compas_seed0_MLP.pdf}
-\caption{Change in HP importance ($\Delta\rho(h)$ = HH $-$ all) for MLP on COMPAS seed 0.}
-\label{fig:hh_delta_hp}
+\includegraphics[width=0.85\textwidth]{figures/nb06/hp_importance_compare_compas_MLP.pdf}
+\caption{Comparison of hyperparameter importance between the Rashomon set and the full candidate pool for MLP on COMPAS.}
+\label{fig:hp_compare}
 \end{figure}
 
-\subsubsection{Predictive Variance by HP Value}
+\subsubsection{Conditional Analysis and Meta-Model Insights}
 
-Figure~\ref{fig:variance_by_hp_mlp} shows the distribution of per-model disagreement contribution $V_m$ across different hyperparameter values for MLP. Certain configurations systematically produce higher disagreement, indicating that multiplicity is not only driven by model class but also by specific parameter choices within each family.
+A remaining question is whether these hyperparameter effects simply reflect model performance, i.e.\ whether models with higher disagreement are merely worse-performing models. To assess this, we analyze the relationship between model-level disagreement contribution $V_m$ and validation Brier score, and fit simple meta-models that predict $V_m$ from hyperparameters and validation performance.
 
-This provides a more fine-grained view of multiplicity: while family choice explains a large portion of variance, hyperparameters determine how disagreement manifests within each model class.
+The conditional analysis shows a clear difference between the Rashomon set and the full candidate pool. In the full pool, $V_m$ is often strongly positively correlated with validation Brier score, indicating that worse-performing models also tend to disagree more. In contrast, within the Rashomon set these correlations are generally much weaker and in some cases close to zero. This suggests that once attention is restricted to near-optimal models, disagreement cannot be explained simply as a byproduct of poor performance.
 
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.8\textwidth]{variance_by_hp_compas_seed0_MLP.pdf}
-\caption{Per-model disagreement contribution $V_m$ by hyperparameter value for MLP on COMPAS seed 0.}
-\label{fig:variance_by_hp_mlp}
-\end{figure}
+The meta-model analysis reinforces this conclusion. In the full pool, validation Brier score often emerges as the dominant predictor of $V_m$, whereas in the Rashomon set hyperparameters remain comparatively more important. Across datasets and model families, several hyperparameters retain substantial importance even after controlling for performance, indicating that predictive multiplicity reflects structured variation within the hyperparameter space itself.
 
-
+Overall, these results show that predictive multiplicity is driven by a combination of model-family differences and structured variation within hyperparameter space. While family choice explains a large portion of disagreement, hyperparameters determine how this disagreement manifests within each model class and how it concentrates in specific regions of feature space. The additional conditional analyses further show that these hyperparameter effects are not reducible to validation-performance differences alone, particularly within the Rashomon set.
 %% ---------------------------------------------------------------------------
 \subsection{Synthetic Data Validation}
 \label{sec:results-synthetic}
@@ -460,29 +468,71 @@ To validate the proposed pipeline, we evaluate it on synthetic datasets with kno
 
 \subsubsection{Single-Island Design}
 
-The first dataset consists of two well-separated Gaussian clusters (stable regions) and one ambiguous island, generated as a uniform disk with $P(y=1|x) \approx 0.5$. The pipeline is applied using the same model families and top-$K=25$ selection.
+The single-island synthetic dataset consists of $n=3000$ observations in a two-dimensional feature space $(x_1, x_2)$. It contains two well-separated Gaussian clusters that form stable regions ($n=2400$ in total) and one ambiguous island ($n=600$), generated as a uniform disk with $P(y=1 \mid x) \approx 0.5$. We apply the standard experimental pipeline with five model families (LogReg, kNN, RF, GBM, MLP), 50 candidates per family (250 total), and a global top-$K=25$ Rashomon set. Evaluation is performed on a held-out test set of size $600$.
 
-\begin{itemize}
-\item \textbf{Moran's $I$:} 0.459 (highly significant; null mean $-0.001 \pm 0.008$, $p < 0.01$), indicating strong spatial clustering of multiplicity.
-\item \textbf{HH recovery:} 101 HH points detected; precision = 0.99, recall = 0.91, Jaccard = 0.90 relative to the ground-truth island (110 points).
-\item \textbf{FDR sensitivity:} Results remain stable across $\alpha \in \{0.01, 0.05, 0.10, 0.20\}$, with Jaccard ranging from 0.87 to 0.93.
-\end{itemize}
+Figure~\ref{fig:synthetic_setup} shows the data-generating process and the ground-truth ambiguous region. Figure~\ref{fig:synthetic_variance_lisa} shows the resulting pointwise predictive variance together with the detected LISA HH hotspots. The variance map reveals that multiplicity is concentrated in the central island rather than in the two stable Gaussian regions, and the HH mask closely follows this structure.
 
-These results demonstrate that the method can accurately recover a single coherent region of ambiguity with both high precision and high recall.
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.6\textwidth]{figures/synthetic/single_island_ground_truth.pdf}
+    \caption{Synthetic single-island dataset. Two stable Gaussian clusters (left/right) and one ambiguous island (center, dashed circle) with $P(y=1 \mid x) \approx 0.5$.}
+    \label{fig:synthetic_setup}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{figures/synthetic/single_island_pred_var_lisa.pdf}
+    \caption{Left: Predictive variance across the Rashomon set. Right: LISA HH hotspots (red). The detected hotspot region aligns with the ground-truth ambiguous island.}
+    \label{fig:synthetic_variance_lisa}
+\end{figure}
+
+This spatial concentration is also reflected in the global autocorrelation statistic. The observed Moran’s $I$ is $0.2536$, indicating clear positive spatial clustering of predictive variance. Under the permutation null, the null mean is $-0.0024$ with standard deviation $0.0098$, and the one-sided empirical p-value is $0.0099$. Thus, the observed clustering is far larger than expected under spatial randomness, confirming that the multiplicity pattern is induced by the ambiguous island rather than by chance.
+
+At the local level, LISA identifies $99$ HH points and $405$ LL points. Relative to the ground-truth island, which contains $120$ test observations, this yields a precision of $0.9697$, a recall of $0.8000$, and a Jaccard overlap of $0.7805$. In absolute terms, $96$ of the $99$ detected HH points lie inside the ambiguous island. This shows that the detected hotspot is highly specific to the intended ambiguous region, while still recovering most of its extent.
+
+To assess sensitivity to the multiple-testing threshold, we vary the FDR level over $\alpha \in \{0.01, 0.05, 0.10, 0.20\}$. Figure~\ref{fig:synthetic_fdr} shows that the results are stable across this range. As $\alpha$ increases, the number of HH points rises moderately from $88$ to $109$, while the Jaccard overlap with the ground-truth island increases from $0.72$ to $0.79$. This change reflects the expected precision--recall trade-off: precision decreases only slightly, from about $0.99$ at $\alpha=0.01$ to about $0.93$ at $\alpha=0.20$, whereas recall increases from $0.73$ to $0.84$. Across all tested $\alpha$ values, the detected HH region remains a single connected component, matching the geometry of the true island.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.6\textwidth]{figures/synthetic/single_island_fdr_sensitivity.pdf}
+    \caption{FDR sensitivity analysis (single-island). HH count and Jaccard overlap vs.\ $\alpha$. Results are stable, with a clear precision--recall trade-off.}
+    \label{fig:synthetic_fdr}
+\end{figure}
+
+Overall, the single-island experiment provides a controlled validation of the pipeline. It shows that when predictive ambiguity is concentrated in one coherent region, the combination of pointwise variance, Moran’s $I$, and LISA recovers that region accurately and with strong statistical support.
 
 \subsubsection{Three-Islands Design}
 
-A more complex dataset is constructed with two stable clusters, three ambiguous islands, and additional outliers.
+The second synthetic design consists of $n=5000$ observations in a two-dimensional feature space $(x_1, x_2)$. It contains two stable Gaussian clusters ($n=3400$), three ambiguous islands ($n=1500$ in total), and an additional set of $100$ outliers. The outliers are constructed in two groups: low-multiplicity outliers placed in regions with stable class probability, and high-multiplicity outliers placed in small ambiguous regions. This makes it explicit which outliers should and should not be detected as hotspots. Figure~\ref{fig:synthetic_three_islands_setup} shows the data-generating process, while Figure~\ref{fig:synthetic_three_islands_variance_lisa} shows the resulting predictive variance and detected LISA HH hotspots.
 
-\begin{itemize}
-\item \textbf{HH recovery:} At $\alpha = 0.05$, precision = 0.96, recall = 0.54, and Jaccard = 0.52. Only 2 of the 3 islands are recovered as connected components.
-\item \textbf{FDR sensitivity:} Recall increases with $\alpha$ (from 0.42 at $\alpha=0.01$ to 0.64 at $\alpha=0.20$), while precision remains consistently above 0.94.
-\end{itemize}
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.6\textwidth]{figures/synthetic/three_islands_ground_truth.pdf}
+    \caption{Synthetic three-islands dataset. Two stable Gaussian clusters, three ambiguous islands, and two types of outliers: stable low-multiplicity outliers and ambiguous high-multiplicity outliers.}
+    \label{fig:synthetic_three_islands_setup}
+\end{figure}
 
-Compared to the single-island case, the recovery is less complete, reflecting the increased difficulty of detecting multiple smaller regions, particularly when local density is low. Some ambiguous regions fail to form sufficiently strong local clusters to be detected as HH components.
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{figures/synthetic/three_islands_pred_var_lisa.pdf}
+    \caption{Left: Predictive variance across the Rashomon set. Right: LISA HH hotspots (red). The detected hotspots align with the three ambiguous islands and additionally recover the designed high-multiplicity outliers, while the stable outliers are not systematically selected.}
+    \label{fig:synthetic_three_islands_variance_lisa}
+\end{figure}
 
-Overall, the synthetic experiments confirm that the proposed pipeline reliably identifies regions of predictive ambiguity when they are sufficiently large and coherent. Detection performance degrades gracefully for smaller or more fragmented regions, highlighting the role of spatial density in hotspot identification.
+Applying the standard pipeline yields $268$ HH points. The variance map shows that predictive multiplicity is concentrated in the three ambiguous islands and in the designed high-multiplicity outliers, while the stable Gaussian clusters and low-multiplicity outliers remain largely outside the hotspot region. This makes hotspot detections outside the main islands directly interpretable, since they can be compared against the known outlier construction.
 
+At the local level, recovery of the three island regions is strong. Relative to the ground-truth islands, which contain $294$ test observations in total, the HH mask achieves a precision of $0.9627$, a recall of $0.8776$, and a Jaccard overlap of $0.8487$. In absolute terms, $258$ of the $268$ HH points lie inside one of the three ground-truth islands. The remaining HH points correspond to the intentionally designed high-multiplicity outliers rather than arbitrary false positives.
+
+To assess sensitivity to the multiple-testing threshold, we vary the FDR level over $\alpha \in \{0.01, 0.05, 0.10, 0.20\}$. Figure~\ref{fig:synthetic_three_islands_fdr} shows that the conclusions are highly stable across this range. At the strictest threshold $\alpha=0.01$, the method detects $265$ HH points with precision $0.9623$, recall $0.8673$, and Jaccard $0.8388$. Increasing the threshold to $\alpha=0.05$ raises the HH count slightly to $268$ and improves recall to $0.8776$, with Jaccard increasing to $0.8487$ while precision remains essentially unchanged. The results are identical at $\alpha=0.10$, and only marginally change at $\alpha=0.20$, where the HH count increases to $269$, precision decreases slightly to $0.9591$, recall remains $0.8776$, and Jaccard decreases slightly to $0.8459$. Across all tested $\alpha$ values, the number of connected components remains four, reflecting the three island hotspots plus one additional outlier-driven hotspot component. The largest connected component has size $95$ throughout.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.6\textwidth]{figures/synthetic/three_islands_fdr_sensitivity.pdf}
+    \caption{FDR sensitivity analysis (three islands). HH count and Jaccard overlap vs.\ $\alpha$. Results are highly stable across thresholds.}
+    \label{fig:synthetic_three_islands_fdr}
+\end{figure}
+
+This experiment shows that the pipeline can recover several disconnected regions of predictive ambiguity while also distinguishing between outliers that should and should not exhibit high multiplicity. The resulting hotspot structure is therefore not only accurate with respect to the three island regions, but also consistent with the known behavior of the outlier groups.
 %% ---------------------------------------------------------------------------
 \subsection{Interpretable Rules for High-Multiplicity Regions}
 \label{sec:results-rules}
@@ -521,41 +571,31 @@ Overall, these results demonstrate that multiplicity hotspots can be described u
 \subsection{Decision Boundary Proximity}
 \label{sec:results-margin}
 
-A natural hypothesis is that high-variance observations arise primarily near the decision boundary, where the ensemble mean prediction $\bar{p}_i$ is close to 0.5. We test this by computing the margin $m_i = |\bar{p}_i - 0.5|$ and correlating it with pointwise variance.
+A natural hypothesis is that high-variance observations arise primarily near the decision boundary, where the ensemble mean prediction $\bar{p}_i$ is close to $0.5$. We test this by computing the margin $m_i = |\bar{p}_i - 0.5|$ and correlating it with pointwise variance.
 
-Table~\ref{tab:margin_summary} summarizes the results. On Breast Cancer and German Credit, variance and margin are strongly \emph{negatively} correlated (Pearson $r = -0.85$ and $-0.56$, respectively), confirming that high-variance points tend to lie near the decision boundary. This indicates that, on these datasets, predictive multiplicity is largely driven by boundary ambiguity.
+Table~\ref{tab:margin_summary} summarizes the results. On Adult and German Credit, variance and margin are negatively correlated, indicating that high-variance observations tend to lie closer to the decision boundary. This pattern is especially strong in rank terms: the mean Spearman correlation is $-0.89$ on Adult and $-0.70$ on German Credit. The corresponding mean margins are also clearly smaller inside HH regions than outside them, with HH margins of $0.22$ vs.\ $0.37$ on Adult and $0.16$ vs.\ $0.26$ on German Credit. These results suggest that, on these datasets, predictive multiplicity is at least partly associated with boundary ambiguity.
 
-In contrast, on COMPAS the correlation is close to zero ($r = -0.04 \pm 0.09$), indicating that multiplicity is \emph{not} explained by proximity to the decision boundary. HH points exhibit similar margin values to non-HH points, suggesting that disagreement arises from structural differences between models rather than inherent classification uncertainty.
+In contrast, on COMPAS the relationship remains weak. The mean Pearson correlation is $-0.04 \pm 0.09$ and the mean Spearman correlation is $-0.07 \pm 0.18$, both close to zero. HH points do not exhibit smaller margins than non-HH points; in fact, their mean margin is slightly larger ($0.19$ vs.\ $0.18$). This indicates that predictive multiplicity on COMPAS is not primarily driven by decision-boundary proximity, but instead reflects structural disagreement between near-optimal models.
 
 \begin{table}[htbp]
 \centering
-\caption{Variance vs.\ margin correlation (mean $\pm$ std across 10 seeds). Margin = $|\bar{p} - 0.5|$.}
+\caption{Variance vs.\ margin correlation (mean $\pm$ std across runs). Margin = $|\bar{p} - 0.5|$.}
 \label{tab:margin_summary}
 \small
 \begin{tabular}{lcccc}
 \hline
 Dataset & Pearson $r$ & Spearman $\rho$ & Margin (HH) & Margin (non-HH) \\
 \hline
-Breast Cancer & $-0.85 \pm 0.14$ & $-0.99 \pm 0.01$ & $0.38 \pm 0.06$ & $0.47 \pm 0.01$ \\
-COMPAS        & $-0.04 \pm 0.09$ & $-0.07 \pm 0.18$ & $0.19 \pm 0.04$ & $0.18 \pm 0.01$ \\
-German        & $-0.56 \pm 0.13$ & $-0.70 \pm 0.10$ & $0.16 \pm 0.06$ & $0.26 \pm 0.02$ \\
+Adult   & $-0.33 \pm 0.04$ & $-0.89 \pm 0.02$ & $0.22 \pm 0.02$ & $0.37 \pm 0.00$ \\
+COMPAS  & $-0.04 \pm 0.09$ & $-0.07 \pm 0.18$ & $0.19 \pm 0.04$ & $0.18 \pm 0.01$ \\
+German  & $-0.56 \pm 0.13$ & $-0.70 \pm 0.10$ & $0.16 \pm 0.06$ & $0.26 \pm 0.02$ \\
 \hline
 \end{tabular}
 \end{table}
 
-This distinction is further supported by a Mann--Whitney U test (alternative: HH has lower margin than non-HH). The test is significant for all Breast Cancer runs ($p < 0.001$, fraction significant = 1.0) and for roughly half of German runs (fraction significant = 0.57), but only for 30\% of COMPAS runs. 
+This distinction is further supported by a Mann--Whitney U test with the alternative hypothesis that HH points have lower margins than non-HH points. The test is significant in all Adult runs (mean $p \approx 3.5 \times 10^{-22}$, fraction significant $=1.00$), confirming a strong boundary effect. On German Credit, the effect is weaker but still present, with significance in $57\%$ of runs. On COMPAS, by contrast, the test is significant in only $30\%$ of runs and the mean p-value is $0.59$, providing no evidence that HH points systematically lie closer to the decision boundary.
 
-Figure~\ref{fig:variance_vs_margin} illustrates this difference: on COMPAS (seed 0), HH (red) and HV (orange) points are distributed across the full range of margins, rather than concentrating near the boundary. 
-
-Taken together, these results show that predictive multiplicity can arise from two distinct mechanisms: boundary uncertainty (as in Breast Cancer and German Credit) and structural model disagreement (as in COMPAS). This reinforces the interpretation of COMPAS multiplicity as a structured, model-driven phenomenon rather than a simple consequence of classification ambiguity.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.65\textwidth]{variance_vs_margin_compas.pdf}
-\caption{Pointwise variance vs.\ margin ($|\bar{p}-0.5|$) for COMPAS seed 0. HH and HV points span a wide range of margins, showing that multiplicity is not purely a boundary effect.}
-\label{fig:variance_vs_margin}
-\end{figure}
-
+Taken together, these results show that predictive multiplicity can arise from different mechanisms across datasets. On Adult and German Credit, high-multiplicity regions are more closely linked to boundary uncertainty. On COMPAS, however, multiplicity is largely decoupled from decision-boundary proximity, reinforcing the interpretation that its hotspot structure is driven primarily by structural disagreement among near-optimal models rather than by intrinsic classification ambiguity.
 %% ---------------------------------------------------------------------------
 \subsection{Fairness and Subgroup Exposure (COMPAS)}
 \label{sec:results-fairness}
@@ -646,49 +686,6 @@ Overall, these findings demonstrate that the spatial clustering of predictive mu
 \label{sec:results-agg-drivers}
 
 To ensure that driver and interpretability claims are robust, we aggregate the variance decomposition results across all 10 seeds.
-
-\subsubsection{Family Importance Across Seeds}
-
-Table~\ref{tab:fam_imp_agg} and Figure~\ref{fig:fam_imp_agg} report family importance (ratio of between-family to total variance) aggregated over 10 seeds for each dataset. Key findings:
-
-\begin{itemize}
-\item Family importance is highest on Breast Cancer ($0.62 \pm 0.05$), followed by German ($0.53 \pm 0.04$) and COMPAS ($0.41 \pm 0.03$). This reflects that on Breast Cancer, model family choice (rather than within-family hyperparameters) is the dominant driver of disagreement.
-\item Inside HH hotspots, family importance rises for all datasets: COMPAS $0.52 \pm 0.04$, German $0.57 \pm 0.08$, Breast Cancer $0.69 \pm 0.05$.
-\end{itemize}
-
-\begin{table}[htbp]
-\centering
-\caption{Family importance aggregated across 10 seeds: ratio of between-family to total variance.}
-\label{tab:fam_imp_agg}
-\small
-\begin{tabular}{lcccc}
-\hline
-Dataset & All points & HH only & Seeds (all) & Seeds (HH) \\
-\hline
-Breast Cancer & $0.62 \pm 0.05$ & $0.69 \pm 0.05$ & 10 & 4 \\
-COMPAS        & $0.41 \pm 0.03$ & $0.52 \pm 0.04$ & 10 & 10 \\
-German        & $0.53 \pm 0.04$ & $0.57 \pm 0.08$ & 10 & 4 \\
-\hline
-\end{tabular}
-\end{table}
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.85\textwidth]{family_importance_aggregated.pdf}
-\caption{Family importance (all test points vs.\ HH only), aggregated across 10 seeds with error bars.}
-\label{fig:fam_imp_agg}
-\end{figure}
-
-\subsubsection{Hyperparameter Importance Across Seeds}
-
-Figure~\ref{fig:hp_imp_agg} shows the top hyperparameters per family on COMPAS, aggregated across 10 seeds.  The ranking is highly consistent: LogReg regularization strength $C$ ($\rho = 0.94 \pm 0.05$), kNN number of neighbors ($0.79 \pm 0.17$), RF maximum depth ($0.64 \pm 0.07$), GBM learning rate ($0.31 \pm 0.05$), and MLP learning rate initialization ($0.22 \pm 0.10$) are the top drivers within their respective families in every seed.  These findings are consistent across German and Breast Cancer, with LogReg $C$ dominating across all datasets ($\rho > 0.93$).
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.95\textwidth]{hp_importance_aggregated_compas.pdf}
-\caption{Top within-family HP importance on COMPAS (mean $\pm$ std across 10 seeds). Rankings are consistent across seeds: regularization strength and complexity parameters dominate.}
-\label{fig:hp_imp_agg}
-\end{figure}
 
 \subsubsection{Rule Feature Frequency Across Seeds}
 
