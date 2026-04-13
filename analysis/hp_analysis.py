@@ -22,12 +22,41 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 import numpy as np
 import pandas as pd
 
-from analysis.run_analysis import load_meta, load_P_test
+from analysis.run_analysis import load_meta, load_P_test, select_rashomon_per_family_k_each
 from analysis.hyperparams import ensure_hp_columns, make_hp_key
 
 PathLike = Union[str, Path]
 
 EPS = 1e-15
+
+# Pool labels for downstream tables (extensible: full trained pool vs Rashomon subset).
+POOL_TYPE_RASHOMON = "Rashomon"
+POOL_TYPE_FULL_POOL = "full_pool"
+
+
+def select_pool_indices(
+    run_dir: PathLike,
+    *,
+    pool_type: str,
+    rashomon_k_each: int,
+) -> np.ndarray:
+    """
+    Map pool_type to row indices into meta / P_test.
+
+    * ``Rashomon`` — per-family top ``rashomon_k_each`` by validation Brier (same
+      construction as ``select_rashomon_per_family_k_each``).
+    * ``full_pool`` — all trained candidates in the run.
+    """
+    run_dir = Path(run_dir)
+    if pool_type == POOL_TYPE_RASHOMON:
+        return np.asarray(
+            select_rashomon_per_family_k_each(run_dir, K_each=rashomon_k_each),
+            dtype=int,
+        )
+    if pool_type == POOL_TYPE_FULL_POOL:
+        meta = load_meta(run_dir)
+        return np.arange(len(meta), dtype=int)
+    raise ValueError(f"Unknown pool_type={pool_type!r}")
 
 
 # ---------------------------------------------------------------------------
@@ -60,16 +89,28 @@ def select_rashomon_family(
     return fam_indices[order], K_actual
 
 
-def compute_Vm(P_sel: np.ndarray) -> np.ndarray:
+def compute_Vm(
+    P_sel: np.ndarray,
+    obs_mask: Optional[np.ndarray] = None,
+) -> np.ndarray:
     """
     Model-level disagreement contribution.
 
     For each model m in P_sel (K, n_obs):
         V_m = mean_x( (P_sel[m, x] - p_bar(x))^2 )
     where p_bar(x) = mean_m P_sel[m, x].
+
+    If ``obs_mask`` is provided, means are taken only over the masked test points
+    (e.g. HH vs non-HH subsets).
     """
-    p_bar = P_sel.mean(axis=0)
-    return np.array([np.mean((P_sel[m] - p_bar) ** 2) for m in range(P_sel.shape[0])])
+    if obs_mask is None:
+        P = P_sel
+    else:
+        P = P_sel[:, np.asarray(obs_mask, dtype=bool)]
+    if P.size == 0 or P.shape[1] == 0:
+        return np.zeros(P_sel.shape[0], dtype=float)
+    p_bar = P.mean(axis=0)
+    return np.array([np.mean((P[m] - p_bar) ** 2) for m in range(P.shape[0])])
 
 
 # ---------------------------------------------------------------------------
@@ -171,20 +212,29 @@ def run_hp_importance_all_seeds(
     dataset_dir: Path,
     dataset: str,
     K: int = 25,
+    *,
+    pool_type: str = POOL_TYPE_RASHOMON,
+    rashomon_k_each: Optional[int] = None,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
-    Iterate over all seed runs and families. For each (seed, family):
-      - select within-family Rashomon (top-K by val_brier)
-      - compute V_m
+    Iterate over all seed runs and families. For each (seed, family) within the
+    selected candidate pool:
+
+      - restrict to that family's models in the pool
+      - compute V_m (disagreement contribution within the family)
       - compute HP importance on V_m
 
-    Returns
-    -------
-    df_per_seed : DataFrame
-        One row per (seed, family, hp_name).
-    df_Vm : DataFrame
-        Per-model V_m with seed/family/hp columns for marginal-effect analysis.
+    Parameters
+    ----------
+    K
+        When ``rashomon_k_each`` is omitted, used as the per-family Rashomon size
+        (backward compatible).
+    pool_type, rashomon_k_each
+        See ``select_pool_indices``; default matches the historical top-K-per-family
+        Rashomon construction.
     """
+    k_each = int(rashomon_k_each if rashomon_k_each is not None else K)
+
     run_dirs = sorted(
         [p for p in dataset_dir.iterdir() if p.is_dir() and p.name.startswith("seed=")],
         key=lambda p: int(p.name.split("=")[1]),
@@ -200,14 +250,20 @@ def run_hp_importance_all_seeds(
         meta = load_meta(run_dir)
         P_test = load_P_test(run_dir)
         meta = ensure_hp_columns(meta)
-        families = sorted(meta["model_name"].unique())
+        pool_idx = select_pool_indices(run_dir, pool_type=pool_type, rashomon_k_each=k_each)
+        if pool_idx.size == 0:
+            continue
+        meta_pool = meta.iloc[pool_idx].reset_index(drop=True)
+        P_pool = P_test[pool_idx]
+        families = sorted(meta_pool["model_name"].unique())
 
         for family in families:
-            idx, K_actual = select_rashomon_family(run_dir, family, K=K)
+            fam_mask = (meta_pool["model_name"] == family).values
+            K_actual = int(fam_mask.sum())
             if K_actual < 3:
                 continue
-            P_sel = P_test[idx]
-            meta_sel = meta.iloc[idx].reset_index(drop=True)
+            P_sel = P_pool[fam_mask]
+            meta_sel = meta_pool.loc[fam_mask].reset_index(drop=True)
 
             V_m = compute_Vm(P_sel)
             imp = hp_importance_Vm(V_m, meta_sel)
@@ -216,6 +272,8 @@ def run_hp_importance_all_seeds(
                 imp["dataset"] = dataset
                 imp["seed"] = seed_val
                 imp["family"] = family
+                imp["pool_type"] = pool_type
+                imp["subset"] = "all"
                 imp["K_actual"] = K_actual
                 imp_rows.append(imp)
 
@@ -223,6 +281,7 @@ def run_hp_importance_all_seeds(
             vm_df["V_m"] = V_m
             vm_df["seed"] = seed_val
             vm_df["family"] = family
+            vm_df["pool_type"] = pool_type
             vm_rows.append(vm_df)
 
     df_per_seed = pd.concat(imp_rows, ignore_index=True) if imp_rows else pd.DataFrame()
@@ -245,25 +304,40 @@ def aggregate_hp_importance(df: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame()
 
     df = df.copy()
+    group_cols = ["dataset", "seed", "family"]
+    if "pool_type" in df.columns:
+        group_cols.append("pool_type")
+    if "subset" in df.columns:
+        group_cols.append("subset")
     df["rank"] = (
-        df.groupby(["dataset", "seed", "family"])["ratio_of_sums"]
+        df.groupby(group_cols)["ratio_of_sums"]
         .rank(ascending=False, method="min")
     )
 
+    agg_keys = ["dataset", "family", "hp_name"]
+    if "pool_type" in df.columns:
+        agg_keys = ["dataset", "pool_type", "family", "hp_name"]
+    if "subset" in df.columns:
+        if "pool_type" in df.columns:
+            agg_keys = ["dataset", "pool_type", "subset", "family", "hp_name"]
+        else:
+            agg_keys = ["dataset", "subset", "family", "hp_name"]
+
     agg = (
-        df.groupby(["dataset", "family", "hp_name"])
+        df.groupby(agg_keys)
         .agg(
             mean_importance=("ratio_of_sums", "mean"),
             std_importance=("ratio_of_sums", "std"),
             n_seeds=("seed", "nunique"),
             mean_V_m=("mean_V_m", "mean"),
+            mean_rank=("rank", "mean"),
             rank_freq_top1=("rank", lambda x: float((x == 1).mean())),
             rank_freq_top3=("rank", lambda x: float((x <= 3).mean())),
         )
         .reset_index()
     )
     agg["std_importance"] = agg["std_importance"].fillna(0.0)
-    agg = agg.sort_values(
-        ["dataset", "family", "mean_importance"], ascending=[True, True, False]
-    ).reset_index(drop=True)
+    sort_cols = [c for c in ["dataset", "pool_type", "subset", "family", "mean_importance"] if c in agg.columns]
+    asc = [True] * (len(sort_cols) - 1) + [False]
+    agg = agg.sort_values(sort_cols, ascending=asc).reset_index(drop=True)
     return agg

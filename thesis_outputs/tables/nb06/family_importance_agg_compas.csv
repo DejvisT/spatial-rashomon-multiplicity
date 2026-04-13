@@ -1,0 +1,4 @@
+dataset,pool_type,subset,mean_ratio,std_ratio,n_seeds
+compas,Rashomon,HH,0.5246049749291669,0.03458213338579202,10
+compas,Rashomon,all,0.4126133441609182,0.03018243785296555,10
+compas,Rashomon,non_HH,0.3903235897495664,0.027431870633844314,10
