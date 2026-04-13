@@ -1,0 +1,5 @@
+dataset,family,pool_type,hp,mean_delta,std_delta,n_seeds
+adult,MLP,full_pool,learning_rate_init,0.0038874746126581123,0.005093927407136652,10
+adult,MLP,full_pool,activation,0.0013627931959166672,0.004169414913410127,10
+adult,MLP,full_pool,alpha,0.001340222011032071,0.002470558898171079,10
+adult,MLP,full_pool,hidden_layer_sizes,0.0003531717380522645,0.004391647379727443,10

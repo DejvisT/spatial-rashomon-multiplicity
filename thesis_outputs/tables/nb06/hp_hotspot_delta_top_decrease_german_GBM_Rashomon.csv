@@ -1,0 +1,5 @@
+dataset,family,pool_type,hp,mean_delta,std_delta,n_seeds
+german,GBM,Rashomon,learning_rate,-0.019470173571035032,0.0907695847945639,3
+german,GBM,Rashomon,n_estimators,-0.01815688558821043,0.03413191693237847,3
+german,GBM,Rashomon,max_depth,-0.016233317640224468,0.09136537730672163,3
+german,GBM,Rashomon,subsample,-0.00012132478348975129,0.0027624135977282645,3

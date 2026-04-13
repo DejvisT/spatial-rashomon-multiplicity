@@ -1,0 +1,3 @@
+dataset,family,pool_type,hp,mean_delta,std_delta,n_seeds
+compas,RF,full_pool,min_samples_leaf,-0.0032090665912276467,0.01922645166168787,10
+compas,RF,full_pool,n_estimators,-0.002150789815479031,0.006580703549927613,10

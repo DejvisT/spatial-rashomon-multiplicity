@@ -1,0 +1,2 @@
+dataset,family,subset,hp_name,rashomon_mean_importance,full_pool_mean_importance,rashomon_mean_rank,full_pool_mean_rank,rashomon_n_seeds,full_pool_n_seeds,rashomon_std_importance,full_pool_std_importance,delta_rashomon_minus_full,abs_delta
+adult,kNN,all,n_neighbors,0.8682881030046878,0.9837118728798216,1.0,1.0,10,10,0.03979584062482689,0.0018849898559953739,-0.11542376987513381,0.11542376987513381

@@ -1,0 +1,2 @@
+dataset,family,pool_type,hp,mean_delta,std_delta,n_seeds
+german,LogReg,full_pool,C,-0.0041259716017273225,0.005559555384517322,6

@@ -1,0 +1,6 @@
+dataset,family,pool_type,hp,mean_delta,std_delta,n_seeds
+compas,RF,Rashomon,min_samples_split,0.0062378369407562525,0.014020059918639236,10
+compas,RF,Rashomon,max_features,0.004607659969204624,0.010828843072375057,10
+compas,RF,Rashomon,min_samples_leaf,0.0009081408060135361,0.014951772099083063,10
+compas,RF,Rashomon,n_estimators,-0.0014358889166708627,0.00468823513176736,10
+compas,RF,Rashomon,max_depth,-0.03990728214945727,0.041656197019061036,10

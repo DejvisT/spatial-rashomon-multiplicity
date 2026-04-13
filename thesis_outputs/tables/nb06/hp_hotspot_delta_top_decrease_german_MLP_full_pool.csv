@@ -1,0 +1,3 @@
+dataset,family,pool_type,hp,mean_delta,std_delta,n_seeds
+german,MLP,full_pool,alpha,-0.002933771152998879,0.015024670386623135,6
+german,MLP,full_pool,hidden_layer_sizes,-0.0026891995973864096,0.012860406988099812,6

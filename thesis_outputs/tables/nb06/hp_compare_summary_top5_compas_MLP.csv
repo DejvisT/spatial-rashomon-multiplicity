@@ -1,0 +1,5 @@
+dataset,family,subset,hp_name,rashomon_mean_importance,full_pool_mean_importance,rashomon_mean_rank,full_pool_mean_rank,delta_rashomon_minus_full
+compas,MLP,all,learning_rate_init,0.2657569121877331,0.11625479860747168,1.6,1.4,0.14950211358026144
+compas,MLP,all,hidden_layer_sizes,0.18051261176785743,0.07141184387483837,2.1,2.2,0.10910076789301906
+compas,MLP,all,alpha,0.15872913047394804,0.05837247379791488,2.6,2.9,0.10035665667603316
+compas,MLP,all,activation,0.027777370992461185,0.03141058987968341,3.7,3.5,-0.003633218887222227

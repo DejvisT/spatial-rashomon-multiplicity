@@ -1,0 +1,2 @@
+dataset,family,pool_type,hp,mean_delta,std_delta,n_seeds
+adult,LogReg,full_pool,l1_ratio,-0.00042592299644926627,0.0008386413423283661,10

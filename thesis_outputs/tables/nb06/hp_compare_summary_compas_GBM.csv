@@ -1,0 +1,5 @@
+dataset,family,subset,hp_name,rashomon_mean_importance,full_pool_mean_importance,rashomon_mean_rank,full_pool_mean_rank,delta_rashomon_minus_full
+compas,GBM,all,n_estimators,0.12774295519687356,0.05870213545952687,2.3,2.9,0.06904081973734669
+compas,GBM,all,subsample,0.03231969799848148,0.014993785766510583,3.6,3.8,0.017325912231970896
+compas,GBM,all,max_depth,0.14103555924557365,0.13153118323698137,1.8,1.8,0.009504376008592275
+compas,GBM,all,learning_rate,0.1511086852435413,0.15643838549604966,2.3,1.5,-0.005329700252508368

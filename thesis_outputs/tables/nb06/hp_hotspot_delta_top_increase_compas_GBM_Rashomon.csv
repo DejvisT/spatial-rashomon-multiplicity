@@ -1,0 +1,3 @@
+dataset,family,pool_type,hp,mean_delta,std_delta,n_seeds
+compas,GBM,Rashomon,subsample,0.026643972131378903,0.04436175031937422,10
+compas,GBM,Rashomon,learning_rate,0.0034042939235078007,0.05260963272230205,10
