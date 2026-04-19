@@ -372,7 +372,7 @@ To identify which modeling choices drive predictive multiplicity, we apply the v
 
 \subsubsection{Family Importance}
 
-Model family (GBM, LogReg, MLP, RF, kNN) explains a substantial portion of predictive multiplicity across all datasets. Figure~\ref{fig:family_importance_agg} shows the aggregated family importance (mean $\pm$ std over seeds) for all test points, HH hotspots, and non-HH observations.
+Model family (GBM, LogReg, MLP, RF, kNN) explains a substantial portion of predictive multiplicity across all datasets. Figure~\ref{fig:family_importance_agg} shows the aggregated family importance (mean $\pm$ std over seeds) within the Rashomon pool for all test points, HH hotspots, and non-HH observations.
 
 Within the Rashomon set, family importance is consistently high and typically increases within HH regions. On Adult, family importance reaches approximately 0.71 on all points and about 0.79 within HH regions, while on COMPAS it is around 0.41 globally and increases to roughly 0.52 in hotspots. German Credit shows a similar pattern on the full test set, with family importance around 0.53; however, the HH-specific estimate is based on fewer seeds and should therefore be interpreted more cautiously. In all datasets, the family contribution is lower outside hotspots than within them, indicating that model-family differences are particularly consequential in regions of concentrated disagreement.
 
@@ -380,8 +380,8 @@ Comparing the Rashomon set to the full candidate pool strengthens this interpret
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.85\textwidth]{figures/nb06/family_importance_agg.pdf}
-\caption{Family importance (mean $\pm$ std over seeds) across datasets and subsets (all, HH, non-HH).}
+\includegraphics[width=0.85\textwidth]{figures/nb06/family_importance_agg_rashomon.pdf}
+\caption{Family importance within the Rashomon pool (mean $\pm$ std over seeds) across datasets and subsets (all, HH, non-HH).}
 \label{fig:family_importance_agg}
 \end{figure}
 

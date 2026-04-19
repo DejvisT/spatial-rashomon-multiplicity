@@ -1,0 +1,7 @@
+dataset,method,moran_i,p_value,n_hh
+compas,euclidean,0.11281031930651406,0.0,18
+compas,pca,0.1125141236362539,0.0,18
+german,euclidean,0.0913562955661258,0.0,1
+german,pca,0.1279563083476092,0.0,1
+adult,euclidean,0.05097757851200888,0.0,72
+adult,pca,0.055127707336803174,0.0,135
