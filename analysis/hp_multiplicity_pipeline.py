@@ -14,7 +14,7 @@ by notebook 06. Plotting stays thin: consumers pass aggregated DataFrames.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
@@ -402,6 +402,7 @@ def plot_decomp_hp_bars(
     family: str,
     top_n: int = 10,
     fig_path: Optional[Path] = None,
+    show: bool = True,
 ) -> None:
     """Horizontal bar chart from ``aggregate_decomposition_hp`` output."""
     import matplotlib.pyplot as plt
@@ -424,7 +425,10 @@ def plot_decomp_hp_bars(
     fig.tight_layout()
     if fig_path is not None:
         fig.savefig(fig_path, bbox_inches="tight")
-    plt.show()
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
 
 
 def plot_vm_hp_bars(
@@ -469,6 +473,7 @@ def plot_hotspot_hp_delta(
     family: str,
     top_n: int = 12,
     fig_path: Optional[Path] = None,
+    show: bool = True,
 ) -> None:
     import matplotlib.pyplot as plt
 
@@ -490,7 +495,118 @@ def plot_hotspot_hp_delta(
     fig.tight_layout()
     if fig_path is not None:
         fig.savefig(fig_path, bbox_inches="tight")
-    plt.show()
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
+
+
+def plot_decomp_hp_grid_rashomon(
+    df_agg: pd.DataFrame,
+    *,
+    datasets: Sequence[str],
+    families: Sequence[str],
+    subset: str = "all",
+    top_n: int = 8,
+    fig_path: Optional[Path] = None,
+    show: bool = True,
+) -> None:
+    """
+    Single figure: rows = families, columns = datasets (secondary decomposition on P).
+    """
+    import matplotlib.pyplot as plt
+
+    col = "hp" if "hp" in df_agg.columns else "hyperparameter"
+    d_all = df_agg.copy()
+    if "pool_type" in d_all.columns:
+        d_all = d_all[d_all["pool_type"] == POOL_TYPE_RASHOMON]
+    if "subset" in d_all.columns:
+        d_all = d_all[d_all["subset"] == subset]
+    if d_all.empty:
+        return
+
+    n_r, n_c = len(families), len(datasets)
+    fig, axes = plt.subplots(n_r, n_c, figsize=(3.2 * n_c, 2.2 * n_r), squeeze=False, sharex=False)
+    for i, fam in enumerate(families):
+        for j, ds in enumerate(datasets):
+            ax = axes[i][j]
+            sub = d_all[(d_all["dataset"] == ds) & (d_all["family"] == fam)]
+            sub = sub.sort_values("mean_importance", ascending=False).head(top_n)
+            if sub.empty:
+                ax.set_axis_off()
+                continue
+            y = np.arange(len(sub))
+            ax.barh(y, sub["mean_importance"], xerr=sub["std_importance"], capsize=1.5, color="darkseagreen")
+            ax.set_yticks(y)
+            ax.set_yticklabels(sub[col].astype(str), fontsize=7)
+            ax.invert_yaxis()
+            ax.tick_params(axis="x", labelsize=7)
+            if i == 0:
+                ax.set_title(str(ds), fontsize=9)
+            if j == 0:
+                ax.set_ylabel(str(fam), fontsize=9)
+    fig.suptitle(
+        "Secondary: within-family HP decomposition (unique values on P), Rashomon",
+        fontsize=11,
+    )
+    fig.tight_layout()
+    if fig_path is not None:
+        fig.savefig(fig_path, bbox_inches="tight")
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
+
+
+def plot_hotspot_hp_delta_grid(
+    delta_agg: pd.DataFrame,
+    *,
+    datasets: Sequence[str],
+    families: Sequence[str],
+    top_n: int = 8,
+    fig_path: Optional[Path] = None,
+    show: bool = True,
+) -> None:
+    """Single figure: HH − all decomposition deltas, rows = families, cols = datasets."""
+    import matplotlib.pyplot as plt
+
+    if delta_agg.empty:
+        return
+    d_all = delta_agg.copy()
+    if "pool_type" in d_all.columns:
+        d_all = d_all[d_all["pool_type"] == POOL_TYPE_RASHOMON]
+    if d_all.empty:
+        return
+
+    n_r, n_c = len(families), len(datasets)
+    fig, axes = plt.subplots(n_r, n_c, figsize=(3.2 * n_c, 2.2 * n_r), squeeze=False)
+    for i, fam in enumerate(families):
+        for j, ds in enumerate(datasets):
+            ax = axes[i][j]
+            sub = d_all[(d_all["dataset"] == ds) & (d_all["family"] == fam)]
+            sub = sub.assign(_abs=np.abs(sub["mean_delta"])).sort_values("_abs", ascending=False).drop(columns="_abs").head(top_n)
+            if sub.empty:
+                ax.set_axis_off()
+                continue
+            y = np.arange(len(sub))
+            ax.barh(y, sub["mean_delta"], xerr=sub["std_delta"], capsize=1.5, color="coral")
+            ax.set_yticks(y)
+            ax.set_yticklabels(sub["hp"].astype(str), fontsize=7)
+            ax.invert_yaxis()
+            ax.axvline(0, color="gray", lw=0.6)
+            ax.tick_params(axis="x", labelsize=7)
+            if i == 0:
+                ax.set_title(str(ds), fontsize=9)
+            if j == 0:
+                ax.set_ylabel(str(fam), fontsize=9)
+    fig.suptitle("Hotspot vs all: Δ HP importance (HH − all), Rashomon", fontsize=11)
+    fig.tight_layout()
+    if fig_path is not None:
+        fig.savefig(fig_path, bbox_inches="tight")
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
 
 
 __all__ = [
@@ -502,9 +618,11 @@ __all__ = [
     "hotspot_delta_decomp",
     "per_seed_analysis_tables",
     "plot_decomp_hp_bars",
+    "plot_decomp_hp_grid_rashomon",
     "plot_family_importance_bars",
     "plot_vm_hp_bars",
     "plot_hotspot_hp_delta",
+    "plot_hotspot_hp_delta_grid",
     "run_dataset_all_seeds",
 ]
 
@@ -517,6 +635,7 @@ def plot_vm_hp_compare_bars(
     subset: str = "all",
     top_n: int = 10,
     fig_path: Optional[Path] = None,
+    show: bool = True,
 ) -> None:
     import matplotlib.pyplot as plt
     import numpy as np
@@ -565,7 +684,10 @@ def plot_vm_hp_compare_bars(
     fig.tight_layout()
     if fig_path is not None:
         fig.savefig(fig_path, bbox_inches="tight")
-    plt.show()
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
 
 
 def plot_family_importance_compare_bars(

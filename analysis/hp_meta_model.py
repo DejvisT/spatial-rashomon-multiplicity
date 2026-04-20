@@ -1,15 +1,18 @@
 """
-Descriptive / exploratory meta-models for model-level disagreement score V_m.
+Descriptive / exploratory meta-models for model-level disagreement score ``V_m``.
 
-RandomForest fits relate V_m (and optional HH / non-HH variants) to validation
-Brier score and hyperparameters. These are **not** causal or fully calibrated
-predictors: we report leave-one-seed-out (or labeled row-level fallback) scores
-and bootstrap stability of **grouped** importances.
+**Thesis role (Section 5.7):** this is the **main descriptive** tool for
+within-family hyperparameter *importance* and *range-style* summaries, conditional
+on validation Brier. **Family decomposition** (between vs within family on ``P``)
+lives in ``hp_multiplicity_pipeline`` / ``hyperparams.py`` and is the main
+*structural* analysis. **Unique-value HP variance decompositions** on ``P`` are
+secondary / appendix material.
 
-Family vs within-family variance decomposition on predictions remains in
-``hp_multiplicity_pipeline`` / ``hyperparams.py``. This module is the primary
-tool for thesis-facing HP importance, performance-vs-HP contrast, and
-effect summaries (1D / 2D grids).
+RandomForest fits are **not** causal or fully calibrated predictors. We report
+leave-one-(outer-)seed-out metrics when possible (else a labeled row-level KFold
+fallback) and **importance stability** under resampling. Stability tables use
+columns ``mean_importance``, ``std_importance``, ``top1_frequency``,
+``top3_frequency``, ``mean_rank``, ``n_reps_used``.
 """
 from __future__ import annotations
 
@@ -70,6 +73,21 @@ def unify_validation_brier(df: pd.DataFrame) -> pd.DataFrame:
         if alt is not None:
             out = out.rename(columns={alt: "validation_brier"})
     return out
+
+
+def resolve_outer_seed_column(
+    df: pd.DataFrame,
+    preference: Sequence[str] = ("outer_seed", "seed"),
+) -> str:
+    """
+    Column used for leave-one-seed-out validation and seed-level bootstrap.
+
+    Prefer ``outer_seed`` (training outer split / run id) when present, else ``seed``.
+    """
+    for c in preference:
+        if c in df.columns and df[c].notna().any():
+            return c
+    return "seed"
 
 
 def collapse_feature_name(name: str, perf_col: str, hp_cols: Sequence[str]) -> str:
@@ -354,8 +372,8 @@ def stability_importance_tables(
                 "feature_group": fg,
                 "mean_importance": float(chunk["importance"].mean()),
                 "std_importance": float(chunk["importance"].std(ddof=1)) if len(chunk) > 1 else 0.0,
-                "freq_top1": freq_top1,
-                "freq_top3": freq_top3,
+                "top1_frequency": freq_top1,
+                "top3_frequency": freq_top3,
                 "mean_rank": float(np.mean(ranks)) if ranks else float("nan"),
                 "n_reps_used": n_succ,
             }
@@ -444,6 +462,71 @@ def _categorical_levels(s: pd.Series) -> List[Any]:
     return u
 
 
+def meta_model_target_specs(meta_df: pd.DataFrame) -> List[Tuple[str, str]]:
+    """(target_column, filename_suffix) pairs for pooled meta-models."""
+    specs: List[Tuple[str, str]] = [("V_m", "")]
+    for alt, tag in (("V_m_HH", "_VmHH"), ("V_m_nonHH", "_VmNonHH")):
+        if alt in meta_df.columns and int(meta_df[alt].notna().sum()) >= MIN_GROUP_ROWS:
+            specs.append((alt, tag))
+    return specs
+
+
+def export_meta_effect_surfaces(
+    pipe_full: Pipeline,
+    X: pd.DataFrame,
+    *,
+    ds: str,
+    fam: str,
+    safe_pt: str,
+    non_perf: pd.DataFrame,
+    table_dir: Path,
+    random_state: int,
+) -> None:
+    """1D / 2D PDP-style grids for top non-performance HPs (``V_m`` target only)."""
+    top_np = non_perf.head(2)["feature_group"].tolist() if len(non_perf) else []
+    for feat in top_np[:2]:
+        if feat not in X.columns:
+            continue
+        s = X[feat]
+        if pd.api.types.is_numeric_dtype(s):
+            grid = _numeric_quantile_grid(s, N_GRID_1D)
+        else:
+            grid = _categorical_levels(s)
+        if not grid:
+            continue
+        eff = pdp_grid_predictions_1d(
+            pipe_full,
+            X,
+            feat,
+            grid,
+            random_state=random_state + sum(ord(c) for c in str(feat)) % 97,
+        )
+        eff.to_csv(
+            table_dir / f"hp_meta_effect_1d_{ds}_{fam}_{safe_pt}_{_safe_filename_part(feat)}.csv",
+            index=False,
+        )
+    if len(top_np) >= 2:
+        f1, f2 = top_np[0], top_np[1]
+        if f1 in X.columns and f2 in X.columns:
+            g1 = _numeric_quantile_grid(X[f1], N_GRID_2D) if pd.api.types.is_numeric_dtype(X[f1]) else _categorical_levels(X[f1])
+            g2 = _numeric_quantile_grid(X[f2], N_GRID_2D) if pd.api.types.is_numeric_dtype(X[f2]) else _categorical_levels(X[f2])
+            if g1 and g2 and len(g1) * len(g2) <= 400:
+                eff2 = pdp_grid_predictions_2d(
+                    pipe_full,
+                    X,
+                    f1,
+                    f2,
+                    g1,
+                    g2,
+                    random_state=random_state + sum(ord(c) for c in str(f1) + str(f2)) % 97,
+                )
+                eff2.to_csv(
+                    table_dir
+                    / f"hp_meta_effect_2d_{ds}_{fam}_{safe_pt}_{_safe_filename_part(f1)}_{_safe_filename_part(f2)}.csv",
+                    index=False,
+                )
+
+
 def write_hp_top2_driver_summary(meta_summary: pd.DataFrame, path: Path) -> None:
     """Thesis export expects columns: dataset, family, Top-1 driver, Top-2 driver."""
     if meta_summary.empty:
@@ -480,11 +563,13 @@ def run_hp_meta_model_suite(
     fig_dir: Optional[Path] = None,
     n_stability_reps: int = N_STABILITY_REPS_DEFAULT,
     random_state: int = 0,
-    seed_col: str = "seed",
+    seed_col: Optional[str] = None,
 ) -> None:
     """
     Fit descriptive meta-models per (dataset, family, pool_type) and optional
     target columns V_m / V_m_HH / V_m_nonHH; write CSV summaries and effect grids.
+
+    If ``seed_col`` is None, uses ``outer_seed`` when available else ``seed`` for LOSO / bootstrap.
     """
     table_dir = Path(table_dir)
     table_dir.mkdir(parents=True, exist_ok=True)
@@ -495,6 +580,8 @@ def run_hp_meta_model_suite(
     if "validation_brier" not in meta_df.columns or "V_m" not in meta_df.columns:
         return
 
+    seed_col_eff = seed_col or resolve_outer_seed_column(meta_df)
+
     hp_cols_all = sorted([c for c in meta_df.columns if c.startswith("hp_")])
     if not hp_cols_all:
         return
@@ -503,10 +590,7 @@ def run_hp_meta_model_suite(
     if not group_cols:
         return
 
-    target_specs: List[Tuple[str, str]] = [("V_m", "")]
-    for alt, tag in (("V_m_HH", "_VmHH"), ("V_m_nonHH", "_VmNonHH")):
-        if alt in meta_df.columns and meta_df[alt].notna().sum() >= MIN_GROUP_ROWS:
-            target_specs.append((alt, tag))
+    target_specs = meta_model_target_specs(meta_df)
 
     summary_rows: List[Dict[str, Any]] = []
     compact_meta_rows: List[Dict[str, Any]] = []
@@ -527,7 +611,7 @@ def run_hp_meta_model_suite(
             if len(g) < MIN_GROUP_ROWS or g[target_col].nunique() < MIN_TARGET_UNIQUE:
                 continue
 
-            seed_for_xy = seed_col if seed_col in g.columns else None
+            seed_for_xy = seed_col_eff if seed_col_eff in g.columns else None
             X, y, hp_use, seeds_arr = prepare_xy(g, hp_cols_all, target_col, seed_for_xy)
             if X is None or y is None:
                 continue
@@ -605,7 +689,7 @@ def run_hp_meta_model_suite(
                     g.reset_index(drop=True),
                     hp_cols_all,
                     target_col,
-                    seed_col if seed_col in g.columns else "",
+                    seed_col_eff if seed_col_eff in g.columns else "",
                     n_stability_reps,
                     random_state + 17,
                 )
@@ -624,50 +708,17 @@ def run_hp_meta_model_suite(
                     top_stable["group_key"] = f"{ds}|{fam}|{pt}|{target_col}"
                     stability_summary_parts.append(top_stable)
 
-            # --- effect curves (main target only to limit volume) ---
             if target_col == "V_m":
-                top_np = non_perf.head(2)["feature_group"].tolist() if len(non_perf) else []
-                for feat in top_np[:2]:
-                    if feat not in X.columns:
-                        continue
-                    s = X[feat]
-                    if pd.api.types.is_numeric_dtype(s):
-                        grid = _numeric_quantile_grid(s, N_GRID_1D)
-                    else:
-                        grid = _categorical_levels(s)
-                    if not grid:
-                        continue
-                    eff = pdp_grid_predictions_1d(
-                        pipe_full,
-                        X,
-                        feat,
-                        grid,
-                        random_state=random_state + sum(ord(c) for c in str(feat)) % 97,
-                    )
-                    eff.to_csv(
-                        table_dir / f"hp_meta_effect_1d_{ds}_{fam}_{safe_pt}_{_safe_filename_part(feat)}.csv",
-                        index=False,
-                    )
-                if len(top_np) >= 2:
-                    f1, f2 = top_np[0], top_np[1]
-                    if f1 in X.columns and f2 in X.columns:
-                        g1 = _numeric_quantile_grid(X[f1], N_GRID_2D) if pd.api.types.is_numeric_dtype(X[f1]) else _categorical_levels(X[f1])
-                        g2 = _numeric_quantile_grid(X[f2], N_GRID_2D) if pd.api.types.is_numeric_dtype(X[f2]) else _categorical_levels(X[f2])
-                        if g1 and g2 and len(g1) * len(g2) <= 400:
-                            eff2 = pdp_grid_predictions_2d(
-                                pipe_full,
-                                X,
-                                f1,
-                                f2,
-                                g1,
-                                g2,
-                                random_state=random_state + sum(ord(c) for c in str(f1) + str(f2)) % 97,
-                            )
-                            eff2.to_csv(
-                                table_dir
-                                / f"hp_meta_effect_2d_{ds}_{fam}_{safe_pt}_{_safe_filename_part(f1)}_{_safe_filename_part(f2)}.csv",
-                                index=False,
-                            )
+                export_meta_effect_surfaces(
+                    pipe_full,
+                    X,
+                    ds=ds,
+                    fam=fam,
+                    safe_pt=safe_pt,
+                    non_perf=non_perf,
+                    table_dir=table_dir,
+                    random_state=random_state,
+                )
 
     if summary_rows:
         meta_summary = pd.DataFrame(summary_rows).sort_values(["dataset", "family", "pool_type", "target_vm"])
@@ -709,10 +760,13 @@ def run_hp_meta_model_suite(
 
 
 __all__ = [
+    "export_meta_effect_surfaces",
+    "grouped_importances_from_pipe",
+    "leave_one_seed_out_scores",
+    "meta_model_target_specs",
+    "prepare_xy",
+    "resolve_outer_seed_column",
     "run_hp_meta_model_suite",
     "unify_validation_brier",
     "collapse_feature_name",
-    "prepare_xy",
-    "grouped_importances_from_pipe",
-    "leave_one_seed_out_scores",
 ]

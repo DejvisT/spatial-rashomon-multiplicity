@@ -1,4 +1,4 @@
-dataset,family,pool_type,target_vm,feature_group,mean_importance,std_importance,freq_top1,freq_top3,mean_rank,n_reps_used
+dataset,family,pool_type,target_vm,feature_group,mean_importance,std_importance,top1_frequency,top3_frequency,mean_rank,n_reps_used
 compas,kNN,Rashomon,V_m_nonHH,validation_brier,0.8694040140718821,0.04449157901141314,1.0,1.0,1.0,12
 compas,kNN,Rashomon,V_m_nonHH,hp_n_neighbors,0.12616863516849697,0.04286744570839815,0.0,1.0,2.0,12
 compas,kNN,Rashomon,V_m_nonHH,hp_weights,0.0037061002474935464,0.0036205599445231417,0.0,0.8333333333333334,3.1666666666666665,12

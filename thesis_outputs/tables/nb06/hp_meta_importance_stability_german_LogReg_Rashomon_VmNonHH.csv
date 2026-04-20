@@ -1,4 +1,4 @@
-dataset,family,pool_type,target_vm,feature_group,mean_importance,std_importance,freq_top1,freq_top3,mean_rank,n_reps_used
+dataset,family,pool_type,target_vm,feature_group,mean_importance,std_importance,top1_frequency,top3_frequency,mean_rank,n_reps_used
 german,LogReg,Rashomon,V_m_nonHH,hp_C,0.8043543643066554,0.01657404071473122,1.0,1.0,1.0,12
 german,LogReg,Rashomon,V_m_nonHH,hp_l1_ratio,0.11041678115568115,0.030449369670221813,0.0,1.0,2.3333333333333335,12
 german,LogReg,Rashomon,V_m_nonHH,validation_brier,0.08522885453766339,0.030711111829052045,0.0,1.0,2.6666666666666665,12
