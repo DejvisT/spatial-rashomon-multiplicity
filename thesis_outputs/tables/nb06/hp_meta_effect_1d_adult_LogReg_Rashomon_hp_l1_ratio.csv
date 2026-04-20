@@ -1,0 +1,6 @@
+feature,grid_value,predicted_V_m,n_background_rows
+hp_l1_ratio,0.0,4.225381641023628e-05,100
+hp_l1_ratio,0.25,4.930690822271419e-05,100
+hp_l1_ratio,0.5,5.670833089607562e-05,100
+hp_l1_ratio,0.75,6.751570004361041e-05,100
+hp_l1_ratio,1.0,6.811352646657947e-05,100

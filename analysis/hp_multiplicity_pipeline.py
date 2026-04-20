@@ -1,8 +1,15 @@
 """
 Multi-seed hyperparameter / family multiplicity tables (Rashomon vs full pool).
 
+Primary structural analysis: **between-family vs within-family** variance
+decomposition on test-set predictions (``compute_family_importance``,
+``compute_within_family_hp_importance``). The within-family *unique HP value*
+decomposition on ``P`` is kept as a **secondary / appendix** robustness view;
+descriptive HP importance and ranges for the thesis narrative live in
+``analysis/hp_meta_model.py`` (RandomForest meta-models on ``V_m``).
+
 Builds tidy metric tables, model-level summaries, and aggregation helpers used
-by notebook 06.  Plotting stays thin: consumers pass aggregated DataFrames.
+by notebook 06. Plotting stays thin: consumers pass aggregated DataFrames.
 """
 from __future__ import annotations
 
@@ -56,8 +63,9 @@ def per_seed_analysis_tables(
     permutations: int = 999,
 ) -> Dict[str, pd.DataFrame]:
     """
-    One seed: decomposition (family + within-family HP) on all/HH/non-HH,
-    V_m-based HP importance on all/HH/non-HH, model-level V_m table.
+    One seed: decomposition (family + within-family HP on **P**, secondary) on
+    all/HH/non-HH; legacy V_m grouped by unique HP values (secondary); model-level
+    ``V_m`` / ``V_m_HH`` / ``V_m_nonHH`` table for meta-models.
 
     Returns keys: ``models``, ``metrics_long``, ``decomp_hp_wide``,
     ``vm_hp_wide`` (wide = seed-level frames suitable for aggregation).

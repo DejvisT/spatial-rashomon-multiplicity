@@ -9,9 +9,11 @@ V_m = mean_x( (P[m,x] - p_bar(x))^2 )
 measures how much model m's predictions deviate from the family ensemble
 mean — its contribution to predictive multiplicity within that family.
 
-Importance of an HP is quantified by the between-group variance of V_m
-when models are grouped by HP value, expressed as a fraction of total V_m
-variance.  This is a *marginal association*, not a causal partial dependence.
+Importance of an HP is quantified by the between-group variance of V_m when
+models are grouped by unique HP values (a marginal association, not causal).
+For the thesis pipeline this view is **secondary**; primary HP importance and
+effect shapes are produced by ``analysis/hp_meta_model.py`` (descriptive
+meta-models with out-of-sample checks).
 """
 from __future__ import annotations
 

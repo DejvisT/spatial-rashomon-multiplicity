@@ -1,0 +1,4 @@
+dataset,family,pool_type,target_vm,feature_group,mean_importance,std_importance,freq_top1,freq_top3,mean_rank,n_reps_used
+adult,LogReg,Rashomon,V_m_HH,hp_C,0.8805422614235611,0.03197256619676449,1.0,1.0,1.0,12
+adult,LogReg,Rashomon,V_m_HH,validation_brier,0.061760336148424834,0.041296700438911864,0.0,1.0,2.6666666666666665,12
+adult,LogReg,Rashomon,V_m_HH,hp_l1_ratio,0.057697402428014084,0.028679456126794886,0.0,1.0,2.3333333333333335,12

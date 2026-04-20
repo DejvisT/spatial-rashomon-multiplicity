@@ -1049,6 +1049,142 @@ def write_calibration_summary_tex():
     print("Wrote", TAB_DIR / "calibration_summary.tex")
 
 
+def _tex_escape(s: str) -> str:
+    s = str(s)
+    return (
+        s.replace("\\", r"\textbackslash{}")
+         .replace("_", r"\_")
+         .replace("%", r"\%")
+         .replace("&", r"\&")
+         .replace("#", r"\#")
+    )
+
+
+def _pretty_dataset(name: str) -> str:
+    name = str(name).strip().lower()
+    return {
+        "compas": "COMPAS",
+        "german": "German",
+        "adult": "Adult",
+    }.get(name, name.title())
+
+
+def _pretty_family(name: str) -> str:
+    name = str(name).strip()
+    return {
+        "LogReg": "LogReg",
+        "kNN": "kNN",
+        "RF": "RF",
+        "GBM": "GBM",
+        "MLP": "MLP",
+    }.get(name, name)
+
+
+def write_hp_top2_driver_summary_tex():
+    path = resolve_csv("hp_top2_driver_summary.csv", "nb06")
+    if path is None or not path.is_file():
+        print("Missing hp_top2_driver_summary.csv (nb06). Skipping hp_top2_driver_summary.tex")
+        return
+
+    df = pd.read_csv(path)
+    required = {"dataset", "family", "Top-1 driver", "Top-2 driver"}
+    if df.empty or not required.issubset(df.columns):
+        print("hp_top2_driver_summary.csv empty or missing required columns. Skipping hp_top2_driver_summary.tex")
+        return
+
+    dataset_order = {"compas": 0, "german": 1, "adult": 2}
+    family_order = {"GBM": 0, "LogReg": 1, "MLP": 2, "RF": 3, "kNN": 4}
+
+    df = df.copy()
+    df["dataset_order"] = df["dataset"].astype(str).str.lower().map(dataset_order).fillna(999)
+    df["family_order"] = df["family"].map(family_order).fillna(999)
+    df = df.sort_values(["dataset_order", "family_order", "dataset", "family"])
+
+    out = []
+    out.append(r"% Auto-generated from nb06/hp_top2_driver_summary.csv")
+    out.append(r"\begin{tabular}{llp{4.8cm}p{4.8cm}}")
+    out.append(r"\hline")
+    out.append(r"Dataset & Family & Top-1 driver & Top-2 driver \\")
+    out.append(r"\hline")
+
+    last_dataset = None
+    for _, r in df.iterrows():
+        ds = _pretty_dataset(r["dataset"])
+        fam = _pretty_family(r["family"])
+        top1 = _tex_escape(r["Top-1 driver"])
+        top2 = _tex_escape(r["Top-2 driver"])
+
+        if last_dataset != ds:
+            out.append(f"{ds} & {fam} & {top1} & {top2} \\\\")
+            last_dataset = ds
+        else:
+            out.append(f" & {fam} & {top1} & {top2} \\\\")
+
+    out.append(r"\hline")
+    out.append(r"\end{tabular}")
+
+    (TAB_DIR / "hp_top2_driver_summary.tex").write_text("\n".join(out), encoding="utf-8")
+    print("Wrote", TAB_DIR / "hp_top2_driver_summary.tex")
+
+import re
+
+
+def _format_delta_cell(text: str) -> str:
+    """
+    Convert strings like:
+        'subsample (mean_delta=0.0266)'
+        'n_estimators (mean_delta=-0.0094)'
+    into:
+        'subsample (+0.027)'
+        'n_estimators (-0.009)'
+    """
+    s = str(text).strip()
+
+    m = re.match(r"^(.*?)\s*\(mean_delta\s*=\s*([+-]?\d*\.?\d+)\)\s*$", s)
+    if not m:
+        return _tex_escape(s)
+
+    hp = m.group(1).strip()
+    val = float(m.group(2))
+    return _tex_escape(f"{hp} ({val:+.3f})")
+
+
+def write_hp_hotspot_delta_compas_tex():
+    path = resolve_csv("hp_hotspot_delta_compas_compact.csv", "nb06")
+    if path is None or not path.is_file():
+        print("Missing hp_hotspot_delta_compas_compact.csv (nb06). Skipping hp_hotspot_delta_compas_compact.tex")
+        return
+
+    df = pd.read_csv(path)
+    required = {"Family", "Most increased in HH", "Most decreased in HH"}
+    if df.empty or not required.issubset(df.columns):
+        print("hp_hotspot_delta_compas_compact.csv empty or missing required columns. Skipping hp_hotspot_delta_compas_compact.tex")
+        return
+
+    family_order = {"GBM": 0, "LogReg": 1, "MLP": 2, "RF": 3, "kNN": 4}
+    df = df.copy()
+    df["family_order"] = df["Family"].map(family_order).fillna(999)
+    df = df.sort_values(["family_order", "Family"])
+
+    out = []
+    out.append(r"% Auto-generated from nb06/hp_hotspot_delta_compas_compact.csv")
+    out.append(r"\begin{tabular}{lp{5.2cm}p{5.2cm}}")
+    out.append(r"\hline")
+    out.append(r"Family & Most increased in HH & Most decreased in HH \\")
+    out.append(r"\hline")
+
+    for _, r in df.iterrows():
+        fam = _pretty_family(r["Family"])
+        inc = _format_delta_cell(r["Most increased in HH"])
+        dec = _format_delta_cell(r["Most decreased in HH"])
+        out.append(f"{fam} & {inc} & {dec} \\\\")
+
+    out.append(r"\hline")
+    out.append(r"\end{tabular}")
+
+    (TAB_DIR / "hp_hotspot_delta_compas_compact.tex").write_text("\n".join(out), encoding="utf-8")
+    print("Wrote", TAB_DIR / "hp_hotspot_delta_compas_compact.tex")
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Export thesis assets")
@@ -1075,6 +1211,8 @@ def main():
     write_hh_moran_per_run_compas()
     write_spatial_patterns_figure()
     write_hh_by_family_figure()
+    write_hp_top2_driver_summary_tex()
+    write_hp_hotspot_delta_compas_tex()
     if not args.quick:
         run_sensitivity_K_and_save_figure()
         run_sensitivity_kNN_and_save_figure()

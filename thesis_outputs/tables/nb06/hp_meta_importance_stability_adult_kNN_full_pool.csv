@@ -1,0 +1,5 @@
+dataset,family,pool_type,target_vm,feature_group,mean_importance,std_importance,freq_top1,freq_top3,mean_rank,n_reps_used
+adult,kNN,full_pool,V_m,hp_n_neighbors,0.5415213475662409,0.12217756432520763,0.5,1.0,1.5,12
+adult,kNN,full_pool,V_m,validation_brier,0.4434845542633157,0.12232976274484167,0.5,1.0,1.5,12
+adult,kNN,full_pool,V_m,hp_weights,0.014490303592917997,0.0007856338950999483,0.0,1.0,3.0,12
+adult,kNN,full_pool,V_m,hp_p,0.0005037945775253563,2.1080593100718005e-05,0.0,0.0,4.0,12

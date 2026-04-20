@@ -1,0 +1,6 @@
+feature,grid_value,predicted_V_m,n_background_rows
+hp_hidden_layer_sizes,"'[100, 50]'",0.001512192130052358,100
+hp_hidden_layer_sizes,'[100]',0.001512192130052358,100
+hp_hidden_layer_sizes,"'[200, 100]'",0.001512192130052358,100
+hp_hidden_layer_sizes,'[200]',0.001512192130052358,100
+hp_hidden_layer_sizes,'[50]',0.001512192130052358,100

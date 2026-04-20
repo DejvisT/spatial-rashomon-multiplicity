@@ -1,0 +1,4 @@
+feature,grid_value,predicted_V_m,n_background_rows
+hp_learning_rate_init,0.0001,0.015838907157437902,100
+hp_learning_rate_init,0.001,0.0154367006303283,100
+hp_learning_rate_init,0.01,0.030901202700446783,100

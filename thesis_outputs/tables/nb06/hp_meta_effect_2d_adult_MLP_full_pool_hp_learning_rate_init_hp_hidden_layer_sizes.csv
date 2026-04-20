@@ -1,0 +1,16 @@
+feature_1,feature_2,grid_value_1,grid_value_2,predicted_V_m,n_background_rows
+hp_learning_rate_init,hp_hidden_layer_sizes,0.0001,"'[100, 50]'",0.0015732616156141966,100
+hp_learning_rate_init,hp_hidden_layer_sizes,0.0001,'[100]',0.0015732616156141966,100
+hp_learning_rate_init,hp_hidden_layer_sizes,0.0001,"'[200, 100]'",0.0015732616156141966,100
+hp_learning_rate_init,hp_hidden_layer_sizes,0.0001,'[200]',0.0015732616156141966,100
+hp_learning_rate_init,hp_hidden_layer_sizes,0.0001,'[50]',0.0015732616156141966,100
+hp_learning_rate_init,hp_hidden_layer_sizes,0.001,"'[100, 50]'",0.0016055705212518207,100
+hp_learning_rate_init,hp_hidden_layer_sizes,0.001,'[100]',0.0016055705212518207,100
+hp_learning_rate_init,hp_hidden_layer_sizes,0.001,"'[200, 100]'",0.0016055705212518207,100
+hp_learning_rate_init,hp_hidden_layer_sizes,0.001,'[200]',0.0016055705212518207,100
+hp_learning_rate_init,hp_hidden_layer_sizes,0.001,'[50]',0.0016055705212518207,100
+hp_learning_rate_init,hp_hidden_layer_sizes,0.01,"'[100, 50]'",0.0034440626960508757,100
+hp_learning_rate_init,hp_hidden_layer_sizes,0.01,'[100]',0.0034440626960508757,100
+hp_learning_rate_init,hp_hidden_layer_sizes,0.01,"'[200, 100]'",0.0034440626960508757,100
+hp_learning_rate_init,hp_hidden_layer_sizes,0.01,'[200]',0.0034440626960508757,100
+hp_learning_rate_init,hp_hidden_layer_sizes,0.01,'[50]',0.0034440626960508757,100

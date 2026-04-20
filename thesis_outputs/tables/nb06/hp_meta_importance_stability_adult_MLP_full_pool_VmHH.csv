@@ -1,0 +1,6 @@
+dataset,family,pool_type,target_vm,feature_group,mean_importance,std_importance,freq_top1,freq_top3,mean_rank,n_reps_used
+adult,MLP,full_pool,V_m_HH,validation_brier,0.5220552646607283,0.025646607133190308,1.0,1.0,1.0,12
+adult,MLP,full_pool,V_m_HH,hp_learning_rate_init,0.27828544096263785,0.015900890741038322,0.0,1.0,2.0,12
+adult,MLP,full_pool,V_m_HH,hp_hidden_layer_sizes,0.10362319206417704,0.013013733317105728,0.0,1.0,3.0,12
+adult,MLP,full_pool,V_m_HH,hp_alpha,0.04944175085663335,0.008796475579541402,0.0,0.0,4.416666666666667,12
+adult,MLP,full_pool,V_m_HH,hp_activation,0.046594351455823434,0.008100054513088815,0.0,0.0,4.583333333333333,12
