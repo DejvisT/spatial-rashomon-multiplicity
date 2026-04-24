@@ -437,30 +437,23 @@ The XOR pattern (p = 0.5 +/- delta based on sign(x1*x2)) is clever because:
 
 ### Purpose
 
-Find interpretable feature-based rules that **describe** HH and high-variance regions. The goal is not prediction but explanation: "what features characterize the individuals where models disagree most?"
+Summarize **LISA HH** hotspots with **shallow decision trees** only (positive-leaf if–then rules). The framing is **descriptive** (not causal, not a classifier benchmark). Implementation: **`analysis/nb09_interpretable_rules.py`**.
 
 ### What the Code Does
 
-1. **Labels**: Define HV_q (top q% by variance), HH (LISA hotspot), HV_only (high variance but not HH), HH_only (HH but not top-q% variance).
-2. **Four extraction methods**:
-  - **Shallow decision tree** (depth 2-4): Fit `DecisionTreeClassifier` to predict HH vs non-HH using test features. Extract rules from leaf nodes.
-  - **L1 logistic regression**: Fit sparse LogReg; features with non-zero coefficients form the rule.
-  - **Cluster-describe**: PCA + KMeans on HV points to find sub-clusters, then describe each cluster with a tiny decision tree.
-  - **Beam search (subgroup discovery)**: Iteratively build conjunctions of feature thresholds that maximize purity (P(HH=1 | rule)).
-3. **Rule metrics**: purity = P(label=1 | rule region), support = #points in region, recall = coverage of positives, lift = purity / base_rate.
-4. **Robustness**:
-  - **Bootstrap OOB**: Resample B=50 times, evaluate rules on out-of-bag points.
-  - **Permutation enrichment**: Shuffle labels N=500 times, check if observed purity exceeds the null.
-  - **Feature stability**: Across B=50 bootstrap samples, how often does each feature appear in the extracted rules.
+1. **Label**: LISA **HH** mask only.
+2. **Shallow tree** (fixed depth 3): one table row per positive-leaf rule with its region mask.
+3. **Region metrics**: purity = P(HH | region), support, recall, lift vs HH base rate on the same fold.
+4. **Robustness**: bootstrap OOB for each rule; permutation enrichment of lift; bootstrap frequency of features appearing in tree rules.
 
 ### Plots
 
-- **PCA scatter**: HV_only, HH_only, Other points in 2D PCA space.
-- **Support vs purity scatter**: Each rule as a point, colored by method and label.
+- **PCA**: HH vs non-HH (`pca_hh_{dataset}.pdf`).
+- **Support vs purity**: tree rules across outer seeds (`rules_support_purity_{dataset}.pdf`).
 
 ### Output Files
 
-- `thesis_outputs/tables/nb09/rules_summary_{dataset}.csv` — all extracted rules with metrics
+- `thesis_outputs/tables/nb09/rules_summary_{dataset}.csv` — tree rules with metrics
 - `thesis_outputs/tables/nb09/rules_oob_summary_{dataset}.csv` — bootstrap OOB evaluation
 - `thesis_outputs/tables/nb09/rules_permutation_pvals_{dataset}.csv` — permutation p-values
 - `thesis_outputs/tables/nb09/rule_feature_stability_{dataset}.csv` — feature appearance frequency
@@ -468,14 +461,9 @@ Find interpretable feature-based rules that **describe** HH and high-variance re
 
 ### How to Interpret
 
-- **High lift** (e.g., 15x): The rule identifies a subgroup where HH rates are 15 times higher than the base rate. Very informative.
-- **Low permutation p-value** (e.g., < 0.01): The rule's purity is unlikely under random labeling — it's a genuine pattern.
-- **Stable features** (appear in > 80% of bootstrap samples): Robust indicators of hotspot membership.
-- For COMPAS: `num__priors_count` and `num__age` are the most stable hotspot descriptors — individuals with high prior count and high age are systematically in the multiplicity hotspot.
-
-### Systematic Driver Analysis Section
-
-Goes beyond rule extraction to provide a full **systematic characterization** of HH vs non-HH points. Fits an L1-regularized logistic regression and a shallow decision tree to predict HH membership from test features. Reports coefficients, feature importances, and classification metrics (precision, recall, F1). This gives a more principled answer to "what distinguishes hotspot individuals" than individual rules, and the L1 sparsity identifies the minimal feature set needed to describe hotspot membership.
+- **High lift**: Region purity much higher than the HH base rate — a concentrated subgroup in feature space.
+- **Low permutation p-value**: Enrichment of HH in the region vs label shuffle.
+- **Stable features** in bootstrap summaries: features that recur in shallow tree rules across resamples.
 
 ---
 

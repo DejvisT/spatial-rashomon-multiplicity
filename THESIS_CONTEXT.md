@@ -103,7 +103,7 @@ rashomon-multiplicity/
 - **Single-family**: Notebook 05 compares global vs. per-family (RF, LR, GBM, MLP) Moran/LISA
 
 ### Gaps (last reviewed 2026-03-13)
-- **Interpretability / rules**: ✓ Implemented in `analysis/rules.py` and `09_interpretable_rules.ipynb`
+- **Interpretability / rules**: ✓ HH component helpers in `analysis/rules.py`; notebook 09 + `analysis/nb09_interpretable_rules.py` for HH tree rules on the test fold
 - **Hyperparameter analysis**: ✓ Implemented in `analysis/hyperparams.py` and `06_hyperparameter_analysis.ipynb`
 - **Stability**: ✓ Pointwise HH stability in `03_spatial_patterns.ipynb`; region-level stability metrics added to `analysis/stability.py`
 - **Sensitivity (K, kNN)**: ✓ Implemented in `04_sensitivity_K.ipynb` and `05_sensitivity_kNN.ipynb`
@@ -117,7 +117,7 @@ rashomon-multiplicity/
 - **Cross-family HH overlap**: ✓ Overlap matrix and variance correlation across families in `10_robustness_and_fairness.ipynb`
 - **HP diversity/entropy/prediction-difference**: ✓ Diversity indices and entropy analysis in `06_hyperparameter_analysis.ipynb`
 - **Calibration quadrant movement**: ✓ Tracking how points move between LISA quadrants after calibration in `10_robustness_and_fairness.ipynb`
-- **Systematic driver analysis**: ✓ L1 logistic + decision tree for HH vs non-HH characterization in `09_interpretable_rules.ipynb`
+- **HH interpretability**: ✓ Shallow tree rules on the HH mask in `09_interpretable_rules.ipynb` via `analysis/nb09_interpretable_rules.py` (descriptive; optional bootstrap feature stability)
 - **Bootstrap ablation infrastructure**: ✓ Implemented in `analysis/bootstrap_ablation.py` and `10_robustness_and_fairness.ipynb`
 - **Gower distance and PCA-based kNN**: ✓ Mixed-type feature support via Gower distance and PCA-reduced kNN in `10_robustness_and_fairness.ipynb`
 

@@ -1,0 +1,176 @@
+label,type,name,frequency,outer_seed
+HH,feature,num__age,3.64,0
+HH,feature,num__priors_count,3.56,0
+HH,feature,cat__race_Asian,0.08,0
+HH,feature,cat__race_Other,0.06,0
+HH,feature,cat__race_African-American,0.06,0
+HH,feature,cat__c_charge_degree_M,0.06,0
+HH,feature,cat__race_Caucasian,0.04,0
+HH,feature_set,num__age & num__priors_count,3.34,0
+HH,feature_set,cat__race_Asian & num__age & num__priors_count,0.08,0
+HH,feature_set,cat__c_charge_degree_M & num__age & num__priors_count,0.06,0
+HH,feature_set,cat__race_Other & num__age,0.04,0
+HH,feature_set,cat__race_African-American & num__age,0.04,0
+HH,feature_set,cat__race_Caucasian & num__age & num__priors_count,0.04,0
+HH,feature_set,cat__race_Other & num__age & num__priors_count,0.02,0
+HH,feature_set,cat__race_African-American & num__age & num__priors_count,0.02,0
+HH,feature,num__age,3.1,1
+HH,feature,num__priors_count,3.02,1
+HH,feature,cat__sex_Male,0.24,1
+HH,feature,cat__race_Other,0.08,1
+HH,feature,cat__sex_Female,0.08,1
+HH,feature_set,num__age & num__priors_count,2.7,1
+HH,feature_set,cat__sex_Male & num__age & num__priors_count,0.24,1
+HH,feature_set,cat__race_Other & num__age,0.08,1
+HH,feature_set,cat__sex_Female & num__age & num__priors_count,0.08,1
+HH,feature,num__priors_count,4.46,2
+HH,feature,num__age,2.58,2
+HH,feature,cat__c_charge_degree_M,0.12,2
+HH,feature,cat__race_Caucasian,0.08,2
+HH,feature,cat__c_charge_degree_F,0.06,2
+HH,feature,cat__sex_Male,0.04,2
+HH,feature,cat__race_African-American,0.04,2
+HH,feature,cat__race_Other,0.02,2
+HH,feature,cat__sex_Female,0.02,2
+HH,feature_set,num__age & num__priors_count,2.38,2
+HH,feature_set,num__priors_count,1.7,2
+HH,feature_set,cat__c_charge_degree_M & num__priors_count,0.08,2
+HH,feature_set,cat__race_Caucasian & num__age & num__priors_count,0.08,2
+HH,feature_set,cat__c_charge_degree_F & num__priors_count,0.06,2
+HH,feature_set,cat__c_charge_degree_M & num__age & num__priors_count,0.04,2
+HH,feature_set,cat__sex_Male & num__age & num__priors_count,0.04,2
+HH,feature_set,cat__race_African-American & num__priors_count,0.04,2
+HH,feature_set,cat__race_Other & num__age & num__priors_count,0.02,2
+HH,feature_set,cat__sex_Female & num__age & num__priors_count,0.02,2
+HH,feature,num__age,3.46,3
+HH,feature,cat__race_Caucasian,2.82,3
+HH,feature,num__priors_count,2.52,3
+HH,feature,cat__race_Other,0.88,3
+HH,feature,cat__sex_Male,0.38,3
+HH,feature,cat__race_African-American,0.32,3
+HH,feature,cat__sex_Female,0.26,3
+HH,feature,cat__race_Hispanic,0.26,3
+HH,feature,cat__c_charge_degree_F,0.12,3
+HH,feature,cat__c_charge_degree_M,0.04,3
+HH,feature_set,cat__race_Caucasian & num__age & num__priors_count,1.86,3
+HH,feature_set,cat__race_Other & num__age,0.22,3
+HH,feature_set,cat__race_Caucasian & cat__race_Other & num__age,0.22,3
+HH,feature_set,num__age & num__priors_count,0.18,3
+HH,feature_set,cat__race_Caucasian & cat__sex_Male & num__age,0.16,3
+HH,feature_set,cat__race_Caucasian & cat__race_Hispanic & num__age,0.16,3
+HH,feature_set,cat__race_African-American & cat__race_Other & num__priors_count,0.14,3
+HH,feature_set,cat__race_Other & num__age & num__priors_count,0.14,3
+HH,feature_set,cat__race_Caucasian & num__age,0.12,3
+HH,feature_set,cat__race_African-American & cat__race_Other & num__age,0.08,3
+HH,feature_set,cat__race_African-American & cat__race_Caucasian & cat__race_Hispanic,0.08,3
+HH,feature_set,cat__race_Caucasian & cat__sex_Female & num__age,0.06,3
+HH,feature_set,cat__race_Caucasian & cat__sex_Male & num__priors_count,0.06,3
+HH,feature_set,cat__c_charge_degree_F & cat__sex_Male & num__age,0.04,3
+HH,feature_set,cat__c_charge_degree_M & cat__sex_Male & num__age,0.04,3
+HH,feature_set,cat__race_Other & cat__sex_Female & num__age,0.04,3
+HH,feature_set,cat__race_Caucasian & cat__sex_Female & num__priors_count,0.04,3
+HH,feature_set,cat__sex_Female & num__age & num__priors_count,0.04,3
+HH,feature_set,cat__c_charge_degree_F & cat__sex_Female & num__age,0.04,3
+HH,feature_set,cat__sex_Male & num__age & num__priors_count,0.02,3
+HH,feature_set,cat__c_charge_degree_F & cat__race_Other & cat__sex_Male,0.02,3
+HH,feature_set,cat__c_charge_degree_F & cat__race_Caucasian & cat__sex_Male,0.02,3
+HH,feature_set,cat__race_Caucasian & cat__race_Hispanic & num__priors_count,0.02,3
+HH,feature_set,cat__race_African-American & cat__race_Other & cat__sex_Female,0.02,3
+HH,feature_set,cat__sex_Female & num__age,0.02,3
+HH,feature_set,cat__race_Caucasian & num__priors_count,0.02,3
+HH,feature_set,cat__sex_Male & num__age,0.02,3
+HH,feature,num__priors_count,2.86,4
+HH,feature,num__age,2.5,4
+HH,feature,cat__race_African-American,0.22,4
+HH,feature,cat__sex_Male,0.08,4
+HH,feature,cat__race_Caucasian,0.04,4
+HH,feature,cat__sex_Female,0.02,4
+HH,feature_set,num__age & num__priors_count,1.9,4
+HH,feature_set,num__priors_count,0.74,4
+HH,feature_set,num__age,0.24,4
+HH,feature_set,cat__race_African-American & num__age & num__priors_count,0.18,4
+HH,feature_set,cat__sex_Male & num__age,0.08,4
+HH,feature_set,cat__race_African-American & num__age,0.04,4
+HH,feature_set,cat__race_Caucasian & num__age & num__priors_count,0.04,4
+HH,feature_set,cat__sex_Female & num__age,0.02,4
+HH,feature,num__priors_count,3.46,5
+HH,feature,num__age,3.0,5
+HH,feature,cat__race_Other,1.66,5
+HH,feature,cat__c_charge_degree_F,0.28,5
+HH,feature,cat__c_charge_degree_M,0.26,5
+HH,feature,cat__sex_Male,0.1,5
+HH,feature,cat__sex_Female,0.06,5
+HH,feature,cat__race_Caucasian,0.06,5
+HH,feature_set,num__age & num__priors_count,1.58,5
+HH,feature_set,cat__race_Other & num__age & num__priors_count,1.12,5
+HH,feature_set,cat__c_charge_degree_M & cat__race_Other & num__priors_count,0.26,5
+HH,feature_set,cat__c_charge_degree_F & cat__race_Other & num__priors_count,0.2,5
+HH,feature_set,cat__sex_Male & num__age & num__priors_count,0.1,5
+HH,feature_set,cat__sex_Female & num__age & num__priors_count,0.06,5
+HH,feature_set,cat__race_Caucasian & num__age & num__priors_count,0.06,5
+HH,feature_set,cat__c_charge_degree_F & num__age & num__priors_count,0.04,5
+HH,feature_set,cat__c_charge_degree_F & cat__race_Other & num__age,0.04,5
+HH,feature_set,cat__race_Other & num__priors_count,0.04,5
+HH,feature,num__priors_count,3.3,6
+HH,feature,num__age,2.64,6
+HH,feature,cat__race_African-American,0.18,6
+HH,feature,cat__race_Hispanic,0.06,6
+HH,feature,cat__c_charge_degree_M,0.04,6
+HH,feature,cat__race_Caucasian,0.04,6
+HH,feature,cat__sex_Female,0.02,6
+HH,feature_set,num__age & num__priors_count,2.22,6
+HH,feature_set,num__priors_count,1.0,6
+HH,feature_set,cat__race_African-American & num__age,0.18,6
+HH,feature_set,num__age,0.12,6
+HH,feature_set,cat__c_charge_degree_M & num__priors_count,0.04,6
+HH,feature_set,cat__race_Hispanic & num__age,0.04,6
+HH,feature_set,cat__race_Caucasian & num__age,0.04,6
+HH,feature_set,cat__race_Hispanic & num__age & num__priors_count,0.02,6
+HH,feature_set,cat__sex_Female & num__age & num__priors_count,0.02,6
+HH,feature,num__age,3.44,7
+HH,feature,num__priors_count,2.5,7
+HH,feature,cat__race_Caucasian,0.82,7
+HH,feature,cat__race_African-American,0.62,7
+HH,feature,cat__race_Hispanic,0.6,7
+HH,feature,cat__c_charge_degree_M,0.16,7
+HH,feature,cat__c_charge_degree_F,0.06,7
+HH,feature,cat__sex_Female,0.04,7
+HH,feature_set,num__age & num__priors_count,1.98,7
+HH,feature_set,cat__race_Caucasian & cat__race_Hispanic & num__age,0.58,7
+HH,feature_set,cat__race_African-American & num__age & num__priors_count,0.36,7
+HH,feature_set,cat__c_charge_degree_M & cat__race_African-American & num__age,0.14,7
+HH,feature_set,cat__race_Caucasian & num__age & num__priors_count,0.14,7
+HH,feature_set,cat__race_Caucasian & num__age,0.06,7
+HH,feature_set,cat__c_charge_degree_F & cat__race_African-American & num__age,0.06,7
+HH,feature_set,cat__race_African-American & num__age,0.04,7
+HH,feature_set,cat__c_charge_degree_M & cat__race_Caucasian & num__age,0.02,7
+HH,feature_set,cat__race_Caucasian & cat__sex_Female & num__age,0.02,7
+HH,feature_set,cat__race_Hispanic & num__age & num__priors_count,0.02,7
+HH,feature_set,cat__race_African-American & cat__sex_Female & num__age,0.02,7
+HH,feature,num__age,3.02,8
+HH,feature,cat__race_Hispanic,1.96,8
+HH,feature,num__priors_count,1.18,8
+HH,feature,cat__race_Caucasian,0.84,8
+HH,feature,cat__race_African-American,0.04,8
+HH,feature,cat__c_charge_degree_F,0.04,8
+HH,feature_set,num__age & num__priors_count,1.06,8
+HH,feature_set,cat__race_Hispanic & num__age,0.92,8
+HH,feature_set,cat__race_Caucasian & cat__race_Hispanic & num__age,0.84,8
+HH,feature_set,cat__race_Hispanic & num__age & num__priors_count,0.12,8
+HH,feature_set,cat__race_African-American & cat__race_Hispanic & num__age,0.04,8
+HH,feature_set,cat__c_charge_degree_F & cat__race_Hispanic & num__age,0.04,8
+HH,feature,num__age,2.94,9
+HH,feature,num__priors_count,1.42,9
+HH,feature,cat__sex_Male,0.22,9
+HH,feature,cat__race_Hispanic,0.08,9
+HH,feature,cat__sex_Female,0.06,9
+HH,feature,cat__race_Other,0.02,9
+HH,feature,cat__race_African-American,0.02,9
+HH,feature_set,num__age & num__priors_count,1.38,9
+HH,feature_set,num__age,1.18,9
+HH,feature_set,cat__sex_Male & num__age,0.22,9
+HH,feature_set,cat__race_Hispanic & num__age,0.04,9
+HH,feature_set,cat__race_Hispanic & num__age & num__priors_count,0.04,9
+HH,feature_set,cat__sex_Female & num__age,0.04,9
+HH,feature_set,cat__race_Other & cat__sex_Female & num__age,0.02,9
+HH,feature_set,cat__race_African-American & num__age,0.02,9

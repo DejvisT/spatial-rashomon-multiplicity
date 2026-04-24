@@ -1,0 +1,36 @@
+method,label,rule_key,n_seeds,mean_lift,mean_purity,mean_support
+tree,HH,num__age > 1.034 AND num__age > 1.891 AND num__age > 2.919,1,58.55652173913044,0.9333333333333333,15.0
+tree,HH,num__priors_count > 3.664,1,40.584375,0.5625,16.0
+tree,HH,num__priors_count <= 3.664 AND num__age > 2.666,1,33.300000000000004,0.46153846153846156,13.0
+tree,HH,num__priors_count > 2.876 AND num__priors_count > 3.49,1,27.75,1.0,28.0
+tree,HH,num__priors_count > 1.229 AND num__age > -0.1088 AND num__priors_count > 3.27,1,23.995464852607707,0.8148148148148148,27.0
+tree,HH,num__priors_count > 1.256 AND num__age > -0.108 AND num__age > 0.9766,1,21.930091185410337,0.7142857142857143,49.0
+tree,HH,num__priors_count > 3.106 AND num__priors_count > 3.518,1,14.876288659793815,1.0,23.0
+tree,HH,num__priors_count <= 2.876 AND num__age > 2.75,1,14.691176470588236,0.5294117647058824,17.0
+tree,HH,num__age > 1.034 AND num__age <= 1.891 AND num__priors_count > 2.856,1,14.478260869565219,0.23076923076923078,13.0
+tree,HH,num__priors_count <= 1.229 AND cat__race_Other > 0.5 AND cat__c_charge_degree_M > 0.5,1,12.957551020408163,0.44,25.0
+tree,HH,num__priors_count <= 1.256 AND num__age > 2.395 AND num__priors_count > -0.6081,1,11.513297872340427,0.375,16.0
+tree,HH,num__priors_count > 2.876 AND num__priors_count <= 3.49,1,11.426470588235293,0.4117647058823529,17.0
+tree,HH,num__age > -0.7017 AND num__priors_count > 2.81 AND num__priors_count > 3.616,1,11.186046511627906,1.0,16.0
+tree,HH,num__priors_count > 3.106 AND num__priors_count <= 3.518,1,10.819119025304593,0.7272727272727273,11.0
+tree,HH,num__age > -0.954 AND num__priors_count > 2.667 AND num__age > 0.6705,1,8.743150684931507,0.8846153846153846,26.0
+tree,HH,num__priors_count <= 3.106 AND num__age <= -0.7704 AND num__age <= -1.19,1,8.612588171459578,0.5789473684210527,38.0
+tree,HH,num__age <= -0.697 AND num__priors_count <= -0.4009 AND num__age > -1.036,1,6.628768303186908,0.6201550387596899,129.0
+tree,HH,num__age <= -0.954 AND cat__race_Hispanic <= 0.5 AND cat__race_Caucasian <= 0.5,1,6.30727289113194,0.6381578947368421,152.0
+tree,HH,num__priors_count > 1.229 AND num__age > -0.1088 AND num__priors_count <= 3.27,1,6.153518123667377,0.208955223880597,67.0
+tree,HH,num__age > -0.7017 AND num__priors_count > 2.81 AND num__priors_count <= 3.616,1,5.92202462380301,0.5294117647058824,17.0
+tree,HH,cat__race_Caucasian > 0.5 AND num__priors_count > 0.6281 AND num__age > 0.7451,1,5.19732441471572,0.6086956521739131,23.0
+tree,HH,cat__race_Caucasian <= 0.5 AND num__age <= -0.9513 AND num__priors_count > -0.6044,1,4.477485928705441,0.524390243902439,82.0
+tree,HH,num__age > 1.034 AND num__age > 1.891 AND num__age <= 2.919,1,4.4286445012787725,0.07058823529411765,85.0
+tree,HH,num__age <= -0.7017 AND cat__race_Caucasian <= 0.5 AND cat__race_Hispanic <= 0.5,1,3.6913953488372093,0.33,300.0
+tree,HH,num__priors_count <= 3.664 AND num__age <= 2.666 AND num__age <= -1.122,1,3.1099137931034484,0.04310344827586207,116.0
+tree,HH,num__age <= -0.697 AND num__priors_count > -0.4009 AND num__age <= -1.036,1,3.0148148148148146,0.28205128205128205,39.0
+tree,HH,num__priors_count <= 1.229 AND cat__race_Other <= 0.5 AND num__age > 2.632,1,2.9448979591836735,0.1,10.0
+tree,HH,num__age <= -0.954 AND cat__race_Hispanic <= 0.5 AND cat__race_Caucasian > 0.5,1,2.875217932752179,0.2909090909090909,55.0
+tree,HH,num__age <= -0.697 AND num__priors_count <= -0.4009 AND num__age <= -1.036,1,2.672222222222222,0.25,140.0
+tree,HH,num__priors_count > 1.256 AND num__age > -0.108 AND num__age <= 0.9766,1,2.6129470348574015,0.0851063829787234,47.0
+tree,HH,num__age > -0.697 AND num__age <= -0.5273 AND num__priors_count <= -0.6032,1,2.5653333333333332,0.24,25.0
+tree,HH,cat__race_Caucasian <= 0.5 AND num__age > -0.9513 AND cat__sex_Female > 0.5,1,2.0567097136440204,0.24087591240875914,137.0
+tree,HH,cat__race_Caucasian <= 0.5 AND num__age <= -0.9513 AND num__priors_count <= -0.6044,1,1.6852226720647774,0.19736842105263158,76.0
+tree,HH,num__priors_count <= 3.106 AND num__age <= -0.7704 AND num__age > -1.19,1,1.578512944608347,0.10610932475884244,311.0
+tree,HH,num__priors_count <= 2.876 AND num__age <= 2.75 AND num__age <= -0.9545,1,1.0373831775700935,0.037383177570093455,214.0

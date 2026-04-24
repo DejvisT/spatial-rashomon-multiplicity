@@ -1,0 +1,36 @@
+method,label,rule,support,purity,recall,lift,outer_seed
+tree,HH,num__priors_count <= 1.256 AND num__age > 2.395 AND num__priors_count > -0.6081,16,0.375,0.1276595744680851,11.513297872340427,0
+tree,HH,num__priors_count > 1.256 AND num__age > -0.108 AND num__age <= 0.9766,47,0.0851063829787234,0.0851063829787234,2.6129470348574015,0
+tree,HH,num__priors_count > 1.256 AND num__age > -0.108 AND num__age > 0.9766,49,0.7142857142857143,0.7446808510638298,21.930091185410337,0
+tree,HH,num__age <= -0.697 AND num__priors_count <= -0.4009 AND num__age <= -1.036,140,0.25,0.25925925925925924,2.672222222222222,1
+tree,HH,num__age <= -0.697 AND num__priors_count <= -0.4009 AND num__age > -1.036,129,0.6201550387596899,0.5925925925925926,6.628768303186908,1
+tree,HH,num__age <= -0.697 AND num__priors_count > -0.4009 AND num__age <= -1.036,39,0.28205128205128205,0.08148148148148149,3.0148148148148146,1
+tree,HH,num__age > -0.697 AND num__age <= -0.5273 AND num__priors_count <= -0.6032,25,0.24,0.044444444444444446,2.5653333333333332,1
+tree,HH,num__priors_count <= 2.876 AND num__age <= 2.75 AND num__age <= -0.9545,214,0.037383177570093455,0.15384615384615385,1.0373831775700935,2
+tree,HH,num__priors_count <= 2.876 AND num__age > 2.75,17,0.5294117647058824,0.17307692307692307,14.691176470588236,2
+tree,HH,num__priors_count > 2.876 AND num__priors_count <= 3.49,17,0.4117647058823529,0.1346153846153846,11.426470588235293,2
+tree,HH,num__priors_count > 2.876 AND num__priors_count > 3.49,28,1.0,0.5384615384615384,27.75,2
+tree,HH,cat__race_Caucasian <= 0.5 AND num__age <= -0.9513 AND num__priors_count <= -0.6044,76,0.19736842105263158,0.08875739644970414,1.6852226720647774,3
+tree,HH,cat__race_Caucasian <= 0.5 AND num__age <= -0.9513 AND num__priors_count > -0.6044,82,0.524390243902439,0.25443786982248523,4.477485928705441,3
+tree,HH,cat__race_Caucasian <= 0.5 AND num__age > -0.9513 AND cat__sex_Female > 0.5,137,0.24087591240875914,0.1952662721893491,2.0567097136440204,3
+tree,HH,cat__race_Caucasian > 0.5 AND num__priors_count > 0.6281 AND num__age > 0.7451,23,0.6086956521739131,0.08284023668639054,5.19732441471572,3
+tree,HH,num__priors_count <= 3.664 AND num__age <= 2.666 AND num__age <= -1.122,116,0.04310344827586207,0.25,3.1099137931034484,4
+tree,HH,num__priors_count <= 3.664 AND num__age > 2.666,13,0.46153846153846156,0.3,33.300000000000004,4
+tree,HH,num__priors_count > 3.664,16,0.5625,0.45,40.584375,4
+tree,HH,num__priors_count <= 1.229 AND cat__race_Other <= 0.5 AND num__age > 2.632,10,0.1,0.02040816326530612,2.9448979591836735,5
+tree,HH,num__priors_count <= 1.229 AND cat__race_Other > 0.5 AND cat__c_charge_degree_M > 0.5,25,0.44,0.22448979591836735,12.957551020408163,5
+tree,HH,num__priors_count > 1.229 AND num__age > -0.1088 AND num__priors_count <= 3.27,67,0.208955223880597,0.2857142857142857,6.153518123667377,5
+tree,HH,num__priors_count > 1.229 AND num__age > -0.1088 AND num__priors_count > 3.27,27,0.8148148148148148,0.4489795918367347,23.995464852607707,5
+tree,HH,num__priors_count <= 3.106 AND num__age <= -0.7704 AND num__age <= -1.19,38,0.5789473684210527,0.2268041237113402,8.612588171459578,6
+tree,HH,num__priors_count <= 3.106 AND num__age <= -0.7704 AND num__age > -1.19,311,0.10610932475884244,0.3402061855670103,1.578512944608347,6
+tree,HH,num__priors_count > 3.106 AND num__priors_count <= 3.518,11,0.7272727272727273,0.08247422680412371,10.819119025304593,6
+tree,HH,num__priors_count > 3.106 AND num__priors_count > 3.518,23,1.0,0.23711340206185566,14.876288659793815,6
+tree,HH,num__age <= -0.7017 AND cat__race_Caucasian <= 0.5 AND cat__race_Hispanic <= 0.5,300,0.33,0.7674418604651163,3.6913953488372093,7
+tree,HH,num__age > -0.7017 AND num__priors_count > 2.81 AND num__priors_count <= 3.616,17,0.5294117647058824,0.06976744186046512,5.92202462380301,7
+tree,HH,num__age > -0.7017 AND num__priors_count > 2.81 AND num__priors_count > 3.616,16,1.0,0.12403100775193798,11.186046511627906,7
+tree,HH,num__age <= -0.954 AND cat__race_Hispanic <= 0.5 AND cat__race_Caucasian <= 0.5,152,0.6381578947368421,0.6643835616438356,6.30727289113194,8
+tree,HH,num__age <= -0.954 AND cat__race_Hispanic <= 0.5 AND cat__race_Caucasian > 0.5,55,0.2909090909090909,0.1095890410958904,2.875217932752179,8
+tree,HH,num__age > -0.954 AND num__priors_count > 2.667 AND num__age > 0.6705,26,0.8846153846153846,0.15753424657534246,8.743150684931507,8
+tree,HH,num__age > 1.034 AND num__age <= 1.891 AND num__priors_count > 2.856,13,0.23076923076923078,0.13043478260869565,14.478260869565219,9
+tree,HH,num__age > 1.034 AND num__age > 1.891 AND num__age <= 2.919,85,0.07058823529411765,0.2608695652173913,4.4286445012787725,9
+tree,HH,num__age > 1.034 AND num__age > 1.891 AND num__age > 2.919,15,0.9333333333333333,0.6086956521739131,58.55652173913044,9

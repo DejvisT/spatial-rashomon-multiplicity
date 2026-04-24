@@ -537,34 +537,28 @@ This experiment shows that the pipeline can recover several disconnected regions
 \subsection{Interpretable Rules for High-Multiplicity Regions}
 \label{sec:results-rules}
 
-To make multiplicity hotspots actionable, we extract interpretable rules that describe HH regions and high-variance (HV, top 10\% by pointwise variance) observations in terms of original features. This provides a human-understandable characterization of which subpopulations are most affected by predictive multiplicity.
+After identifying LISA High--High (HH) hotspots of predictive multiplicity, we ask whether they can be described with simple feature patterns. The goal is \emph{descriptive}: we summarize where HH occurs in the test feature space, not to claim causality or to benchmark classifiers.
 
-\subsubsection{Rule Extraction Methods}
+\subsubsection{Rule extraction}
 
-We apply four complementary rule extraction approaches: (1) shallow decision trees, (2) L1-regularized logistic regression, (3) cluster-describe (DBSCAN followed by rule fitting), and (4) beam search for conjunctive rules maximizing lift. Rules are evaluated using support (coverage), purity ($P(\text{label}=1 \mid \text{rule region})$), and lift (purity relative to the base rate).
+We fit a shallow decision tree to the binary HH mask on preprocessed test features and read off compact if--then rules from positive leaves. We report support (coverage), purity ($P(\text{HH}\mid\text{region})$), recall, and lift relative to the HH base rate on the same fold. Bootstrap resampling of test rows provides out-of-bag summaries for each rule region, permutation shuffles of the label give a simple enrichment check, and optional resampling summarizes how often individual features appear in extracted rules.
 
 \subsubsection{Results on COMPAS}
 
-On COMPAS (seed 0), the base rate is 10.2\% for HV (147 out of 1443 test points) and 3.3\% for HH (48 points). Across methods, the extracted rules consistently identify a small set of features that characterize high-multiplicity regions.
+On COMPAS (e.g.\ seed 0), HH covers a small fraction of the test set; tree leaves highlight a compact set of features (e.g.\ prior record and age-related structure on this dataset).
 
-Decision tree rules achieve high purity (up to 1.0, lift $\approx 9.8$) for small but well-defined regions, indicating that certain subpopulations exhibit highly concentrated instability. L1-regularized logistic regression highlights prior offence count and race (``Other'' category) as key drivers of HV regions, suggesting that multiplicity is associated with specific demographic and behavioral characteristics. 
-
-Beam search produces rules with strong out-of-bag (OOB) performance (purity $\sim$0.40, lift $\sim$12.0), again emphasizing prior offence count and age. Across methods, the consistency of selected features indicates that hotspot regions are not arbitrary but correspond to meaningful subgroups in the data. OOB bootstrap evaluation further confirms rule stability, with median purity remaining within 10\% of in-sample estimates.
-
-Figure~\ref{fig:pca_hv_hh} shows HV and HH points in PCA space for COMPAS, illustrating that these regions form a coherent cluster in feature space. This aligns with earlier spatial analyses, reinforcing that multiplicity is concentrated in identifiable regions rather than scattered randomly.
+Figure~\ref{fig:pca_hh} shows HH relative to other test points in PCA space for COMPAS, illustrating that HH observations occupy identifiable directions in feature space rather than being uniformly scattered.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.55\textwidth]{pca_hv_hh_compas.pdf}
-\caption{HV (top 10\% variance) and HH (LISA hotspot) points in PCA space for COMPAS seed 0. Both sets overlap substantially and occupy a distinct region.}
-\label{fig:pca_hv_hh}
+\includegraphics[width=0.55\textwidth]{pca_hh_compas.pdf}
+\caption{LISA HH hotspots (stars) versus other test points in PCA space for COMPAS (representative seed).}
+\label{fig:pca_hh}
 \end{figure}
 
-\subsubsection{Cross-Dataset Comparison}
+\subsubsection{Other datasets}
 
-Similar patterns are observed on other datasets, though with weaker structure. On German Credit, HV rules achieve moderate purity (0.3--0.5) and are driven by features such as credit amount and employment duration, indicating economically meaningful sources of disagreement. On Breast Cancer, HV regions correspond to intermediate cell measurements, reflecting inherent ambiguity near the classification boundary.
-
-Overall, these results demonstrate that multiplicity hotspots can be described using simple, interpretable feature conditions. This shows that predictive multiplicity is not only spatially structured but also semantically meaningful, affecting identifiable subpopulations rather than arbitrary subsets of the data.
+The same pipeline applies to other benchmark datasets where HH is non-degenerate; strength of feature patterns varies with sample size and HH prevalence. Overall, the exercise supports the thesis emphasis on \emph{spatially clustered} multiplicity: once HH is located, it can often be narrated with short if--then rule lists, aiding transparency for affected subpopulations.
 
 
 %% ---------------------------------------------------------------------------

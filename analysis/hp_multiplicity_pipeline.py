@@ -365,30 +365,87 @@ def aggregate_family_importance_long(metrics_long: pd.DataFrame) -> pd.DataFrame
         .reset_index()
     )
 
-
 def plot_family_importance_bars(
     fam_agg: pd.DataFrame,
     *,
-    fig_path: Optional[Path] = None,
+    fig_path,
 ) -> None:
-    """One row of panels: one subplot per dataset; bars = subsets with error bars."""
+    """One row of panels: one subplot per dataset; stacked bars show between- vs within-family share."""
     import matplotlib.pyplot as plt
 
     if fam_agg.empty:
         return
-    ds_list = list(fam_agg["dataset"].unique())
-    fig, axes = plt.subplots(1, len(ds_list), figsize=(4 * len(ds_list), 3.5), squeeze=False)
+
+    df = fam_agg.copy()
+    df["between_share"] = df["mean_ratio"]
+    df["within_share"] = 1.0 - df["mean_ratio"]
+
+    ds_list = list(df["dataset"].unique())
+    fig, axes = plt.subplots(
+        1, len(ds_list),
+        figsize=(4 * len(ds_list), 3.8),
+        squeeze=False,
+        sharey=True,
+    )
+
     for ax, ds in zip(axes[0], ds_list):
-        g = fam_agg[fam_agg["dataset"] == ds]
+        g = df[df["dataset"] == ds].copy()
+
+        # optional: enforce subset order if present
+        subset_order = ["all", "HH", "non_HH"]
+        if "subset" in g.columns:
+            g["subset"] = pd.Categorical(g["subset"], categories=subset_order, ordered=True)
+            g = g.sort_values("subset")
+
         subs = g["subset"].astype(str).tolist()
         x = np.arange(len(subs))
-        ax.bar(x, g["mean_ratio"], yerr=g["std_ratio"], capsize=3, color="steelblue", alpha=0.85)
+
+        between = g["between_share"].to_numpy()
+        within = g["within_share"].to_numpy()
+
+        ax.bar(
+            x,
+            between,
+            label="Between-family",
+            color="steelblue",
+            alpha=0.9,
+        )
+        ax.bar(
+            x,
+            within,
+            bottom=between,
+            label="Within-family",
+            color="lightgray",
+            alpha=0.9,
+        )
+
+        # Optional: keep error bars only on between-family share
+        if "std_ratio" in g.columns:
+            ax.errorbar(
+                x,
+                between,
+                yerr=g["std_ratio"].to_numpy(),
+                fmt="none",
+                ecolor="black",
+                elinewidth=1,
+                capsize=3,
+            )
+
         ax.set_xticks(x)
         ax.set_xticklabels(subs, rotation=20, ha="right")
-        ax.set_ylabel("Family importance (ratio of sums)")
+        ax.set_ylim(0, 1.0)
+        ax.set_ylabel("Share of total predictive variance")
         ax.set_title(str(ds))
-    fig.suptitle("Global family factor (mean ± std over seeds)", fontsize=12)
-    fig.tight_layout()
+        ax.grid(axis="y", alpha=0.25)
+        
+    for ax in axes[0]:
+        ax.tick_params(axis="y", labelleft=True)
+
+    handles, labels = axes[0][0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="upper center", bbox_to_anchor=(0.5, 1.02), ncol=2, frameon=False)
+    fig.suptitle("Between- vs within-family decomposition (mean over seeds)", fontsize=12, y=1.08)
+    fig.tight_layout(rect=[0, 0, 1, 0.90])
+
     if fig_path is not None:
         fig.savefig(fig_path, bbox_inches="tight")
     plt.show()

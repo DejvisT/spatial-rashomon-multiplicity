@@ -1,0 +1,8 @@
+feature,n_seeds,total_mentions,mean_per_seed
+num__age,10,45,4.5
+num__priors_count,10,38,3.8
+cat__race_Caucasian,3,7,2.3333333333333335
+cat__race_Hispanic,2,3,1.5
+cat__race_Other,1,2,2.0
+cat__c_charge_degree_M,1,1,1.0
+cat__sex_Female,1,1,1.0
