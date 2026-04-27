@@ -1,8 +1,8 @@
-feature,n_seeds,total_mentions,mean_per_seed
-num__age,10,45,4.5
-num__priors_count,10,38,3.8
-cat__race_Caucasian,3,7,2.3333333333333335
-cat__race_Hispanic,2,3,1.5
-cat__race_Other,1,2,2.0
-cat__c_charge_degree_M,1,1,1.0
-cat__sex_Female,1,1,1.0
+feature,n_rules_with_feature,n_seeds_with_feature,mean_purity_when_used
+age,49,10,0.3396537146725741
+priors_count,49,10,0.3396537146725741
+race_Caucasian,13,2,0.26839709294137576
+sex_Female,11,2,0.35770315102778477
+c_charge_degree_M,5,1,0.2481423367518114
+race_Hispanic,5,1,0.3636824301859131
+race_Other,5,1,0.32008690845290455

@@ -1,0 +1,10 @@
+feature,n_rules_with_feature,n_seeds_with_feature,mean_purity_when_used
+age,16,8,0.37045033658021276
+priors_count,15,7,0.37549790287854273
+race_Hispanic,5,2,0.43825539539825253
+sex_Male,4,2,0.5854377104377104
+race_African-American,4,4,0.28987751056793043
+race_Other,3,1,0.5892255892255892
+race_Asian,2,1,0.40731707317073174
+c_charge_degree_F,1,1,0.29473684210526313
+c_charge_degree_M,1,1,0.5740740740740741
