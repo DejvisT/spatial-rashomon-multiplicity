@@ -333,7 +333,12 @@ def extract_hh_components(
 
     # Row indexing W[u] requires CSR; PySAL may give COO
     if not isinstance(W, sparse.csr_matrix):
-        W = sparse.csr_matrix(W)
+        if hasattr(W, "sparse"):
+            W = W.sparse
+        elif hasattr(W, "to_sparse"):
+            W = W.to_sparse()
+        else:
+            W = sparse.csr_matrix(W)
 
     visited = np.zeros(n, dtype=bool)
     comp_id = -np.ones(n, dtype=int)
