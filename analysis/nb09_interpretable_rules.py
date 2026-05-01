@@ -94,6 +94,56 @@ def prepare_X_for_rules(
 # Decision tree rules extraction
 # =====================================================================
 
+def _format_threshold(value: float) -> str:
+    if np.isnan(value) or np.isinf(value):
+        return str(value)
+    rounded = round(value)
+    if abs(value - rounded) < 1e-8:
+        return str(int(rounded))
+    return f"{value:.2f}".rstrip("0").rstrip(".")
+
+
+def _extract_rules_from_tree_paths(
+    tree: DecisionTreeClassifier,
+    feature_names: List[str],
+) -> Dict[int, Dict[str, Any]]:
+    tree_ = tree.tree_
+    feature = tree_.feature
+    threshold = tree_.threshold
+    children_left = tree_.children_left
+    children_right = tree_.children_right
+
+    paths: Dict[int, Dict[str, Any]] = {}
+
+    def recurse(node: int, conditions: List[str]):
+        if children_left[node] == children_right[node]:
+            rule_text = " AND ".join(conditions) if conditions else "ALL"
+            features_used = [cond.split()[0] for cond in conditions]
+            features_used = list(dict.fromkeys(features_used))
+            paths[node] = {
+                "rule_text": rule_text,
+                "features_used": features_used,
+            }
+            return
+
+        feat_idx = feature[node]
+        if feat_idx < 0 or feat_idx >= len(feature_names):
+            recurse(children_left[node], conditions)
+            recurse(children_right[node], conditions)
+            return
+
+        name = feature_names[int(feat_idx)]
+        thresh = _format_threshold(threshold[node])
+        left_cond = f"{name} <= {thresh}"
+        right_cond = f"{name} > {thresh}"
+
+        recurse(children_left[node], conditions + [left_cond])
+        recurse(children_right[node], conditions + [right_cond])
+
+    recurse(0, [])
+    return paths
+
+
 def extract_rules_from_tree(
     tree: DecisionTreeClassifier,
     feature_names: List[str],
@@ -105,19 +155,6 @@ def extract_rules_from_tree(
     
     For each positive leaf (class=1), evaluate on training data
     and compute support, purity, recall, lift.
-    
-    Parameters
-    ----------
-    tree : fitted DecisionTreeClassifier
-    feature_names : list of feature names
-    X : training feature DataFrame
-    y : binary target (0/1)
-    
-    Returns
-    -------
-    rules : list of dicts with keys
-        - rule_text, features_used, support, support_frac,
-          purity, recall, lift
     """
     rules = []
     
@@ -127,74 +164,54 @@ def extract_rules_from_tree(
     X_arr = X.values if isinstance(X, pd.DataFrame) else X
     leaf_id = tree.apply(X_arr)
     
-    n_pos = y.sum()
+    n_pos = int(y.sum())
     n_total = len(y)
-    hh_base_rate = n_pos / n_total if n_total > 0 else 0.0
+    base_rate = n_pos / n_total if n_total > 0 else 0.0
     
-    # Find leaves with positive class
+    rule_paths = _extract_rules_from_tree_paths(tree, feature_names)
+    
     unique_leaves = np.unique(leaf_id)
     
-    for leaf_idx, leaf in enumerate(unique_leaves):
-        # Check if this leaf is positive
+    for leaf in unique_leaves:
         leaf_mask = (leaf_id == leaf)
-        y_leaf = y[leaf_mask]
-        support = leaf_mask.sum()
-        support_in_pos = y_leaf.sum()
+        support = int(leaf_mask.sum())
+        support_in_pos = int(y[leaf_mask].sum())
         
-        if support_in_pos == 0:  # No positive samples at this leaf
+        if support_in_pos == 0:
             continue
         
-        # Metrics
         purity = support_in_pos / support if support > 0 else 0.0
         recall = support_in_pos / n_pos if n_pos > 0 else 0.0
-        lift = purity / hh_base_rate if hh_base_rate > 0 else 0.0
-        
-        # Get features used (from tree feature indices)
-        # Traverse tree from leaf to root to find conditions
-        features_used = set()
-        def collect_features(node_id):
-            if node_id < 0:
-                return
-            feat_idx = tree.tree_.feature[node_id]
-            if feat_idx >= 0 and feat_idx < len(feature_names):
-                features_used.add(feature_names[int(feat_idx)])
-            # Cannot easily walk up tree, so use importance instead
-        
-        # Use feature importances to identify key features
-        feat_imp = tree.feature_importances_
-        top_indices = np.argsort(feat_imp)[::-1][:3]  # Top 3 features
-        features_used = [
-            feature_names[i]
-            for i in top_indices
-            if i < len(feature_names) and feat_imp[i] > 1e-6
-        ]
+        lift = purity / base_rate if base_rate > 0 else 0.0
+
+        path_info = rule_paths.get(leaf, {})
+        rule_text = path_info.get("rule_text", "ALL")
+        features_used = path_info.get("features_used", [])
         if not features_used:
-            # Fallback: find any feature used in tree
-            for i in range(len(feature_names)):
-                if feat_imp[i] > 0:
-                    features_used.append(feature_names[i])
-            if not features_used:
-                features_used = feature_names[:1]
-        
-        # Rule text
-        rule_text = f"tree_leaf_{leaf_idx}_support_{support}"
-        
+            # Fallback to feature importances if no explicit path features
+            feat_imp = tree.feature_importances_
+            features_used = [
+                feature_names[i]
+                for i in np.argsort(feat_imp)[::-1]
+                if i < len(feature_names) and feat_imp[i] > 1e-6
+            ]
+        rule_features = ", ".join(features_used)
+
         rules.append({
             "rule_text": rule_text,
             "features_used": features_used,
-            "support": int(support),
+            "rule_features": rule_features,
+            "support": support,
             "support_frac": support / n_total if n_total > 0 else 0.0,
             "purity": float(purity),
             "recall": float(recall),
             "lift": float(lift),
-            "hh_base_rate": float(hh_base_rate),
-            "n_pos": int(n_pos),
+            "base_rate": float(base_rate),
+            "n_hh_total": int(n_pos),
             "n_total": n_total,
         })
     
-    # Sort by support descending
     rules = sorted(rules, key=lambda x: x["support"], reverse=True)
-    
     return rules
 
 
@@ -349,30 +366,17 @@ def analyze_component(
     for rank, rule_dict in enumerate(rules):
         row = {
             "rule_rank": rank,
+            "component_support": rule_dict.get("support", 0),
             "component_purity": rule_dict.get("purity", 0.0),
             "component_recall": rule_dict.get("recall", 0.0),
-            "component_base_rate": component_base_rate,
             "component_lift": rule_dict.get("lift", 0.0),
+            "component_base_rate": component_base_rate,
         }
         
-        # Compute HH purity/recall by evaluating which HH points match
-        # This is approximate without leaf-level rule evaluation
-        hh_purity_any = (
-            rule_dict.get("purity", 0.0) * rule_dict.get("support", 0) / n_total
-            if n_total > 0 else 0.0
-        )
-        hh_recall_any = (
-            rule_dict.get("recall", 0.0) * n_component / n_all_hh
-            if n_all_hh > 0 else 0.0
-        )
-        
-        row.update({
-            "hh_purity_any": hh_purity_any,
-            "hh_recall_any": hh_recall_any,
-        })
+        # Preserve existing rule metrics too
         row.update(rule_dict)
         rows.append(row)
-    
+
     rules_df = pd.DataFrame(rows) if rows else None
     
     metadata = {
@@ -608,22 +612,25 @@ def rule_feature_frequency_across_seeds(
     for idx, row in rules_summary.iterrows():
         features = row.get("features_used", [])
         if isinstance(features, str):
-            features = [f.strip() for f in features.split(",")]
+            features = [f.strip() for f in features.split(",") if f.strip()]
         else:
             features = list(features) if features else []
         
-        purity = row.get("purity", 0.5)
+        purity = float(row.get("purity", 0.0))
+        lift = float(row.get("lift", 0.0)) if "lift" in row else 0.0
         
         for feat in features:
             if feat not in feature_stats:
                 feature_stats[feat] = {
                     "n_rules": 0,
                     "n_seeds": set(),
-                    "mean_purity": [],
+                    "purities": [],
+                    "lifts": [],
                 }
             feature_stats[feat]["n_rules"] += 1
             feature_stats[feat]["n_seeds"].add(row.get("outer_seed", 0))
-            feature_stats[feat]["mean_purity"].append(purity)
+            feature_stats[feat]["purities"].append(purity)
+            feature_stats[feat]["lifts"].append(lift)
     
     rows = []
     for feat, stats in sorted(feature_stats.items()):
@@ -631,10 +638,14 @@ def rule_feature_frequency_across_seeds(
             "feature": feat,
             "n_rules_with_feature": stats["n_rules"],
             "n_seeds_with_feature": len(stats["n_seeds"]),
-            "mean_purity_when_used": float(np.mean(stats["mean_purity"])) if stats["mean_purity"] else 0.0,
+            "mean_purity_when_used": float(np.mean(stats["purities"])) if stats["purities"] else 0.0,
+            "mean_lift_when_used": float(np.mean(stats["lifts"])) if stats["lifts"] else 0.0,
         })
     
-    return pd.DataFrame(rows).sort_values("n_rules_with_feature", ascending=False)
+    return pd.DataFrame(rows).sort_values(
+        ["n_seeds_with_feature", "n_rules_with_feature", "mean_purity_when_used"],
+        ascending=False,
+    )
 
 
 # =====================================================================

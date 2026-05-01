@@ -1185,6 +1185,169 @@ def write_hp_hotspot_delta_compas_tex():
     (TAB_DIR / "hp_hotspot_delta_compas_compact.tex").write_text("\n".join(out), encoding="utf-8")
     print("Wrote", TAB_DIR / "hp_hotspot_delta_compas_compact.tex")
 
+def write_interpretable_rules_top_compas_tex():
+    """Top COMPAS HH rules from notebook 09."""
+    path = resolve_csv("rules_summary_compas.csv", "nb09")
+    if path is None or not path.is_file():
+        print("Missing rules_summary_compas.csv")
+        return
+
+    df = pd.read_csv(path)
+    df = df[df["label"].eq("HH")].copy()
+
+    # Prefer rules that are not tiny but still pure
+    df = df[df["support"] >= 20]
+    df = df.sort_values(["purity", "lift", "support"], ascending=[False, False, False])
+    df = df.head(5)
+
+    rows = [
+        r"\begin{tabular}{llrrrr}",
+        r"\hline",
+        r"Seed & Rule & Support & Purity & Recall & Lift \\",
+        r"\hline",
+    ]
+
+    for _, r in df.iterrows():
+        rows.append(
+            f"{int(r['outer_seed'])} & "
+            f"{_tex_escape(str(r['rule_text']))} & "
+            f"{int(r['support'])} & "
+            f"{r['purity']:.3f} & "
+            f"{r['recall']:.3f} & "
+            f"{r['lift']:.2f} \\\\"
+        )
+
+    rows += [r"\hline", r"\end{tabular}"]
+
+    out_path = TAB_DIR / "interpretable_rules_top_compas.tex"
+    out_path.write_text("\n".join(rows), encoding="utf-8")
+    print(f"Wrote {out_path}")
+
+
+def write_interpretable_rule_features_compas_tex():
+    """Most frequent features used by COMPAS HH rules."""
+    path = resolve_csv("rule_feature_frequency_compas.csv", "nb09")
+    if path is None or not path.is_file():
+        print("Missing rule_feature_frequency_compas.csv")
+        return
+
+    df = pd.read_csv(path)
+    df = df.sort_values(
+        ["n_seeds_with_feature", "n_rules_with_feature", "mean_purity_when_used"],
+        ascending=False,
+    ).head(8)
+
+    rows = [
+        r"\begin{tabular}{lrrrr}",
+        r"\hline",
+        r"Feature & Rules & Seeds & Mean purity & Mean lift \\",
+        r"\hline",
+    ]
+
+    for _, r in df.iterrows():
+        rows.append(
+            f"{_tex_escape(str(r['feature']))} & "
+            f"{int(r['n_rules_with_feature'])} & "
+            f"{int(r['n_seeds_with_feature'])} & "
+            f"{r['mean_purity_when_used']:.3f} & "
+            f"{r.get('mean_lift_when_used', 0.0):.3f} \\\\"
+        )
+
+    rows += [r"\hline", r"\end{tabular}"]
+
+    out_path = TAB_DIR / "interpretable_rule_features_compas.tex"
+    out_path.write_text("\n".join(rows), encoding="utf-8")
+    print(f"Wrote {out_path}")
+
+
+def write_component_rules_compas_tex():
+    """Best component-level COMPAS HH rules."""
+    path = resolve_csv("component_rules_summary_compas.csv", "nb09")
+    if path is None or not path.is_file():
+        print("Missing component_rules_summary_compas.csv")
+        return
+
+    df = pd.read_csv(path)
+    df = df[df["support"] >= 10].copy()
+    df = df.sort_values(
+        ["component_purity", "component_lift", "support"],
+        ascending=[False, False, False],
+    ).head(5)
+
+    rows = [
+        r"\begin{tabular}{lllrrrr}",
+        r"\hline",
+        r"Seed & Component & Rule & Support & Purity & Recall & Lift \\",
+        r"\hline",
+    ]
+
+    for _, r in df.iterrows():
+        rows.append(
+            f"{int(r['outer_seed'])} & "
+            f"{int(r['component_id'])} & "
+            f"{_tex_escape(str(r['rule_text']))} & "
+            f"{int(r['support'])} & "
+            f"{r['component_purity']:.3f} & "
+            f"{r['component_recall']:.3f} & "
+            f"{r['component_lift']:.2f} \\\\"
+        )
+
+    rows += [r"\hline", r"\end{tabular}"]
+
+    out_path = TAB_DIR / "component_rules_compas.tex"
+    out_path.write_text("\n".join(rows), encoding="utf-8")
+    print(f"Wrote {out_path}")
+
+
+def write_component_rule_features_compas_tex():
+    """Most frequent features used by component-level COMPAS HH rules."""
+    path = resolve_csv("component_feature_frequency_compas.csv", "nb09")
+    if path is None or not path.is_file():
+        print("Missing component_feature_frequency_compas.csv")
+        return
+
+    df = pd.read_csv(path)
+
+    required = {
+        "feature",
+        "n_rules_with_feature",
+        "n_seeds_with_feature",
+        "mean_purity_when_used",
+        "mean_lift_when_used",
+    }
+    missing = required - set(df.columns)
+    if missing:
+        print(f"component_feature_frequency_compas.csv missing columns: {missing}")
+        return
+
+    df = df.sort_values(
+        ["n_rules_with_feature", "n_seeds_with_feature", "mean_lift_when_used"],
+        ascending=[False, False, False],
+    ).head(8)
+
+    rows = [
+        r"\begin{tabular}{lrrrr}",
+        r"\hline",
+        r"Feature & Rules & Seeds & Mean purity & Mean lift \\",
+        r"\hline",
+    ]
+
+    for _, r in df.iterrows():
+        rows.append(
+            f"{_tex_escape(str(r['feature']))} & "
+            f"{int(r['n_rules_with_feature'])} & "
+            f"{int(r['n_seeds_with_feature'])} & "
+            f"{r['mean_purity_when_used']:.3f} & "
+            f"{r['mean_lift_when_used']:.2f} \\\\"
+        )
+
+    rows += [r"\hline", r"\end{tabular}"]
+
+    out_path = TAB_DIR / "component_feature_frequency_compas.tex"
+    out_path.write_text("\n".join(rows), encoding="utf-8")
+    print(f"Wrote {out_path}")
+
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Export thesis assets")
@@ -1200,7 +1363,11 @@ def main():
         help="Remove PDFs under presentation_assets/fig/ not referenced by the thesis or this export script.",
     )
     args = parser.parse_args()
-
+    write_interpretable_rules_top_compas_tex()
+    write_interpretable_rule_features_compas_tex()
+    write_component_rules_compas_tex()
+    write_component_rule_features_compas_tex()
+"""
     write_dataset_summary_tex()
     write_global_summary_tex()
     write_family_summary_tex()
@@ -1225,7 +1392,7 @@ def main():
         overleaf_bundle=OVERLEAF_BUNDLE,
     )
     print("Done.")
-
+"""
 
 if __name__ == "__main__":
     main()
