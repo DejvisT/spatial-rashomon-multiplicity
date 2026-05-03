@@ -29,6 +29,7 @@ from analysis.hyperparams import (
     compute_family_importance,
     compute_within_family_hp_importance,
     ensure_hp_columns,
+    make_hp_key,
 )
 from analysis.knn_defaults import K_NN_BY_DATASET
 from analysis.preprocessing import get_transformed_test_features
@@ -61,6 +62,7 @@ def per_seed_analysis_tables(
     rashomon_k_each: int = 25,
     min_hh_obs: int = 5,
     permutations: int = 999,
+    grouping_info: Optional[Dict[str, Dict[str, Tuple[str, Optional[List[float]]]]]] = None,
 ) -> Dict[str, pd.DataFrame]:
     """
     One seed: decomposition (family + within-family HP on **P**, secondary) on
@@ -159,7 +161,8 @@ def per_seed_analysis_tables(
             P_f = P_sel[fam_mask]
             meta_f = meta_sel.loc[fam_mask].reset_index(drop=True)
             V_m = compute_Vm(P_f, obs_mask=mask)
-            imp = hp_importance_Vm(V_m, meta_f)
+            fam_grouping = grouping_info.get(family, {}) if grouping_info else {}
+            imp = hp_importance_Vm(V_m, meta_f, fam_grouping)
             if imp.empty:
                 continue
             imp = imp.copy()
@@ -259,11 +262,50 @@ def run_dataset_all_seeds(
         [p for p in d.iterdir() if p.is_dir() and p.name.startswith("seed=")],
         key=lambda p: int(p.name.split("=")[1]),
     )
+    
+    # First pass: collect all meta for each family to determine grouping
+    family_hp_values = {}
+    for run_dir in run_dirs:
+        seed_val = int(run_dir.name.split("=")[1])
+        meta = load_meta(run_dir)
+        meta = ensure_hp_columns(meta)
+        pool_idx = select_pool_indices(run_dir, pool_type=pool_type, rashomon_k_each=rashomon_k_each)
+        if pool_idx.size == 0:
+            continue
+        meta_pool = meta.iloc[pool_idx].reset_index(drop=True)
+        families = sorted(meta_pool["model_name"].unique())
+
+        for family in families:
+            fam_mask = (meta_pool["model_name"] == family).values
+            if fam_mask.sum() < 3:
+                continue
+            meta_sel = meta_pool.loc[fam_mask].reset_index(drop=True)
+            
+            if family not in family_hp_values:
+                family_hp_values[family] = {}
+            
+            for hp_col in [c for c in meta_sel.columns if c.startswith("hp_")]:
+                hp_name = hp_col.replace("hp_", "")
+                if hp_name not in family_hp_values[family]:
+                    family_hp_values[family][hp_name] = []
+                family_hp_values[family][hp_name].extend([make_hp_key(v) for v in meta_sel[hp_col].dropna()])
+
+    # Determine grouping per family-hp
+    from analysis.hp_analysis import determine_hp_grouping
+    grouping_info = {}
+    for family, hp_dict in family_hp_values.items():
+        grouping_info[family] = {}
+        for hp_name, values in hp_dict.items():
+            grouping_type, bins = determine_hp_grouping(pd.Series(values))
+            grouping_info[family][hp_name] = (grouping_type, bins)
+
+    # Second pass: compute with grouping
     parts = [per_seed_analysis_tables(
         rd, dataset, int(rd.name.split("=")[1]),
         pool_type=pool_type,
         rashomon_k_each=rashomon_k_each,
         min_hh_obs=min_hh_obs,
+        grouping_info=grouping_info,
     ) for rd in run_dirs]
 
     def cat(key: str) -> pd.DataFrame:

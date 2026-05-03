@@ -1,5 +1,5 @@
 dataset,pool_type,subset,family,hp_name,mean_importance,std_importance,mean_rank,rank_freq_top1,rank_freq_top3,n_seeds
-adult,Rashomon,HH,GBM,learning_rate,0.29319086835997943,0.12252871714978841,1.5,0.5,1.0,10
-adult,Rashomon,HH,GBM,max_depth,0.17096028138314692,0.10569903510028195,2.5,0.2,0.9,10
+adult,Rashomon,HH,GBM,learning_rate,0.29007714882287444,0.12119447380846732,1.5,0.5,1.0,10
+adult,Rashomon,HH,GBM,max_depth,0.17014451088653096,0.10702984782283115,2.5,0.2,0.9,10
 adult,Rashomon,HH,GBM,n_estimators,0.12988726113031346,0.12313819304247632,2.7,0.3,0.6,10
 adult,Rashomon,HH,GBM,subsample,0.05618612909290035,0.06692496998842325,3.3,0.0,0.5,10
