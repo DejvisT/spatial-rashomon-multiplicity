@@ -34,14 +34,33 @@ Figure~\ref{fig:between_ratio_hist} shows the per-observation distribution of th
 \label{fig:between_ratio_hist}
 \end{figure}
 
-\subsection{Interpretable Rules: Support vs.\ Purity}
-\label{app:rules-support-purity}
 
-Figure~\ref{fig:rules_support_purity} shows the trade-off between rule support (coverage) and purity for all rule extraction methods on COMPAS.
 
-\begin{figure}[htbp]
+
+\subsection{Alternative Local Statistics (Gi*)}
+\label{sec:appendix-gistar}
+
+To verify that the observed hotspot structure is not specific to local Moran's $I$, we also apply the Getis--Ord Gi* statistic. Whereas LISA detects relative local association, Gi* emphasizes regions of high absolute intensity.
+
+Empirically, Gi* hotspots form a subset of the LISA hotspots and exhibit substantially higher predictive variance. This suggests that the hotspot regions contain an internal structure, with a high-intensity core surrounded by a broader area of elevated instability. Thus, the existence of localized multiplicity does not depend on a single local statistic, even though different statistics emphasize different parts of the hotspot geometry.
+
+
+\begin{figure}[htbp] \centering \includegraphics[width=0.7\textwidth]{fairness_hh_rate_by_race_compas.pdf} \caption{HH rate by race on COMPAS (mean $\pm$ std across 10 seeds). African-Americans have a higher HH rate than Caucasians and Hispanics.} \label{fig:fairness_hh_race} \end{figure}
+
+
+
+\begin{table}[htbp]
 \centering
-\includegraphics[width=0.65\textwidth]{rules_support_purity_compas.pdf}
-\caption{Rule support vs.\ purity for all extraction methods on COMPAS seed 0. Decision tree rules achieve high purity at low support; L1 logistic regression achieves broader coverage at lower purity.}
-\label{fig:rules_support_purity}
-\end{figure}
+\caption{Representative global HH rules on COMPAS.}
+\label{tab:rules_compas_top_global}
+\resizebox{\textwidth}{!}{%
+\input{presentation_assets/tab/interpretable_rules_top_compas.tex}
+}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Feature frequency across global HH rules on COMPAS.}
+\label{tab:rules_compas_features_global}
+\input{presentation_assets/tab/interpretable_rule_features_compas.tex}
+\end{table}

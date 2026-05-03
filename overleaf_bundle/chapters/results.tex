@@ -1,14 +1,15 @@
-This chapter presents the main empirical results.  We first summarize predictive multiplicity and spatial structure across datasets (Section~\ref{sec:results-metrics}), then compare soft prediction variance with hard conflict ratio and present a quadrant analysis (Section~\ref{sec:results-conflict}), report null-hypothesis testing (Section~\ref{sec:results-null}), global vs.\ per-family comparisons (Section~\ref{sec:results-global-vs-family}), spatial pattern analysis (Section~\ref{sec:results-spatial}), sensitivity analyses (Sections~\ref{sec:results-sensitivity-K}--\ref{sec:results-sensitivity-kNN}), hyperparameter and family importance (Section~\ref{sec:results-hp}), calibration robustness (Section~\ref{sec:results-calibration}), synthetic validation (Section~\ref{sec:results-synthetic}), interpretable rules (Section~\ref{sec:results-rules}), and four additional robustness analyses: decision boundary proximity (Section~\ref{sec:results-margin}), fairness exposure (Section~\ref{sec:results-fairness}), alternative graph constructions (Section~\ref{sec:results-alt-graph}), and aggregated drivers across seeds (Section~\ref{sec:results-agg-drivers}).  All analyses use the global Rashomon set (top-$K$ with $K=25$) and default spatial parameters ($k=30$) unless stated otherwise.
+This chapter presents the main empirical results. We begin with a cross-dataset overview of predictive multiplicity and its spatial structure (Section~\ref{sec:results-metrics}), then compare soft prediction variance with hard conflict ratio (Section~\ref{sec:results-conflict}), test the significance of the observed clustering against a permutation null (Section~\ref{sec:results-null}), and examine the stability of hotspot regions across runs (Section~\ref{sec:results-spatial}). We next compare global and per-family Rashomon sets (Section~\ref{sec:results-global-vs-family}), analyze robustness to analytical choices including $K$, $k$, calibration, and graph construction (Section~\ref{sec:results-robustness}), and then study model-family and hyperparameter drivers of multiplicity (Section~\ref{sec:results-hp}). The chapter concludes with synthetic validation, interpretable rule extraction, and auxiliary diagnostic analyses. Unless stated otherwise, all analyses use the global Rashomon set (top-$K$ with $K=25$) and the default spatial parameters defined in Chapter~4.
+
 
 %% ---------------------------------------------------------------------------
 \subsection{Multiplicity and Spatial Metrics by Dataset}
 \label{sec:results-metrics}
 
-Table~\ref{tab:dataset_summary} summarizes mean predictive variance and global Moran's $I$ of pointwise variance, aggregated over 10 outer runs (mean $\pm$ standard deviation) for COMPAS, German Credit, and Adult.
+We begin with a compact cross-dataset summary of the two main questions underlying this thesis: how large predictive multiplicity is, and how strongly it is spatially structured in feature space. Table~\ref{tab:dataset_summary} reports the core summary statistics over 10 outer runs for COMPAS, German Credit, and Adult.
 
-Across datasets, predictive multiplicity is consistently present but varies substantially in magnitude and spatial organization. COMPAS exhibits the strongest spatial structure, with the highest Moran's $I$ ($0.20 \pm 0.08$), indicating pronounced clustering of predictive instability in feature space. German Credit shows moderate spatial structure (Moran's $I = 0.10 \pm 0.04$), but the highest overall multiplicity magnitude, with substantially larger predictive variance and conflict values. Adult displays lower multiplicity magnitude and weaker spatial clustering ($0.07 \pm 0.02$), though spatial dependence remains statistically significant across all runs.
+The three datasets differ clearly in both the magnitude and the spatial organization of predictive multiplicity. COMPAS exhibits the strongest spatial clustering, with the largest mean Moran's $I$ ($0.20 \pm 0.08$), indicating that high-variance observations are concentrated in localized regions of the feature space. German Credit shows weaker spatial clustering ($0.10 \pm 0.04$), but the largest overall disagreement magnitude, with the highest mean predictive variance and conflict-related values. Adult, in contrast, displays comparatively low disagreement magnitude and the weakest Moran's $I$ ($0.07 \pm 0.02$), though the clustering signal remains consistently positive across runs.
 
-The number of HH LISA hotspots further highlights structural differences across datasets. In absolute terms, Adult contains the largest number of hotspot points ($286.1$ on average), followed by COMPAS ($86.7$), while German Credit exhibits very few HH observations. However, absolute HH counts are not directly comparable across datasets due to differences in dataset size and the use of dataset-specific $k$ in the kNN graph. Interpreted alongside Moran's $I$, the results indicate that COMPAS exhibits the strongest spatial concentration of multiplicity, while Adult shows more diffuse but still structured hotspot regions.
+The HH hotspot counts provide additional context, but should be interpreted with care. In absolute terms, Adult contains the largest number of HH observations ($286.1$ on average), followed by COMPAS ($86.7$), while German Credit contains very few HH points. However, these counts are not directly comparable across datasets because both dataset size and the dataset-specific neighborhood parameter $k$ differ. For this reason, Moran's $I$ is the more informative cross-dataset measure of spatial concentration. Under this interpretation, COMPAS shows the clearest localized hotspot structure, whereas Adult is better characterized by broader and more diffuse regions of instability.
 
 \begin{table}[htbp]
 \centering
@@ -17,32 +18,32 @@ The number of HH LISA hotspots further highlights structural differences across 
 \input{presentation_assets/tab/dataset_summary.tex}
 \end{table}
 
-Additional multiplicity metrics computed across all runs include: mean ambiguity, disagreement rate ($\delta = 0.05$), discrepancy, and neighborhood agreement. German Credit exhibits the highest disagreement and discrepancy values, indicating greater diversity within the Rashomon set, while Adult shows lower disagreement and more stable predictions. COMPAS lies between these extremes but exhibits stronger spatial concentration of disagreement.
+The table already captures the main cross-dataset pattern: German Credit has the largest overall disagreement magnitude, COMPAS the strongest spatial concentration, and Adult a broader but weaker hotspot structure.
 
-Figure~\ref{fig:dataset_comparison_bars} provides a compact comparison of key metrics across datasets, including Moran's $I$, HH hotspot count, mean predictive variance, and mean conflict ratio. COMPAS shows the strongest spatial structure, while German Credit exhibits the highest overall variance and conflict. Adult displays lower predictive variance and weaker spatial clustering than German Credit, but a substantially larger number of HH hotspot observations, indicating more spatially dispersed instability.
+Figure~\ref{fig:dataset_comparison_bars} complements Table~\ref{tab:dataset_summary} by visualizing the same cross-dataset comparison. The figure makes the main pattern immediately visible: COMPAS stands out in spatial structure, German Credit in overall disagreement magnitude, and Adult in the extent of its hotspot field despite weaker clustering strength.
 
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.85\textwidth]{dataset_comparison_bars.pdf}
-\caption{Dataset comparison: Moran's $I$, HH count, mean variance, and mean conflict (mean $\pm$ std over 10 outer runs, $K=25$, dataset-specific $k$). COMPAS shows the strongest spatial structure, German Credit the highest multiplicity magnitude, and Adult more diffuse hotspot patterns.}
+\includegraphics[width=0.72\textwidth]{dataset_comparison_bars.pdf}
+\caption{Cross-dataset comparison of Moran's $I$, HH count, mean predictive variance, and mean conflict (mean $\pm$ std over 10 outer runs, $K=25$, dataset-specific $k$). COMPAS shows the strongest spatial clustering, German Credit the largest disagreement magnitude, and Adult the most diffuse hotspot structure.}
 \label{fig:dataset_comparison_bars}
 \end{figure}
 
-Overall, these results establish that predictive multiplicity is strongly dataset-dependent. COMPAS exhibits highly localized and spatially concentrated instability, German Credit shows high overall predictive variability with weaker spatial organization, and Adult displays moderate but consistently structured multiplicity with more diffuse hotspot regions. In the following sections, we focus on COMPAS as a representative dataset for detailed spatial analysis, and return to cross-dataset comparisons where relevant.
+Taken together, these results show that predictive multiplicity is strongly dataset-dependent and that disagreement magnitude and spatial concentration need not coincide. German Credit exhibits the largest overall predictive variability, but COMPAS shows the clearest localized structure, making it the most informative case study for the detailed spatial analyses that follow. Adult occupies an intermediate position: multiplicity is weaker in magnitude than on German Credit and less concentrated than on COMPAS, but still forms non-random hotspot regions. In the following sections, we therefore use COMPAS as the main running example and return to the other datasets where cross-dataset comparison is most informative.
 
 %% ---------------------------------------------------------------------------
 \subsection{Conflict Ratio vs Soft Prediction Variance}
 \label{sec:results-conflict}
 
-This thesis reports two complementary per-observation disagreement metrics (defined in Chapter~3): \emph{soft prediction variance}~$v_i$, which captures the spread of predicted probabilities across Rashomon models, and the \emph{conflict ratio}~$c_i$, which measures hard-label disagreement (the fraction of models on the minority side of the 0.5 decision threshold). Both are computed for each test observation on every run.
+In addition to soft prediction variance $v_i$, which captures the spread of predicted probabilities across Rashomon models, we also consider the conflict ratio $c_i$, which measures hard-label disagreement relative to the 0.5 decision threshold. The two metrics capture complementary aspects of predictive multiplicity: variance reflects disagreement in probability space, whereas conflict isolates disagreement that changes the predicted class.
 
 \subsubsection{Why Both Metrics Are Needed}
 
-Soft variance and hard conflict capture distinct aspects of predictive multiplicity. An observation can have high variance without high conflict (e.g., probabilities spread across $[0.6, 0.9]$, where all models agree on the positive label) or high conflict without high variance (e.g., probabilities tightly clustered around 0.5, where small differences lead to label flips). Reporting both metrics is therefore necessary to capture both probability-level instability and decision-level disagreement.
+The distinction is substantively important. An observation can have high variance without high conflict if predicted probabilities vary widely but remain on the same side of the decision threshold. Conversely, an observation can have high conflict despite relatively low variance if predictions are tightly concentrated near 0.5 and small shifts are sufficient to flip the label. Reporting both metrics therefore separates probability-level instability from decision-level disagreement.
 
 \subsubsection{Dataset-Level Conflict Metrics}
 
-Table~\ref{tab:conflict_summary} reports conflict-related metrics aggregated over 10 outer runs. Across datasets, conflict prevalence varies substantially. On COMPAS, 17.9\% of test points exhibit nonzero conflict ($c_i > 0$) and 5.9\% show severe disagreement ($c_i \geq 0.25$), accompanied by strong spatial clustering (conflict Moran's $I = 0.17$). German Credit exhibits the highest fraction of conflicted points (30.1\%) and the highest overall conflict magnitude, but substantially weaker spatial structure (Moran's $I = 0.05$), indicating that disagreement is more dispersed. Adult shows lower overall conflict levels (mean $c_i = 0.017$) and a smaller fraction of conflicted points, but still exhibits consistent spatial clustering of conflict across all runs.
+Table~\ref{tab:conflict_summary} summarizes conflict-related metrics across datasets. The overall pattern mirrors the variance-based results, but also highlights important differences between disagreement magnitude and spatial concentration. German Credit exhibits the largest overall conflict, with the highest mean $c_i$ and the largest fraction of conflicted observations. However, its conflict Moran's $I$ remains relatively small, indicating that hard-label disagreement is widespread but only weakly clustered in feature space. COMPAS shows lower overall conflict prevalence than German Credit, but substantially stronger spatial concentration ($0.17 \pm 0.03$), again indicating more localized disagreement regions. Adult shows the lowest overall conflict magnitude, but still retains a consistent positive clustering signal across runs.
 
 \begin{table}[htbp]
 \centering
@@ -60,27 +61,25 @@ Adult  & $0.017 \pm 0.001$ & $11.5 \pm 0.8$ & $3.2 \pm 0.5$ & $0.06 \pm 0.02$ & 
 \end{tabular}
 \end{table}
 
-These results highlight that high disagreement rates do not necessarily imply strong spatial structure: German Credit exhibits frequent conflict but weak clustering, whereas COMPAS shows both substantial disagreement and clear spatial concentration. Adult occupies an intermediate position, with lower disagreement levels than COMPAS and German Credit but still consistent positive spatial clustering across runs, albeit weaker than on COMPAS.
+Thus, high disagreement frequency does not necessarily imply strong spatial structure. German Credit is the clearest example: conflict is common, but not strongly localized. COMPAS combines substantial conflict with clear spatial concentration, while Adult occupies an intermediate position.
 
 \subsubsection{Overlap Between Variance-Based and Conflict-Based Hotspots}
 
-The Jaccard similarity between variance-based and conflict-based HH masks is low on COMPAS ($0.06 \pm 0.05$), indicating that the two metrics identify largely \emph{different} observations as hotspots. This is expected: variance-HH captures regions where predicted probabilities vary widely, while conflict-HH identifies regions where predictions cross the decision boundary. The two metrics therefore capture complementary notions of instability rather than redundant ones.
-
-On German Credit, the mean Jaccard similarity is numerically higher ($0.21 \pm 0.42$), but this estimate is unstable and should be interpreted cautiously because both hotspot sets are often very small. On Adult, overlap remains limited ($0.10 \pm 0.05$), indicating that variance-based and conflict-based hotspots capture different aspects of predictive instability even in larger datasets with many hotspot observations.
+The overlap between variance-based and conflict-based HH hotspots is limited across all datasets. On COMPAS, the Jaccard similarity is only $0.06 \pm 0.05$, showing that the two metrics identify largely different observations as hotspots. This is consistent with their definitions: variance-based hotspots reflect broad probability spread, whereas conflict-based hotspots reflect threshold-crossing disagreement. Adult shows similarly low overlap ($0.10 \pm 0.05$), and although the mean overlap is numerically higher on German Credit ($0.21 \pm 0.42$), this estimate is unstable because both hotspot sets are often very small. Overall, the two metrics should therefore be interpreted as complementary rather than interchangeable.
 
 \subsubsection{Quadrant Analysis}
 \label{sec:results-quadrant}
 
-To characterize the joint behavior of soft variance and hard conflict, we partition test observations into four quadrants using the 90th percentile of each metric within each run as thresholds. This focuses the analysis on the upper tail of each disagreement measure, i.e., observations with unusually large variance and/or conflict relative to the rest of the run:
+To characterize the joint behavior of variance and conflict more explicitly, we partition observations into four quadrants using the 90th percentile of each metric within each run. This yields four regimes: jointly high variance and conflict, high variance only, high conflict only, and jointly low disagreement.
 
 \begin{itemize}
   \item \textbf{A (high variance, high conflict):} both soft and hard disagreement are elevated.
   \item \textbf{B (high variance, low conflict):} models differ in probability space but agree on the label.
-  \item \textbf{C (low variance, high conflict):} predictions are tightly clustered near 0.5, leading to label flips despite low spread.
+  \item \textbf{C (low variance, high conflict):} predictions are tightly clustered near 0.5, so small differences lead to label flips.
   \item \textbf{D (low variance, low conflict):} stable observations with minimal disagreement.
 \end{itemize}
 
-Table~\ref{tab:quadrant_compas} reports the quadrant breakdown for COMPAS (mean $\pm$ std over 10 seeds). The dominant regime is D (81.2\%), indicating that most observations are stable. However, the remaining points reveal distinct forms of instability: quadrant B (7.7\%) captures ``probability-unstable but label-stable'' observations, while quadrant C (8.7\%) identifies observations near the decision boundary where small differences lead to label changes. Quadrant A (2.3\%) represents the most critical cases, combining high probability spread with frequent label disagreement.
+Table~\ref{tab:quadrant_compas} reports the resulting breakdown for COMPAS. Most observations fall into the stable regime D ($81.2\%$), showing that large disagreement remains concentrated in a minority of cases. Among the remaining observations, quadrants B ($7.7\%$) and C ($8.7\%$) are both more common than quadrant A ($2.3\%$). This indicates that high disagreement often appears in only one of the two metrics: either as broad probability variation without label changes, or as threshold-sensitive label instability without especially large probability spread.
 
 \begin{table}[htbp]
 \centering
@@ -99,15 +98,14 @@ D (low var, low conflict)   & $1172.2 \pm 9.9$ & $0.812 \pm 0.007$ & 0.0009 & 0.
 \end{tabular}
 \end{table}
 
-Overall, the quadrant analysis confirms that predictive multiplicity manifests in multiple forms, affecting both probability estimates and classification decisions. These distinctions are essential for interpreting downstream spatial patterns, as different types of disagreement may concentrate in different regions of the feature space.
-
+Taken together, these results show that soft variance and hard conflict represent different forms of predictive multiplicity. Variance captures broad score instability, conflict captures decision-level fragility, and their low overlap implies that both are needed for a complete description of disagreement.
 %% ---------------------------------------------------------------------------
 \subsection{Null Hypothesis Testing}
 \label{sec:results-null}
 
-To assess whether the observed spatial structure exceeds what would be expected by chance, we compare observed Moran's $I$ to a permutation-based null distribution (Section~\ref{sec:exp-null}). In this null model, each model's test-set predictions are independently permuted across observations ($R = 100$ permutations per run), preserving per-model marginal distributions while removing any spatial alignment between predictions and feature space.
+To test whether the observed spatial structure could arise by chance, we compare the observed Moran's $I$ values to a permutation-based null distribution (Section~\ref{sec:exp-null}). In this null model, each model's test-set predictions are independently permuted across observations ($R=100$ permutations per run), preserving the marginal prediction distribution of each model while removing any systematic alignment between disagreement and feature-space location.
 
-Table~\ref{tab:null_significance} reports the fraction of runs with significant Moran's $I$ ($p < 0.05$). 
+Table~\ref{tab:null_significance} summarizes the null-test results. The conclusion is unambiguous: all three datasets exhibit significant variance-based Moran's $I$ in all 10 runs. In every case, the empirical permutation p-value reaches the minimum possible value under $R=100$ permutations, namely $p = 1/101 \approx 0.0099$.
 
 \begin{table}[htbp]
 \centering
@@ -116,55 +114,50 @@ Table~\ref{tab:null_significance} reports the fraction of runs with significant 
 \input{presentation_assets/tab/null_significance.tex}
 \end{table}
 
-The results provide strong evidence that the observed spatial structure is not attributable to chance. All three datasets (COMPAS, German Credit, and Adult) exhibit significant spatial autocorrelation in all 10 runs. In every case, the empirical p-value attains the minimum possible value under $R=100$ permutations, namely $p = 1/101 \approx 0.0099$
+These results show that the spatial clustering of predictive multiplicity is not a byproduct of the marginal distribution of disagreement values alone. Instead, disagreement is systematically aligned with feature-space structure. The strength of this clustering differs across datasets, but its statistical significance is uniformly strong.
 
-These findings indicate that spatial clustering of predictive multiplicity is a consistent and robust property across datasets, rather than a dataset-specific artifact. While the strength of clustering differs (strongest on COMPAS, weaker on Adult), statistical significance is uniformly high.
-
-Figure~\ref{fig:null_moran_example} illustrates this effect for a representative COMPAS run (seed 0), where the observed Moran's $I$ lies far outside the null distribution. This large separation indicates that the spatial clustering of predictive variance cannot be explained by random variation alone.
+Figure~\ref{fig:null_moran_example} illustrates this result for one representative COMPAS run. The observed Moran's $I$ lies well outside the null distribution, showing that the measured clustering cannot be explained by random reassignment of predictions to observations.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.6\textwidth]{null_moran_compas_seed0.pdf}
-\caption{Null distribution of Moran's $I$ (100 permutations) vs.\ observed value for COMPAS seed 0. The observed value (vertical line) exceeds all null samples ($p < 0.01$).}
+\caption{Null distribution of Moran's $I$ (100 permutations) versus the observed value for COMPAS seed 0. The observed value (vertical line) exceeds all null samples ($p < 0.01$).}
 \label{fig:null_moran_example}
 \end{figure}
 
 \subsubsection{Conflict-Based Null Testing}
 
-In addition to variance-based Moran's $I$, we repeat the null experiment using the pointwise conflict ratio $c_i$ (Section~\ref{sec:meth-conflict}) as the spatial variable. This tests whether hard-label disagreement---a complementary notion of multiplicity---also exhibits statistically significant spatial clustering.
+We repeat the same null experiment using the pointwise conflict ratio $c_i$ rather than predictive variance as the spatial variable. The results closely mirror the variance-based analysis. On COMPAS, conflict Moran's $I$ averages $0.17 \pm 0.03$, while German Credit and Adult again show weaker but consistently positive clustering. Under the permutation null, conflict Moran's $I$ is also significant in all runs for all datasets.
 
-The results mirror the variance-based findings. On COMPAS, conflict Moran's $I$ averages $0.17 \pm 0.03$ (compared to $0.20 \pm 0.08$ for variance), while German Credit and Adult show weaker but still positive clustering. Under the permutation null, conflict Moran's $I$ is significant ($p < 0.01$) in all runs for all datasets. 
-
-This confirms that spatial clustering is not specific to the soft prediction variance metric, but reflects a broader phenomenon of localized disagreement that is also visible at the level of discrete classification decisions.
+This shows that the null result is not specific to soft probability disagreement. Spatial clustering also appears for hard-label disagreement, indicating that localized multiplicity is visible both in score space and in thresholded classification outcomes.
 
 \subsubsection{Aggregated Null Summary}
 
-Figure~\ref{fig:null_summary} summarizes the null experiment across all seeds. The left panel compares observed Moran's $I$ (boxplots) to the null mean $\pm$ standard deviation for both variance-based and conflict-based metrics. The right panel reports standardized z-scores, $z = (\text{observed} - \mu_{\text{null}}) / \sigma_{\text{null}}$.
+Figure~\ref{fig:null_summary} summarizes the null experiment across all seeds for both variance-based and conflict-based Moran's $I$. The left panel compares observed Moran's $I$ to the corresponding null mean and standard deviation, while the right panel reports the associated z-scores.
 
-Across all runs, COMPAS, German Credit, and Adult show large positive z-scores, consistent with the permutation-test results and indicating strong separation between the observed Moran's $I$ values and the null distribution. Differences across datasets are reflected in the magnitude of z-scores rather than their significance: COMPAS shows the strongest separation from the null, while Adult exhibits smaller but still clearly positive deviations.
-
-Overall, these results demonstrate that the observed spatial clustering of predictive multiplicity is highly unlikely to arise under a spatially unstructured null model. This provides strong statistical support for treating multiplicity as a structured, feature-space-dependent phenomenon rather than random noise.
+Across all datasets, the observed values are clearly separated from the null distribution. COMPAS shows the largest separation, while Adult exhibits smaller but still clearly positive deviations. Thus, differences across datasets concern the \emph{strength} of clustering, not its existence: in every dataset, the observed spatial structure is far stronger than expected under a spatially unstructured null model.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.95\textwidth]{null_summary_across_seeds.pdf}
-\caption{Aggregated null summary. Left: observed Moran's $I$ (boxplots) vs.\ null mean $\pm$ std for both variance-based and conflict-based metrics per dataset. Right: z-scores for variance and conflict Moran's $I$ across seeds; dashed lines mark $z = \pm 1.96$.}
+\caption{Aggregated null summary. Left: observed Moran's $I$ (boxplots) versus null mean $\pm$ std for both variance-based and conflict-based metrics by dataset. Right: z-scores for variance and conflict Moran's $I$ across seeds; dashed lines mark $z = \pm 1.96$.}
 \label{fig:null_summary}
 \end{figure}
 
+Taken together, the permutation tests provide strong evidence that predictive multiplicity is spatially structured rather than randomly distributed across the feature space. This holds for both soft prediction variance and hard conflict, and across all three benchmark datasets.
 %% ---------------------------------------------------------------------------
 \subsection{Spatial Structure and Stability of Hotspots}
 \label{sec:results-spatial}
 
-This section addresses two related questions about high--high (HH) hotspots on COMPAS, after Section~\ref{sec:results-metrics}--\ref{sec:results-global-vs-family} have established that predictive variance is spatially clustered. First, \textbf{point-level stability:} for a fixed test observation, how often is it classified as HH across random training seeds? Second, \textbf{regional stability:} do the same \emph{hotspot patches}---coherent groups of HH points in the $k$NN graph---reappear across seeds, even when the exact HH set changes? All cross-seed comparisons below use the \emph{fixed-test-set} protocol (Section~\ref{sec:exp-splits}) so observation identities align across runs; see notebook~03 for the corresponding frequency histograms, Jaccard heatmaps, and component-matching diagnostics.
+Having established that predictive variance is spatially clustered, we now examine how stable the resulting HH hotspots are across runs on COMPAS. Two levels of stability must be distinguished. First, \emph{point-level stability}: for a fixed test observation, how often is it classified as HH across random training seeds? Second, \emph{region-level stability}: do the same broader hotspot areas reappear across seeds even when the exact HH membership changes? All cross-seed comparisons in this section use the fixed-test-set protocol from Section~\ref{sec:exp-splits}, so that observation identities are aligned across runs.
 
 \subsubsection{Point-level stability: HH selection frequency}
 
-Let $f_i$ denote the fraction of outer seeds (out of 10) in which test point $i$ is HH under the global Rashomon set (top-$K=25$) and default $k$. Figure~\ref{fig:hh_stability_freq} maps $\{f_i\}$ in PCA space; Figure~\ref{fig:hh_location} shows HH membership in one representative run (median HH count among seeds).
+Let $f_i$ denote the fraction of outer seeds (out of 10) in which test point $i$ is classified as HH under the global Rashomon set (top-$K=25$) and the default neighborhood definition. Figure~\ref{fig:hh_location} shows HH membership in one representative run, while Figure~\ref{fig:hh_stability_freq} visualizes the corresponding per-point HH frequency in PCA space.
 
-Most points are rarely HH: only about $2.0$\% of the fixed test set satisfies $f_i \geq 0.8$, and about $4.5$\% satisfies $f_i \geq 0.5$. More broadly, the total \emph{HH support}---the set of observations that are classified as HH in at least one seed---covers about $17.2$\% of the fixed test set. Within this support, HH membership is typically infrequent: the mean frequency is $0.33$ and the median is $0.20$, and about $60.1$\% of support points lie in the lowest frequency bucket $(0,0.2]$. Defining a recurrent \emph{HH core} as points with $f_i \geq 0.5$, the core-to-support ratio is about $26.2$\%, so only about one quarter of points ever identified as HH recur in at least half of the seeds.
+At the point level, stability is limited. Only about $2.0\%$ of the fixed test set satisfies $f_i \geq 0.8$, and only about $4.5\%$ satisfies $f_i \geq 0.5$. More broadly, the total \emph{HH support}---the set of observations classified as HH in at least one seed---covers about $17.2\%$ of the fixed test set. Within this support, HH membership is typically infrequent: the mean frequency is $0.33$, the median is $0.20$, and about $60.1\%$ of support points lie in the lowest frequency bucket $(0, 0.2]$. Defining a recurrent \emph{HH core} as points with $f_i \geq 0.5$, the core-to-support ratio is about $26.2\%$, indicating that only a minority of ever-detected HH points recur in at least half of the runs.
 
-Taken together, these results show that \textbf{individual observations are not stably tagged as hotspots} under resampled Rashomon sets. Exact HH membership is unstable at the observation level, but this instability is confined to a limited subset of the test set rather than being dispersed uniformly. The spatial pattern remains informative: elevated $f_i$ values concentrate in a contiguous region of the PCA plane rather than being uniformly dispersed. Thus, while the specific observations classified as HH vary across runs, the location of multiplicity remains comparatively stable.
+The main conclusion is therefore that \textbf{individual observations are not stably labeled as hotspots}. Exact HH membership varies substantially across seeds. At the same time, this variability is not spatially diffuse: high-$f_i$ values remain concentrated in one part of the PCA plane rather than being scattered uniformly. Thus, even though pointwise hotspot assignment is unstable, the broader location of multiplicity remains informative.
 
 \begin{figure}[htbp]
 \centering
@@ -182,15 +175,13 @@ Taken together, these results show that \textbf{individual observations are not 
 
 \subsubsection{Overlap of exact HH sets (pointwise Jaccard)}
 
-To quantify agreement on the exact set of hotspot observations, we compare the full HH indicator masks between pairs of seeds using the Jaccard index
+To quantify agreement on the exact set of hotspot observations, we compare the HH masks between pairs of seeds using the Jaccard index
 \[
 J_{ss'} = \frac{|H_s \cap H_{s'}|}{|H_s \cup H_{s'}|}.
 \]
-Figure~\ref{fig:hh_jaccard} shows the resulting pairwise overlap matrix for variance-based HH masks on COMPAS. The mean off-diagonal Jaccard is about $0.025$ (with a maximum of about $0.08$), indicating that two independent runs rarely identify the same observations as HH.
+Figure~\ref{fig:hh_jaccard} shows the resulting overlap matrix for variance-based HH masks on COMPAS. The mean off-diagonal Jaccard is only about $0.025$, with a maximum of about $0.08$, indicating that two independent runs rarely identify the same observations as HH.
 
-Exact agreement at the observation level is low. In most cases, a given point is not consistently classified as HH across seeds, and different runs select substantially different HH sets. This is consistent with the frequency-based analysis above.
-
-Importantly, low overlap of the full HH sets does \emph{not} imply the absence of spatial structure. Jaccard overlap is sensitive to boundary variation: even small shifts at the edges of a hotspot can lead to large differences in the exact set of HH observations. As a result, low pointwise overlap can coexist with recurring hotspot \emph{regions}, which motivates the region-level analysis in the following subsection.
+This confirms the frequency-based result: agreement on the \emph{exact} hotspot set is very low. However, this should not be interpreted as evidence against stable spatial structure. Pointwise Jaccard overlap is highly sensitive to boundary variation, so even modest shifts at the edges of a hotspot can greatly reduce overlap in the full HH mask. Low overlap of exact HH labels is therefore compatible with recurrence of the same broader hotspot regions, which is the question addressed next.
 
 \begin{figure}[htbp]
 \centering
@@ -201,13 +192,13 @@ Importantly, low overlap of the full HH sets does \emph{not} imply the absence o
 
 \subsubsection{Regional structure: connected components and cross-seed recurrence}
 
-To characterize hotspot regions beyond individual HH points, we extract connected components of HH nodes in the same $k$NN graph used for LISA, discarding components smaller than 5 points. Table~\ref{tab:hh_component_summary} summarizes these component statistics across runs. On COMPAS, HH points typically form about $3$--$4$ connected components per run, with one dominant component whose maximum size averages about $44$ test points (median $34$). Thus, hotspots do not appear as isolated singletons, but as a small number of spatially contiguous regions in the feature-space graph.
+To move beyond individual HH points, we extract connected components of HH nodes in the same $k$NN graph used for LISA, discarding components smaller than 5 points. Table~\ref{tab:hh_component_summary} summarizes these component statistics across runs. On COMPAS, HH points typically form about $3$--$4$ connected components per run, with one dominant component whose maximum size averages about $44$ test points (median $34$). Hotspots therefore appear as a small number of contiguous regions rather than as isolated singletons.
 
-We next examine whether these regions recur across seeds. For each pair of runs, each component in one run is matched to the most similar component in the other run using Jaccard overlap on the corresponding sets of fixed test observations. The resulting best-match overlaps are substantially larger than the overlap of the raw HH masks: on COMPAS, the mean best-match Jaccard is about $0.35$ (standard deviation $\approx 0.28$), compared with only about $0.025$ for the full HH masks. This indicates that while exact HH membership changes considerably across runs, the broader hotspot regions recur more consistently.
+We then compare these regions across seeds. For each pair of runs, each component in one run is matched to the most similar component in the other run using Jaccard overlap on the corresponding fixed test observations. These best-match overlaps are substantially larger than the overlap of the raw HH masks: the mean best-match Jaccard is about $0.35$ (standard deviation $\approx 0.28$), compared to only about $0.025$ for the full HH sets. Thus, while exact HH membership changes strongly across runs, the larger hotspot regions recur much more consistently.
 
-A complementary persistence analysis leads to the same conclusion. Taking the components from one run as a reference, we ask for each component whether a matching component with Jaccard overlap at least $0.3$ appears in the other runs. In the reported COMPAS analysis, this yields an average persistence of roughly two-thirds ($\approx 67\%$). Although the exact value depends on the chosen reference run and matching threshold, the qualitative finding is stable: \textbf{hotspot regions are considerably more stable than exact HH labels.}
+A complementary persistence analysis yields the same qualitative conclusion. Taking the components from one run as a reference, we ask whether each component reappears in the other runs with Jaccard overlap at least $0.3$. This gives an average persistence of roughly two-thirds ($\approx 67\%$). Although the exact value depends on the matching threshold and reference choice, the substantive conclusion is stable: \textbf{hotspot regions are markedly more reproducible than exact HH labels.}
 
-Additional region-aware diagnostics reinforce this interpretation. When HH masks are dilated by one graph hop before overlap is computed, overlap increases noticeably, showing that nearby hotspot neighborhoods are more stable than exact pointwise assignments. Likewise, the centroid of the largest hotspot component exhibits only moderate dispersion in PCA space across seeds. Taken together, these results suggest that cross-seed instability is driven primarily by boundary variation within recurring hotspot areas, rather than by complete relocation of the hotspots themselves.
+Additional region-aware diagnostics reinforce this interpretation. Dilating HH masks by one graph hop increases overlap, indicating that nearby hotspot neighborhoods are more stable than strict pointwise assignments. Likewise, the centroid of the largest hotspot component shows only moderate dispersion in PCA space across seeds. Together, these results suggest that cross-seed instability is driven mainly by shifting hotspot boundaries within recurring areas, rather than by complete relocation of the hotspots themselves.
 
 \begin{table}[htbp]
 \centering
@@ -216,28 +207,12 @@ Additional region-aware diagnostics reinforce this interpretation. When HH masks
 \input{presentation_assets/tab/hh_component_summary.tex}
 \end{table}
 
-\subsubsection{Spatial Scale of Clustering}
-
-To assess the spatial scale of multiplicity, we examine how Moran's $I$ changes as the neighborhood size $k$ increases. Figure~\ref{fig:spatial_correlogram} shows an example spatial correlogram for COMPAS. Moran's $I$ is highest for small $k$ and decreases smoothly as $k$ increases, while remaining positive across the examined range.
-
-This pattern suggests a multi-scale structure: strong local clustering of instability is embedded within broader regions of moderate multiplicity. Thus, predictive multiplicity is not confined to isolated neighborhoods but persists across multiple spatial scales. The corresponding aggregated sensitivity analysis across runs is reported in Section~\ref{sec:results-knn-sensitivity}.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.62\textwidth]{spatial_correlogram_compas.pdf}
-\caption{Spatial correlogram for COMPAS: Moran's $I$ as a function of neighborhood size $k$ for an example run. Spatial autocorrelation is strongest at small neighborhood scales and decreases smoothly as $k$ increases, while remaining positive throughout.}
-\label{fig:spatial_correlogram}
-\end{figure}
-
-\subsubsection{Alternative Local Statistics (Gi*)}
-
-To verify that the observed hotspot structure is not specific to LISA, we apply the Getis--Ord Gi* statistic. While LISA identifies relative clustering, Gi* highlights regions of high absolute intensity.
-
-Empirically, Gi* hotspots form a subset of LISA hotspots and exhibit substantially higher predictive variance. This suggests that multiplicity regions have internal structure, consisting of a high-intensity core surrounded by a broader region of moderate instability. The low overlap between LISA and Gi* masks suggests that these statistics emphasize different aspects of spatial multiplicity: LISA highlights relative local association, whereas Gi* concentrates more strongly on high-intensity cores.
 
 \subsubsection{Moran's $I$ and HH Count Per Run}
 
-Figure~\ref{fig:spatial_per_run} shows per-run variability in Moran's $I$ and HH count. Both metrics vary across seeds (Moran's $I$: 0.11--0.36; HH count: 21--160), reflecting the stochastic nature of the Rashomon set. However, all runs exhibit positive Moran's $I$, confirming that spatial clustering is a consistent property of the data rather than an artifact of specific splits.
+Figure~\ref{fig:spatial_per_run} shows the run-to-run variability of Moran's $I$ and HH count on COMPAS. Both vary across seeds (Moran's $I$: 0.11--0.36; HH count: 21--160), reflecting the stochasticity of the Rashomon approximation. However, all runs retain positive Moran's $I$, confirming that spatial clustering is a recurring property of the data rather than an artifact of a single split.
+
+Taken together, the stability analysis reveals a clear hierarchy: exact HH labels are unstable, but the broader hotspot regions recur much more reliably. Predictive multiplicity on COMPAS should therefore be interpreted as a \emph{region-level} phenomenon rather than a pointwise-stable labeling.
 
 \begin{figure}[htbp]
 \centering
@@ -245,15 +220,13 @@ Figure~\ref{fig:spatial_per_run} shows per-run variability in Moran's $I$ and HH
 \caption{Moran's $I$ and HH count per run for COMPAS, showing variability across seeds.}
 \label{fig:spatial_per_run}
 \end{figure}
-
-
 %% ---------------------------------------------------------------------------
 \subsection{Global vs Per-Family Rashomon Sets}
 \label{sec:results-global-vs-family}
 
-We compare the \textbf{global Rashomon set} (top-$K=25$ across all families; Section~\ref{sec:meth-rashomon}) with \textbf{per-family Rashomon sets} ($K$-each mode: top-$K=25$ within each model family, up to 125 models total). The global set pools near-optimal models across families; the per-family construction isolates disagreement within each model class.
+We now compare two ways of constructing the Rashomon set: a \emph{global} set, defined as the top-$K=25$ models across all families, and \emph{per-family} sets, defined as the top-$K=25$ models within each family. The global construction reflects disagreement among all near-optimal models taken together, whereas the per-family construction isolates the spatial structure that arises within a given model class. The key question is whether pooling across families obscures family-specific multiplicity patterns.
 
-Tables~\ref{tab:global_summary} and~\ref{tab:family_summary} report mean variance, Moran's $I$, mean HH counts, and the fraction of runs with significant Moran's $I$. Table~\ref{tab:global_summary} lists these quantities for the global set on German Credit, Adult, and COMPAS. Table~\ref{tab:family_summary} gives the per-family breakdown for COMPAS (aggregated over outer seeds).
+Table~\ref{tab:global_summary} reports the global summary by dataset, while Table~\ref{tab:family_summary} gives the per-family breakdown for COMPAS. Figure~\ref{fig:hh_by_family} compares per-family HH counts and Moran's $I$ to the corresponding global reference values across all three datasets.
 
 \begin{table}[htbp]
 \centering
@@ -277,37 +250,32 @@ Tables~\ref{tab:global_summary} and~\ref{tab:family_summary} report mean varianc
 \includegraphics[width=0.92\textwidth]{family_vs_global_spatial_german.pdf}\\[0.55em]
 {\small\textbf{(c)} Adult}\\[-0.2em]
 \includegraphics[width=0.92\textwidth]{family_vs_global_spatial_adult.pdf}
-\caption{Per-family vs.\ global Rashomon sets (mean $\pm$ std over runs). Each row: mean HH count (left) and Moran's $I$ (right) for top-$K{=}25$ models within each family (bars), with the global top-$K{=}25$ mean as a horizontal dashed line. \textbf{(a)}~COMPAS---Table~\ref{tab:family_summary} gives the corresponding numerical values. \textbf{(b)}~German Credit---same layout with much smaller absolute HH counts (Table~\ref{tab:global_summary}). \textbf{(c)}~Adult---wide spread across families; MLP and RF attain the largest Moran's $I$ and HH counts among families, while logistic regression is comparatively low on both panels.}
+\caption{Per-family vs.\ global Rashomon sets (mean $\pm$ std over runs). Each row shows mean HH count (left) and Moran's $I$ (right) for top-$K{=}25$ models within each family, with the global top-$K{=}25$ mean shown as a horizontal dashed line.}
 \label{fig:hh_by_family}
 \end{figure}
 
-\paragraph{COMPAS (main case study).}
-On COMPAS, Table~\ref{tab:family_summary} shows clear heterogeneity across families. MLP attains the strongest spatial clustering (Moran's $I = 0.422 \pm 0.049$) and the largest mean HH count ($208.5 \pm 39.8$), in each case well above the global-set averages in Table~\ref{tab:global_summary} ($0.199 \pm 0.077$ and $86.7$). kNN carries the highest mean variance ($0.0107 \pm 0.0014$) but the lowest Moran's $I$ among families ($0.090 \pm 0.027$), which is consistent with large disagreement that is not strongly concentrated in feature space. Logistic regression has the smallest mean variance ($0.00006 \pm 0.00013$) and, on average, fewer HH points than MLP ($57.7 \pm 77.4$ vs.\ $208.5 \pm 39.8$), though its Moran's $I$ estimate is more variable across seeds ($0.172 \pm 0.198$). Random forest and GBM fall between these extremes on Moran's $I$ and HH counts.
+\paragraph{COMPAS.}
+COMPAS shows the clearest family-level heterogeneity. According to Table~\ref{tab:family_summary}, MLP has by far the strongest spatial structure, with the largest Moran's $I$ and the largest HH count, both well above the corresponding global values. kNN exhibits the highest mean variance but the weakest Moran's $I$ among the families, indicating that large disagreement does not necessarily translate into strongly localized clustering. Logistic regression lies at the opposite extreme, with very small mean variance and comparatively weak hotspot structure, albeit with high variability across seeds. GBM and random forest occupy an intermediate position. Figure~\ref{fig:hh_by_family}(a) makes the main point visually clear: several per-family signals exceed the global reference, especially for MLP, so the pooled global Rashomon set understates the strength of family-specific hotspot structure.
 
-Figure~\ref{fig:hh_by_family}(a) mirrors Table~\ref{tab:family_summary}: several families lie above the global dashed line in one or both panels, with MLP the most pronounced example for HH count and Moran's $I$. Thus pooling into a single global Rashomon set can \emph{understate} the hotspot intensity and clustering visible within a single high-multiplicity family.
+\paragraph{German Credit and Adult.}
+The same comparison is informative on the other datasets, but with different emphases. On German Credit, the absolute HH counts remain small across all constructions, so family differences should be interpreted cautiously in absolute terms. Nonetheless, Figure~\ref{fig:hh_by_family}(b) still shows that the spatial signal is not uniform across families. On Adult, the heterogeneity is much more pronounced: MLP and random forest stand out with markedly larger Moran's $I$ and HH counts, whereas logistic regression remains comparatively low on both measures. Thus, as on COMPAS, the pooled global construction compresses family-level structure that is clearly visible when families are examined separately.
 
-\paragraph{German Credit and Adult (supporting comparisons).}
-Table~\ref{tab:global_summary} already separates the datasets in scale: global mean HH counts are very small on German Credit ($2.7$) compared with COMPAS ($86.7$) and Adult ($286.1$), while global Moran's $I$ is largest on COMPAS.
-
-For German Credit, Figure~\ref{fig:hh_by_family}(b) uses the same bar-vs.-dashed layout as COMPAS. The relative ordering of families varies across the two metrics, so multiplicity cannot be reduced to a single family-independent spatial summary; however, the absolute magnitudes are modest, in line with the tiny global HH totals. Any parallel to COMPAS is therefore qualitative and scale-dependent, not a claim of identical effect sizes.
-
-For Adult, Figure~\ref{fig:hh_by_family}(c) shows a wide spread across families on both panels. MLP and random forest stand out with the strongest Moran's $I$ and HH counts among families, whereas logistic regression sits toward the lower end of both metrics. The ordering and gaps are not a carbon copy of COMPAS; in particular, the families that stand out most strongly on Adult differ from those emphasized by the COMPAS per-family summary. Nonetheless, the figure supports the same substantive point: predictive multiplicity remains \emph{model-dependent}, and a globally pooled set compresses family-level structure.
-
-Taken together, the three panels reinforce two conclusions. First, which families drive structured disagreement is not fixed across datasets. Second, aggregating across families can mask pronounced per-family spatial signals (most visibly for COMPAS and Adult, where per-family bars often exceed the global reference in at least one panel). This motivates the variance decomposition analysis in the following section.
-
+Taken together, these comparisons support two conclusions. First, the families that drive structured disagreement are dataset-dependent rather than fixed across problems. Second, global pooling can mask substantial family-specific multiplicity patterns, particularly on COMPAS and Adult. This motivates the more explicit variance-decomposition analysis in the following section, where disagreement is attributed directly to model family and within-family hyperparameters.
 %% ---------------------------------------------------------------------------
-\subsection{Sensitivity to Rashomon Set Size $K$}
+
+\subsection{Robustness to Analytical Choices}
+\label{sec:results-robustness}
+
+We next assess whether the main spatial conclusions depend on several key analytical choices: the Rashomon set size $K$, the neighborhood size $k$ used in the feature-space graph, post-hoc probability calibration, and the precise graph construction itself. Across all four checks, the absolute magnitude of disagreement and the extent of detected hotspot regions can change, but the central conclusion remains stable: predictive multiplicity retains non-random spatial structure under a wide range of reasonable specifications.
+
+\subsubsection{Sensitivity to Rashomon Set Size $K$}
 \label{sec:results-sensitivity-K}
 
-To assess how the choice of Rashomon set size affects the results, we vary $K \in \{5, 10, 15, 20, 25, 30, 35, 40, 45, 50\}$ using global top-$K$ selection (Section~\ref{sec:meth-rashomon}). Figure~\ref{fig:sensitivity_K} shows the sensitivity of both variance-based and conflict-based metrics to $K$, including mean variance, Moran's $I$, HH count, mean conflict, conflict Moran's $I$, and conflict-HH count.
+We first vary the Rashomon set size over $K \in \{5, 10, 15, 20, 25, 30, 35, 40, 45, 50\}$ using global top-$K$ selection. Figure~\ref{fig:sensitivity_K} shows the resulting sensitivity curves for COMPAS; the corresponding plots for German Credit and Adult follow the same qualitative pattern.
 
-Mean predictive variance increases monotonically with $K$ for all datasets, reflecting the inclusion of additional near-optimal models and thus greater prediction diversity. This trend is clearly visible for COMPAS, German Credit, and Adult, where variance grows steadily with $K$ (see Figure~\ref{fig:sensitivity_K} and corresponding dataset-specific plots).
+As expected, the overall magnitude of disagreement increases with $K$. Mean predictive variance rises monotonically as additional near-optimal models are included, and mean conflict shows the same behavior. In contrast, the spatial organization of disagreement is much more stable. On COMPAS, Moran's $I$ stabilizes once $K$ reaches roughly $20$--$25$, remaining in a narrow range thereafter, and the number of HH hotspots also changes only modestly. German Credit and Adult show the same qualitative behavior: disagreement magnitude grows as the Rashomon set widens, but the spatial pattern changes much less than the raw scale of disagreement.
 
-In contrast, Moran's $I$ stabilizes beyond $K \approx 20$--25 for COMPAS (remaining around 0.18--0.21), and shows only gradual changes for German Credit and Adult. Similarly, the number of HH hotspots remains relatively stable for COMPAS ($\sim$77--91) and remains low for German Credit, while increasing more strongly for Adult due to its larger dataset size and more diffuse hotspot structure (dataset-specific $K$-sensitivity curves in notebook~03).
-
-Conflict-based metrics show a similar qualitative pattern: mean conflict increases with $K$, while conflict Moran's $I$ and conflict-HH counts stabilize once moderately sized Rashomon sets are reached. This indicates that both probability-level and label-level disagreement increase in magnitude but maintain similar spatial organization.
-
-These results indicate that while the magnitude of disagreement increases with $K$, its \emph{spatial organization} is largely unaffected beyond moderate Rashomon set sizes. This supports the use of $K = 25$ as a default that captures the relevant structure of predictive multiplicity, while avoiding substantially larger Rashomon sets that primarily increase disagreement magnitude without materially changing its spatial structure.
+The main implication is that larger Rashomon sets primarily add \emph{more} disagreement, not a fundamentally different \emph{structure} of disagreement. This supports the use of $K=25$ as a default: it is large enough to capture the relevant spatial organization of predictive multiplicity without substantially inflating the model set beyond the point where the qualitative conclusions have already stabilized.
 
 \begin{figure}[htbp]
 \centering
@@ -316,20 +284,14 @@ These results indicate that while the magnitude of disagreement increases with $
 \label{fig:sensitivity_K}
 \end{figure}
 
-%% ---------------------------------------------------------------------------
-
-\subsection{Sensitivity to kNN Neighborhood Size $k$}
+\subsubsection{Sensitivity to kNN Neighborhood Size $k$}
 \label{sec:results-sensitivity-kNN}
 
-To evaluate the effect of the neighborhood definition in the feature-space graph (Section~\ref{sec:meth-graph}), we vary $k$ over a broad range and examine the resulting variance-based and conflict-based spatial metrics. Figure~\ref{fig:sensitivity_kNN} shows the COMPAS sensitivity curves, while the corresponding plots for German Credit and Adult are reported in the supplementary material.
+We next vary the neighborhood size $k$ used in the feature-space graph and recompute the variance-based and conflict-based spatial metrics. Figure~\ref{fig:sensitivity_kNN} shows the resulting curves for COMPAS; the same qualitative behavior is observed on German Credit and Adult.
 
-As expected, mean predictive variance is invariant to $k$, since it does not depend on the graph structure. In contrast, Moran's $I$ decreases with increasing $k$ for all datasets, reflecting the smoothing effect of larger neighborhoods. On COMPAS, variance-based Moran's $I$ drops from roughly $0.29$ at small $k$ to about $0.12$ at $k=100$, while conflict Moran's $I$ shows a similar monotone decline. German Credit and Adult exhibit the same qualitative pattern, with positive Moran's $I$ values throughout but progressively weaker local autocorrelation as neighborhoods become larger. 
+Mean predictive variance is invariant to $k$, since it is defined before the graph is constructed. By contrast, Moran's $I$ decreases as $k$ grows, reflecting the smoothing effect of larger neighborhoods. On COMPAS, variance-based Moran's $I$ falls from roughly $0.29$ at small $k$ to about $0.12$ at $k=100$, and conflict Moran's $I$ shows a similar decline. At the same time, HH counts tend to increase with larger neighborhoods on COMPAS and Adult, because broader neighborhoods can merge local structure into larger statistically significant regions. German Credit again shows the same direction of effect, though at a much smaller absolute scale.
 
-At the same time, the number of detected hotspots changes with $k$. On COMPAS and Adult, both variance-HH and conflict-HH counts increase with larger neighborhoods, whereas on German Credit the absolute counts remain very small and fluctuate only modestly. This reflects the fact that larger neighborhoods smooth the local signal and can increase the number of points classified as belonging to broader statistically significant clusters, even as the strength of local autocorrelation decreases. 
-
-Importantly, despite these changes in magnitude, spatial clustering remains consistently positive across all examined values of $k$. This indicates that the presence of spatial structure is robust to the choice of neighborhood size, even though the exact extent of detected hotspot regions depends on $k$.
-
-For moderate neighborhood sizes, the curves begin to flatten, supporting the use of dataset-specific default values ($k=30$ for COMPAS and German Credit, $k=60$ for Adult) as reasonable compromises between locality and graph stability. Together with the spatial correlogram analysis in Section~\ref{sec:results-spatial}, these results show that predictive multiplicity exhibits a stable multi-scale structure rather than being an artifact of a particular neighborhood choice.
+Crucially, the clustering signal remains positive throughout the examined range. Thus, while the precise extent of detected hotspots depends on the neighborhood definition, the existence of spatial structure does not. The chosen defaults ($k=30$ for COMPAS and German Credit, $k=60$ for Adult) therefore represent a reasonable compromise between locality and graph stability rather than a finely tuned requirement for obtaining positive results.
 
 \begin{figure}[htbp]
 \centering
@@ -338,11 +300,14 @@ For moderate neighborhood sizes, the curves begin to flatten, supporting the use
 \label{fig:sensitivity_kNN}
 \end{figure}
 
-%% ---------------------------------------------------------------------------
-\subsection{Calibration Robustness}
+\subsubsection{Calibration Robustness}
 \label{sec:results-calibration}
 
-To assess whether the observed spatial multiplicity is driven by probability miscalibration, we apply post-hoc calibration as described in Section~\ref{sec:exp-calibration}. For each model in the global Rashomon set, a calibrator is fitted on validation-set predictions and labels and then applied to the corresponding test-set predictions. We then recompute the multiplicity and spatial metrics on the calibrated prediction matrix. Figure~\ref{fig:calibration-delta-boxplots} summarizes the run-level changes for the three datasets, showing distributions of the change in mean predictive variance, the change in Moran's $I$, the change in the number of HH hotspot points, and the Jaccard overlap between HH masks before and after calibration.
+To test whether the observed hotspot structure is primarily driven by probability miscalibration, we apply post-hoc calibration to each model in the global Rashomon set and then recompute the multiplicity and spatial metrics on the calibrated predictions. Figure~\ref{fig:calibration-delta-boxplots} summarizes the resulting run-level changes.
+
+Across datasets, calibration changes the \emph{magnitude} of disagreement more than its \emph{spatial existence}. On COMPAS, Platt scaling tends to reduce mean variance and Moran's $I$ slightly, while isotonic calibration produces more heterogeneous shifts. On German Credit, the effects are again mixed and more variable, which is unsurprising given the small size of the HH sets. On Adult, calibration can increase HH counts noticeably, but changes in Moran's $I$ remain modest in absolute terms. In all three datasets, the Jaccard overlap between pre- and post-calibration hotspot masks shows that exact HH membership can change, yet the broader hotspot regions remain recognizable.
+
+Overall, calibration modifies the scale and boundaries of the detected hotspots, but it does not remove the underlying clustering of predictive multiplicity. This supports the interpretation that the main results reflect structural disagreement among near-optimal models rather than a mere artifact of uncalibrated probabilities.
 
 \begin{figure}[htbp]
     \centering
@@ -355,111 +320,119 @@ To assess whether the observed spatial multiplicity is driven by probability mis
     \label{fig:calibration-delta-boxplots}
 \end{figure}
 
-Overall, post-hoc calibration has only a limited effect on the spatial structure of predictive multiplicity. On COMPAS, the boxplots indicate that Platt scaling tends to slightly reduce mean predictive variance and Moran's $I$, while also shifting the HH count downward in most runs. The Jaccard overlap between pre- and post-calibration HH masks is moderate, indicating that hotspot membership changes, but that the same general regions remain implicated. Isotonic calibration produces more variable changes: it tends to increase mean variance, often reduces Moran's $I$ more strongly, and yields larger run-to-run variation in HH counts and hotspot overlap than Platt scaling.
+\subsubsection{Alternative Graph Constructions}
+\label{sec:results-alt-graph}
 
-German Credit shows a similar qualitative pattern. Under Platt scaling, changes in mean variance and Moran's $I$ are centered slightly below zero, while the change in HH count remains small overall. The Jaccard overlap is low and highly variable, which is consistent with the fact that HH sets on German are often very small and therefore sensitive to even minor changes. Isotonic calibration again induces more heterogeneous effects, with positive shifts in mean variance, mixed changes in HH count, and wide variation in hotspot overlap across runs.
+Finally, we test whether the spatial results depend strongly on the feature-space representation used to construct the graph. In addition to the baseline Euclidean $k$NN graph, we consider a graph built in PCA-reduced space (15 components) and a cosine-distance graph. Table~\ref{tab:alt_graph} reports the resulting Moran's $I$ and HH counts.
 
-On Adult, calibration changes the magnitudes somewhat differently, but still does not alter the main conclusion. Both calibration methods tend to increase the HH count, while the effect on Moran's $I$ remains small in absolute terms. Mean variance also shifts only modestly. The hotspot overlap remains moderate for Platt scaling and noticeably higher for isotonic calibration, suggesting that although the exact boundaries of HH regions move, the broader hotspot structure is preserved.
+\begin{table}[htbp]
+\centering
+\caption{Spatial metrics under alternative kNN graph constructions (mean $\pm$ std over 10 seeds; dataset-specific default $k$: 30 for COMPAS and German Credit, 60 for Adult).}
+\label{tab:alt_graph}
+\small
+\begin{tabular}{llcc}
+\hline
+Dataset & Method & Moran's $I$ & HH count \\
+\hline
+COMPAS & Euclidean (baseline) & $0.199 \pm 0.077$ & $86.7 \pm 55.0$ \\
+        & PCA (15 comp.)       & $0.198 \pm 0.076$ & $82.2 \pm 50.1$ \\
+        & Cosine               & $0.210 \pm 0.083$ & $114.9 \pm 50.8$ \\
+\hline
+German & Euclidean (baseline) & $0.104 \pm 0.040$ & $2.7 \pm 2.2$ \\
+       & PCA (15 comp.)       & $0.098 \pm 0.040$ & $3.0 \pm 2.2$ \\
+       & Cosine               & $0.112 \pm 0.043$ & $6.2 \pm 4.8$ \\
+\hline
+Adult  & Euclidean (baseline) & $0.070 \pm 0.020$ & $286.1 \pm 125.5$ \\
+       & PCA (15 comp.)       & $0.075 \pm 0.021$ & $411.1 \pm 145.9$ \\
+       & Cosine               & $0.079 \pm 0.022$ & $410.1 \pm 131.4$ \\
+\hline
+\end{tabular}
+\end{table}
 
-Taken together, Figure~\ref{fig:calibration-delta-boxplots} supports the conclusion that the observed spatial multiplicity is predominantly structural rather than an artifact of probability miscalibration. Calibration can shift the overall magnitude of disagreement and modify exact hotspot membership, but it does not remove the presence of spatial clustering. The main qualitative pattern---localized multiplicity that persists after recalibration---therefore remains intact across datasets.
+The resulting Moran's $I$ values are highly consistent across graph constructions. On COMPAS and German Credit, Euclidean and PCA-based graphs are nearly identical, while cosine distance yields slightly higher Moran's $I$ and larger HH counts. On Adult, the alternative graph constructions increase HH counts more noticeably, but Moran's $I$ remains close to the baseline value. Thus, different graph definitions can change the extent of the detected hotspot regions, but they do not overturn the main conclusion that multiplicity is spatially structured.
+
+Figure~\ref{fig:alt_graph} visualizes the same comparison. The key pattern is that relative differences across datasets remain stable even when the graph construction is varied.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{alternative_knn_comparison.pdf}
+\caption{Moran's $I$ (left) and HH count (right) under three kNN graph constructions: Euclidean (baseline), PCA-reduced (15 components), and cosine distance.}
+\label{fig:alt_graph}
+\end{figure}
+
+Taken together, these robustness checks show a consistent pattern. Analytical choices can affect the \emph{magnitude} of disagreement, the precise size of hotspot regions, and the exact HH assignments, but they do not eliminate the presence of spatial clustering. The main empirical finding of this thesis is therefore robust to reasonable variations in Rashomon set definition, neighborhood size, calibration, and graph construction.
 
 
 %% ---------------------------------------------------------------------------
 \subsection{Hyperparameter and Family Importance}
 \label{sec:results-hp}
 
-To identify which modeling choices drive predictive multiplicity, we apply the variance decomposition described in Section~\ref{sec:exp-hp-decomp} using the per-family Rashomon set (top-25 per family, up to 125 models total). For each dataset and each outer seed, we compute family importance, within-family hyperparameter importance, hotspot-specific hyperparameter effects, and marginal $V_m$ patterns; results are then aggregated across seeds. We further compare these results to the full candidate pool and fit simple model-level meta-models to assess whether the observed hyperparameter effects persist after accounting for validation performance. The analysis is therefore multi-seed by default and reflects robust patterns rather than single-run behavior.
+To identify which modeling choices drive predictive multiplicity, we distinguish three levels
+of explanation: differences between model families, differences between hyperparameter
+settings within a family, and changes in these hyperparameter effects inside hotspot
+regions. Family importance is assessed through a variance decomposition over model
+family, whereas within-family hyperparameter importance is measured using the
+model-level disagreement contribution $V_m$. A final diagnostic analysis examines
+whether these effects are mainly explained by validation performance.
 
 \subsubsection{Family Importance}
 
-Model family (GBM, LogReg, MLP, RF, kNN) explains a substantial portion of predictive multiplicity across all datasets. Figure~\ref{fig:family_importance_agg} shows the aggregated family importance (mean $\pm$ std over seeds) within the Rashomon pool for all test points, HH hotspots, and non-HH observations.
+Model family explains a substantial share of predictive multiplicity across all datasets. Figure~\ref{fig:family_importance_agg} shows the aggregated family importance within the Rashomon set for all observations, HH hotspots, and non-HH points. Family importance is consistently high and typically increases inside hotspots. On Adult, it is about $0.71$ on all points and rises to about $0.79$ in HH regions. On COMPAS, it increases from about $0.41$ globally to about $0.52$ in HH regions. German Credit shows a similarly high global value (about $0.53$), though the HH-specific estimate is based on fewer seeds and should therefore be interpreted more cautiously.
 
-Within the Rashomon set, family importance is consistently high and typically increases within HH regions. On Adult, family importance reaches approximately 0.71 on all points and about 0.79 within HH regions, while on COMPAS it is around 0.41 globally and increases to roughly 0.52 in hotspots. German Credit shows a similar pattern on the full test set, with family importance around 0.53; however, the HH-specific estimate is based on fewer seeds and should therefore be interpreted more cautiously. In all datasets, the family contribution is lower outside hotspots than within them, indicating that model-family differences are particularly consequential in regions of concentrated disagreement.
-
-Comparing the Rashomon set to the full candidate pool strengthens this interpretation. On COMPAS, family importance is slightly higher in the full pool on all points but no longer increases in HH regions, whereas in the Rashomon set the HH increase is clear. On Adult and German Credit, family importance is markedly larger in the Rashomon set than in the full pool. This suggests that among near-optimal models, disagreement is more strongly structured by model family than in the broader candidate pool.
+A comparison to the full candidate pool shows that this family effect is often sharper within the Rashomon set than in the broader search space. On Adult and German Credit, family importance is markedly larger in the Rashomon set than in the full pool. On COMPAS, the all-point family importance is similar in the two pools, but the hotspot-specific increase is much clearer in the Rashomon subset. This indicates that disagreement among near-optimal models is especially structured by model family in the regions where predictive multiplicity is most concentrated.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.85\textwidth]{figures/nb06/family_importance_agg_rashomon.pdf}
-\caption{Family importance within the Rashomon pool (mean $\pm$ std over seeds) across datasets and subsets (all, HH, non-HH).}
+\caption{Family importance within the Rashomon set (mean $\pm$ std over seeds) across datasets and subsets (all, HH, non-HH).}
 \label{fig:family_importance_agg}
 \end{figure}
 
-\subsubsection{Within-Family Hyperparameter Importance}
+\subsubsection{Within-Family Hyperparameter Drivers}
 
-Within each model family, a small number of hyperparameters consistently drive disagreement. The aggregated $V_m$-based importance results show stable rankings across seeds.
+Within each family, a small number of hyperparameters account for most of the remaining disagreement. Figure~\ref{fig:hp_top2_driver_grid} summarizes the two strongest $V_m$-based hyperparameter drivers per family and dataset within the Rashomon set.
 
-For logistic regression, regularization strength $C$ dominates across all datasets, with near-maximal importance and perfect rank stability. For kNN, the number of neighbors is the primary driver, with other parameters contributing only marginally. These results indicate that model-complexity controls are the main source of variability in simpler model families.
-
-For tree-based and neural models, the drivers are more distributed. In GBM, learning rate and tree depth are consistently the most important hyperparameters. In random forests, the dominant parameter varies somewhat by dataset, with depth, number of estimators, and feature subsampling all contributing. MLP exhibits the most distributed sensitivity, with learning-rate initialization, architecture, and regularization ($\alpha$) all playing significant roles.
-
-Figure~\ref{fig:hp_importance_mlp} illustrates this for MLP on COMPAS, showing the relative contribution of different hyperparameters aggregated across seeds.
+Several patterns are especially clear. For logistic regression, regularization strength $C$ dominates across all datasets by a wide margin. For kNN, the number of neighbors is the primary driver everywhere, while the second driver is much weaker and less stable. GBM is more distributed: learning rate is consistently among the strongest drivers across all datasets, with max depth or number of estimators typically appearing second. Random forests are more dataset-dependent, with depth standing out on COMPAS, number of estimators on German Credit, and feature subsampling on Adult. MLP shows the most distributed sensitivity overall, but learning-rate initialization is the strongest driver in all three datasets, with hidden-layer size and regularization contributing additional but smaller effects.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.85\textwidth]{figures/nb06/hp_importance_bar_rashomon_compas_MLP.pdf}
-\caption{Within-family hyperparameter importance for MLP on COMPAS (mean $\pm$ std over seeds, Rashomon set).}
-\label{fig:hp_importance_mlp}
+\includegraphics[width=0.92\textwidth]{figures/nb06/hp_top2_driver_grid_rashomon.pdf}
+\caption{Top two $V_m$-based hyperparameter drivers per family and dataset within the Rashomon set (subset = all). Bar length shows mean importance over seeds. Blue bars indicate the strongest driver and orange bars the second strongest. Each family uses its own x-axis range.}
+\label{fig:hp_top2_driver_grid}
 \end{figure}
+
+These results show that within-family multiplicity is structured rather than diffuse. Simpler families are largely governed by one dominant complexity control, whereas richer families such as RF and MLP exhibit broader but still stable sensitivity patterns.
 
 \subsubsection{Hotspot-Specific Drivers}
 
-Restricting the analysis to HH observations reveals that the drivers of multiplicity are not spatially uniform. The hotspot-delta analysis compares hyperparameter importance in HH regions to the full dataset.
+Restricting the analysis to HH observations shows that the drivers of multiplicity are not spatially uniform. Table~\ref{tab:hp_hotspot_delta_compas} summarizes, for COMPAS, the most increased and most decreased hyperparameter effects inside hotspots relative to the full test set.
 
-On COMPAS, MLP learning-rate initialization becomes more important inside hotspots, while hidden-layer size decreases slightly in importance. This indicates that optimization-related choices play a particularly strong role in the most unstable regions. More generally, across datasets, some hyperparameters become more influential inside HH regions while others become less important, implying that the mechanisms generating localized disagreement differ from those governing disagreement globally.
-
-This demonstrates that different modeling choices drive disagreement in different regions of feature space. Hyperparameters that are only moderately important on average can become critical within localized regions of instability.
-
-\subsubsection{Predictive Variance by Hyperparameter Value}
-
-To further analyze how hyperparameters affect disagreement, we examine the marginal relationship between hyperparameter values and model-level disagreement contribution $V_m$.
-
-These results show that predictive multiplicity is not only driven by model family, but also by specific regions of hyperparameter space. For logistic regression, smaller values of $C$ are associated with substantially higher disagreement. For kNN, certain neighborhood sizes lead to increased variability. For GBM and MLP, disagreement varies across learning-rate settings and architectural choices.
-
-This pattern is also visible in the meta-model partial-dependence analysis. Figure~\ref{fig:hp_pdp_mlp_adult} shows that, within the Rashomon set, the MLP learning-rate initialization is associated with systematic changes in $V_m$, confirming that disagreement concentrates in specific regions of the hyperparameter space rather than varying randomly.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.72\textwidth]{figures/nb06/hp_meta_pdp_adult_MLP_Rashomon_hp_learning_rate_init.pdf}
-\caption{Marginal relationship between learning-rate initialization and model-level disagreement contribution $V_m$ for MLP on Adult within the Rashomon set.}
-\label{fig:hp_pdp_mlp_adult}
-\end{figure}
-
-Table~\ref{tab:hp_compare_compas_mlp} and Figure~\ref{fig:hp_compare} compare hyperparameter importance between the Rashomon set and the full candidate pool for MLP on COMPAS. The same hyperparameters remain dominant in both settings, but their importance is substantially larger inside the Rashomon set. For example, learning-rate initialization has mean importance 0.266 in the Rashomon set compared with 0.116 in the full pool, and similar reductions are observed for hidden-layer size and $\alpha$. Thus, these drivers are not merely properties of the broad search space; they are especially relevant among near-optimal models.
+The clearest example is MLP, where learning-rate initialization becomes more important inside hotspots, while hidden-layer size decreases slightly in importance. This indicates that optimization-related choices play a particularly strong role in the most unstable parts of the feature space. Other families show different hotspot shifts: for example, RF exhibits a decrease in the importance of max depth inside HH regions, and kNN shows a substantial decrease for the weighting scheme. Thus, the mechanisms governing localized disagreement are not identical to those governing disagreement globally.
 
 \begin{table}[htbp]
 \centering
-\caption{Comparison of $V_m$-based hyperparameter importance for MLP on COMPAS between the Rashomon set and the full candidate pool (mean over seeds, subset = all).}
-\label{tab:hp_compare_compas_mlp}
-\small
-\begin{tabular}{lccc}
-\hline
-Hyperparameter & Rashomon & Full pool & $\Delta$ (Rashomon $-$ Full) \\
-\hline
-learning\_rate\_init & 0.266 & 0.116 & 0.150 \\
-hidden\_layer\_sizes & 0.181 & 0.071 & 0.109 \\
-alpha & 0.159 & 0.058 & 0.100 \\
-activation & 0.028 & 0.031 & -0.004 \\
-\hline
-\end{tabular}
+\caption{Most increased and most decreased within-family hyperparameter effects inside COMPAS HH hotspots relative to all observations (Rashomon set). Positive values indicate greater importance in hotspots.}
+\label{tab:hp_hotspot_delta_compas}
+\input{presentation_assets/tab/hp_hotspot_delta_compas_compact.tex}
 \end{table}
 
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.85\textwidth]{figures/nb06/hp_importance_compare_compas_MLP.pdf}
-\caption{Comparison of hyperparameter importance between the Rashomon set and the full candidate pool for MLP on COMPAS.}
-\label{fig:hp_compare}
-\end{figure}
+Taken together, the hotspot analysis shows that some modeling choices become distinctly more consequential inside regions of concentrated disagreement. Hyperparameters that are only moderately important on average can therefore become critical within localized instability hotspots.
+
 
 \subsubsection{Conditional Analysis and Meta-Model Insights}
 
-A remaining question is whether these hyperparameter effects simply reflect model performance, i.e.\ whether models with higher disagreement are merely worse-performing models. To assess this, we analyze the relationship between model-level disagreement contribution $V_m$ and validation Brier score, and fit simple meta-models that predict $V_m$ from hyperparameters and validation performance.
+A remaining question is whether these hyperparameter effects simply proxy for model performance. To assess this, we analyze the relationship between model-level disagreement contribution $V_m$ and validation Brier score, and fit simple model-level meta-models that predict $V_m$ from hyperparameters and validation performance.
 
-The conditional analysis shows a clear difference between the Rashomon set and the full candidate pool. In the full pool, $V_m$ is often strongly positively correlated with validation Brier score, indicating that worse-performing models also tend to disagree more. In contrast, within the Rashomon set these correlations are generally much weaker and in some cases close to zero. This suggests that once attention is restricted to near-optimal models, disagreement cannot be explained simply as a byproduct of poor performance.
+The comparison between the Rashomon set and the full candidate pool shows a clear difference. In the full pool, $V_m$ is often strongly positively associated with validation Brier score, indicating that worse-performing models also tend to disagree more. Within the Rashomon set, these relationships are much weaker, implying that disagreement among near-optimal models cannot be explained simply as a byproduct of poor performance.
 
-The meta-model analysis reinforces this conclusion. In the full pool, validation Brier score often emerges as the dominant predictor of $V_m$, whereas in the Rashomon set hyperparameters remain comparatively more important. Across datasets and model families, several hyperparameters retain substantial importance even after controlling for performance, indicating that predictive multiplicity reflects structured variation within the hyperparameter space itself.
+The meta-model analysis supports the same conclusion. In the full pool, validation Brier score is often the dominant predictor of $V_m$, whereas in the Rashomon set non-performance hyperparameters become comparatively more important. The meta-model is used here as a descriptive conditional analysis rather than as primary evidence; its main role is to show that several hyperparameters retain substantial importance even after accounting for validation performance.
 
-Overall, these results show that predictive multiplicity is driven by a combination of model-family differences and structured variation within hyperparameter space. While family choice explains a large portion of disagreement, hyperparameters determine how this disagreement manifests within each model class and how it concentrates in specific regions of feature space. The additional conditional analyses further show that these hyperparameter effects are not reducible to validation-performance differences alone, particularly within the Rashomon set.
+Overall, these results show that predictive multiplicity is driven by both model-family
+differences and structured variation within model families. Family choice explains a
+substantial share of disagreement, especially inside hotspots, while a small number of
+within-family hyperparameters account for much of the remaining variation. The
+meta-model diagnostics suggest that these patterns are not merely a reflection of poor
+validation performance, although they are interpreted descriptively rather than causally.
 %% ---------------------------------------------------------------------------
 \subsection{Synthetic Data Validation}
 \label{sec:results-synthetic}
@@ -537,39 +510,70 @@ This experiment shows that the pipeline can recover several disconnected regions
 \subsection{Interpretable Rules for High-Multiplicity Regions}
 \label{sec:results-rules}
 
-After identifying LISA High--High (HH) hotspots of predictive multiplicity, we ask whether they can be described with simple feature patterns. The goal is \emph{descriptive}: we summarize where HH occurs in the test feature space, not to claim causality or to benchmark classifiers.
+To make multiplicity hotspots more actionable, we extract simple rules that describe HH regions (LISA High--High hotspots) in terms of the original input features. The goal is not to fully explain every hotspot point, but to assess whether localized regions of predictive multiplicity correspond to recognizable subpopulations.
 
-\subsubsection{Rule extraction}
+\subsubsection{Rule Extraction Approach}
 
-We fit a shallow decision tree to the binary HH mask on preprocessed test features and read off compact if--then rules from positive leaves. We report support (coverage), purity ($P(\text{HH}\mid\text{region})$), recall, and lift relative to the HH base rate on the same fold. Bootstrap resampling of test rows provides out-of-bag summaries for each rule region, permutation shuffles of the label give a simple enrichment check, and optional resampling summarizes how often individual features appear in extracted rules.
+We use shallow decision trees (maximum depth 3) to extract human-readable rules. Trees are fitted on the original feature space, and positive leaf nodes are converted into conjunctive rules. Each rule is evaluated by support, purity, recall, and lift.
+
+We apply this procedure in two ways. First, we fit global HH rules, where the target is membership in the full HH set of a given run. In this case, purity is defined as
+\[
+P(\text{HH} \mid \text{rule region}),
+\]
+and lift is the ratio between this purity and the HH base rate.
+
+Second, we fit component-level rules, where each connected HH component is treated as the positive class and all other test observations as the negative class. In this case, purity is defined as
+\[
+P(\text{component} \mid \text{rule region}),
+\]
+and lift is measured relative to the base rate of the corresponding component. The component-level analysis is especially relevant because earlier results show that hotspots are better interpreted as localized regions than as pointwise-stable labels.
 
 \subsubsection{Results on COMPAS}
 
-On COMPAS (e.g.\ seed 0), HH covers a small fraction of the test set; tree leaves highlight a compact set of features (e.g.\ prior record and age-related structure on this dataset).
-
-Figure~\ref{fig:pca_hh} shows HH relative to other test points in PCA space for COMPAS, illustrating that HH observations occupy identifiable directions in feature space rather than being uniformly scattered.
+COMPAS provides the clearest interpretable structure. The global HH rules reveal a strong support--purity trade-off: highly pure rules exist, but they typically describe small subgroups, whereas broader rules have lower purity. Figure~\ref{fig:rules_support_purity} shows this relationship. This indicates that the full HH set is heterogeneous and cannot be summarized well by a single global rule.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.55\textwidth]{pca_hh_compas.pdf}
-\caption{LISA HH hotspots (stars) versus other test points in PCA space for COMPAS (representative seed).}
-\label{fig:pca_hh}
+\includegraphics[width=0.58\textwidth]{figures/nb09/rules_support_purity_compas.pdf}
+\caption{Support--purity trade-off for global HH rules on COMPAS, aggregated across seeds. High-purity rules exist, but they usually cover only small subgroups.}
+\label{fig:rules_support_purity}
 \end{figure}
 
-\subsubsection{Other datasets}
+The component-level analysis gives a stronger regional interpretation. Across retained COMPAS hotspot components, shallow-tree rules often identify compact subregions with high enrichment. In the current analysis, 17 retained HH components across 8 seeds yield 36 component-level rules. Considering the highest-purity rule for each component, the median component size is 31 observations, the median purity is 0.53, the median recall is 0.96, and the median lift is 26.7. Thus, individual hotspot components are often more cleanly describable than the full global HH set.
 
-The same pipeline applies to other benchmark datasets where HH is non-degenerate; strength of feature patterns varies with sample size and HH prevalence. Overall, the exercise supports the thesis emphasis on \emph{spatially clustered} multiplicity: once HH is located, it can often be narrated with short if--then rule lists, aiding transparency for affected subpopulations.
+Table~\ref{tab:component_rules_compas} reports representative component-level rules. The strongest rules mostly involve age and prior offence count. For example, rules based on high values of \texttt{priors\_count}, sometimes combined with higher age thresholds, identify compact regions with very high lift relative to the component base rate. A purity of 1.0 means that all observations satisfying the rule belong to the corresponding component, while recall below 1.0 indicates that the rule captures only a subset of the component, typically a clean core rather than the full region.
 
+\begin{table}[!htbp]
+\centering
+\small
+\caption{Representative component-level HH rules on COMPAS. Rules are fitted separately for retained connected HH components.}
+\label{tab:component_rules_compas}
+\resizebox{\textwidth}{!}{%
+\input{presentation_assets/tab/component_rules_compas.tex}
+}
+\end{table}
 
+The feature-frequency results in Table~\ref{tab:component_rule_features_compas} confirm this pattern. The dominant recurring descriptors are \texttt{priors\_count} and \texttt{age}, which appear across most component rules and across several seeds. Race, sex, and charge-degree indicators occur only in a smaller number of component rules and should therefore be interpreted as component-specific rather than as global drivers of hotspot membership.
+
+\begin{table}[!htbp]
+\centering
+\caption{Feature frequency across component-level HH rules on COMPAS.}
+\label{tab:component_rule_features_compas}
+\input{presentation_assets/tab/component_feature_frequency_compas.tex}
+\end{table}
+
+We therefore interpret stability at the feature level rather than at the exact-rule level. The precise tree thresholds are not expected to be invariant across seeds or components, but the repeated use of the same variables indicates a robust descriptive pattern.
+
+Overall, the rule analysis shows that HH regions are only partially interpretable at the global level, but substantially more interpretable once decomposed into connected hotspot components. This supports the main interpretation of the thesis: predictive multiplicity is localized and heterogeneous, but not arbitrary. It concentrates in recognizable regions of the feature space, especially regions characterized by age and prior criminal history.
 %% ---------------------------------------------------------------------------
 \subsection{Decision Boundary Proximity}
 \label{sec:results-margin}
 
-A natural hypothesis is that high-variance observations arise primarily near the decision boundary, where the ensemble mean prediction $\bar{p}_i$ is close to $0.5$. We test this by computing the margin $m_i = |\bar{p}_i - 0.5|$ and correlating it with pointwise variance.
+A natural hypothesis is that high-variance observations arise mainly near the decision boundary, where the ensemble mean prediction $\bar{p}_i$ is close to $0.5$. We test this by computing the margin $m_i = |\bar{p}_i - 0.5|$ and relating it to pointwise predictive variance.
 
-Table~\ref{tab:margin_summary} summarizes the results. On Adult and German Credit, variance and margin are negatively correlated, indicating that high-variance observations tend to lie closer to the decision boundary. This pattern is especially strong in rank terms: the mean Spearman correlation is $-0.89$ on Adult and $-0.70$ on German Credit. The corresponding mean margins are also clearly smaller inside HH regions than outside them, with HH margins of $0.22$ vs.\ $0.37$ on Adult and $0.16$ vs.\ $0.26$ on German Credit. These results suggest that, on these datasets, predictive multiplicity is at least partly associated with boundary ambiguity.
+Table~\ref{tab:margin_summary} shows a clear cross-dataset contrast. On Adult and German Credit, variance and margin are negatively correlated, indicating that high-variance observations tend to lie closer to the decision boundary. This pattern is especially pronounced in rank terms: the mean Spearman correlation is $-0.89$ on Adult and $-0.70$ on German Credit. The same conclusion is reflected in the HH vs.\ non-HH comparison, where HH points have substantially smaller margins on both datasets ($0.22$ vs.\ $0.37$ on Adult and $0.16$ vs.\ $0.26$ on German Credit). Thus, on these datasets, predictive multiplicity is at least partly associated with boundary ambiguity.
 
-In contrast, on COMPAS the relationship remains weak. The mean Pearson correlation is $-0.04 \pm 0.09$ and the mean Spearman correlation is $-0.07 \pm 0.18$, both close to zero. HH points do not exhibit smaller margins than non-HH points; in fact, their mean margin is slightly larger ($0.19$ vs.\ $0.18$). This indicates that predictive multiplicity on COMPAS is not primarily driven by decision-boundary proximity, but instead reflects structural disagreement between near-optimal models.
+By contrast, COMPAS shows almost no relationship between variance and boundary proximity. The mean Pearson correlation is $-0.04 \pm 0.09$ and the mean Spearman correlation is $-0.07 \pm 0.18$, both close to zero. HH points do not exhibit smaller margins than non-HH points; if anything, their mean margin is slightly larger ($0.19$ vs.\ $0.18$). This indicates that multiplicity on COMPAS is not primarily a boundary phenomenon, but instead reflects structural disagreement among near-optimal models.
 
 \begin{table}[htbp]
 \centering
@@ -587,16 +591,16 @@ German  & $-0.56 \pm 0.13$ & $-0.70 \pm 0.10$ & $0.16 \pm 0.06$ & $0.26 \pm 0.02
 \end{tabular}
 \end{table}
 
-This distinction is further supported by a Mann--Whitney U test with the alternative hypothesis that HH points have lower margins than non-HH points. The test is significant in all Adult runs (mean $p \approx 3.5 \times 10^{-22}$, fraction significant $=1.00$), confirming a strong boundary effect. On German Credit, the effect is weaker but still present, with significance in $57\%$ of runs. On COMPAS, by contrast, the test is significant in only $30\%$ of runs and the mean p-value is $0.59$, providing no evidence that HH points systematically lie closer to the decision boundary.
+The Mann--Whitney U test supports the same interpretation. On Adult, the alternative hypothesis that HH points have lower margins than non-HH points is significant in all runs (mean $p \approx 3.5 \times 10^{-22}$). On German Credit, the effect is weaker but still present, with significance in $57\%$ of runs. On COMPAS, by contrast, the test is significant in only $30\%$ of runs and the mean p-value is $0.59$, providing no evidence that HH points systematically lie closer to the decision boundary.
 
-Taken together, these results show that predictive multiplicity can arise from different mechanisms across datasets. On Adult and German Credit, high-multiplicity regions are more closely linked to boundary uncertainty. On COMPAS, however, multiplicity is largely decoupled from decision-boundary proximity, reinforcing the interpretation that its hotspot structure is driven primarily by structural disagreement among near-optimal models rather than by intrinsic classification ambiguity.
+Taken together, these results suggest that predictive multiplicity arises from different mechanisms across datasets. On Adult and German Credit, high-multiplicity regions are more closely linked to boundary uncertainty. On COMPAS, however, multiplicity is largely decoupled from decision-boundary proximity, reinforcing the interpretation that its hotspot structure is driven mainly by structural disagreement among near-optimal models rather than by intrinsic classification ambiguity.
 %% ---------------------------------------------------------------------------
 \subsection{Fairness and Subgroup Exposure (COMPAS)}
 \label{sec:results-fairness}
 
-We examine whether HH and HV regions disproportionately affect sensitive groups on COMPAS (race and sex). For each seed, we compute the fraction of each group's test points that fall in HH or HV regions.
+As an auxiliary diagnostic, we examine whether HH and HV regions on COMPAS disproportionately affect sensitive groups defined by race and sex. For each seed, we compute the fraction of each group's test points that fall into HH or HV regions.
 
-Table~\ref{tab:fairness} reports group-wise HH and HV rates (mean $\pm$ std across 10 seeds). African-Americans have a mean HH rate of 7.4\%, compared to 2.9\% for Caucasians and 1.9\% for Hispanics. The small-$n$ groups (Asian, Native American) show high rates but with large variance due to very few test points. HV rates follow a similar pattern (10.3\% for African-Americans vs.\ 7.3\% for Caucasians).
+Table~\ref{tab:fairness} shows subgroup-level differences in exposure. African-American test points exhibit a higher mean HH rate than Caucasian and Hispanic test points, and HV rates follow a similar pattern. However, some groups have small sample sizes and correspondingly high variability, so these raw differences should be interpreted cautiously.
 
 \begin{table}[htbp]
 \centering
@@ -620,118 +624,101 @@ Attribute & Group & $n$ (mean) & HH rate & HV rate & Mean variance \\
 \end{tabular}
 \end{table}
 
-A permutation test (1000 permutations of group labels) yields a mean $p$-value of 0.25 for race and 0.26 for sex, with significant disparity in 30\% (race) and 40\% (sex) of seeds. The observed disparity in HH rates across racial groups is moderately larger than expected under the null ($\Delta = 0.32$ observed vs.\ $0.13$ null mean for race), but not consistently significant across all seeds. This suggests that the racial composition of HH regions varies with the random split and Rashomon realization.
+Permutation testing shows that these disparities are not consistently statistically significant across runs. The mean $p$-values are 0.25 for race and 0.26 for sex, with significant disparity detected in only 30\% and 40\% of seeds, respectively. Thus, while some groups appear more exposed to multiplicity hotspots in certain runs, the evidence is not strong enough to support a stable fairness conclusion. This analysis is therefore best interpreted as an exploratory auditing signal rather than as a primary result.
 
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.7\textwidth]{fairness_hh_rate_by_race_compas.pdf}
-\caption{HH rate by race on COMPAS (mean $\pm$ std across 10 seeds). African-Americans have a higher HH rate than Caucasians and Hispanics.}
-\label{fig:fairness_hh_race}
-\end{figure}
-
-%% ---------------------------------------------------------------------------
-\subsection{Alternative kNN Graph Constructions}
-\label{sec:results-alt-graph}
-
-To verify that the observed spatial patterns are not artifacts of a specific distance metric or feature representation, we compare alternative kNN graph constructions: (1) kNN in PCA-reduced space (15 components) and (2) kNN using cosine distance. Table~\ref{tab:alt_graph} summarizes Moran's $I$ and HH count for each method.
-
-\begin{table}[htbp]
-\centering
-\caption{Moran's $I$ and HH count under alternative kNN graph constructions (mean $\pm$ std across 10 seeds, $k=30$).}
-\label{tab:alt_graph}
-\small
-\begin{tabular}{llcc}
-\hline
-Dataset & Method & Moran's $I$ & HH count \\
-\hline
-\multirow{3}{*}{COMPAS}
-& Euclidean (baseline)  & $0.199 \pm 0.077$ & $80.7 \pm 48.7$ \\
-& PCA (15 comp.)        & $0.198 \pm 0.076$ & $82.2 \pm 50.1$ \\
-& Cosine                & $0.213 \pm 0.083$ & $111.3 \pm 49.0$ \\
-\hline
-\multirow{3}{*}{German}
-& Euclidean (baseline)  & $0.104 \pm 0.040$ & $2.8 \pm 2.1$ \\
-& PCA (15 comp.)        & $0.098 \pm 0.040$ & $3.0 \pm 2.2$ \\
-& Cosine                & $0.114 \pm 0.043$ & $5.8 \pm 4.7$ \\
-\hline
-\multirow{3}{*}{Breast Cancer}
-& Euclidean (baseline)  & $0.032 \pm 0.021$ & $1.5 \pm 3.0$ \\
-& PCA (15 comp.)        & $0.033 \pm 0.022$ & $1.8 \pm 3.4$ \\
-& Cosine                & $0.037 \pm 0.023$ & $0.7 \pm 1.1$ \\
-\hline
-\end{tabular}
-\end{table}
-
-Across all datasets, Moran's $I$ remains highly consistent under different graph constructions. Euclidean and PCA-based graphs produce nearly identical values (differences $< 0.01$), indicating that dimensionality reduction does not materially affect the detected spatial structure. Cosine-based graphs yield slightly higher Moran's $I$ and HH counts for COMPAS and German Credit, suggesting that alternative similarity measures may emphasize different aspects of local structure, but without altering the overall pattern.
-
-Figure~\ref{fig:alt_graph} illustrates these results visually. While the absolute number of detected hotspots varies somewhat across graph constructions, the presence and relative strength of spatial clustering remain stable.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.85\textwidth]{alternative_knn_comparison.pdf}
-\caption{Moran's $I$ (left) and HH count (right) under three kNN graph constructions: Euclidean (baseline), PCA-reduced (15 components), and cosine distance.}
-\label{fig:alt_graph}
-\end{figure}
-
-Overall, these findings demonstrate that the spatial clustering of predictive multiplicity is robust to the choice of distance metric and feature representation. The consistency across graph constructions indicates that the observed patterns reflect intrinsic structure in the data rather than artifacts of a particular similarity definition.
-
-%% ---------------------------------------------------------------------------
-\subsection{Aggregated Drivers Across Seeds}
-\label{sec:results-agg-drivers}
-
-To ensure that driver and interpretability claims are robust, we aggregate the variance decomposition results across all 10 seeds.
-
-\subsubsection{Rule Feature Frequency Across Seeds}
-
-The interpretable rules extracted for COMPAS (Section~\ref{sec:results-rules}) consistently use the same features across seeds and rule extraction methods.  Table~\ref{tab:rule_freq} reports the frequency of feature appearance across all extracted rules.  Age and prior offence count dominate, appearing in 78 and 58 rules respectively.  Race-related features and sex appear less frequently but contribute to specific rules.
-
-\begin{table}[htbp]
-\centering
-\caption{Feature frequency in extracted rules for COMPAS (across all methods and seeds).}
-\label{tab:rule_freq}
-\small
-\begin{tabular}{lc}
-\hline
-Feature & Frequency \\
-\hline
-Age                         & 78 \\
-Prior offence count         & 58 \\
-Race (Other)                & 10 \\
-Sex (Female)                & 8 \\
-Charge degree (Misdemeanor) & 4 \\
-\hline
-\end{tabular}
-\end{table}
 
 %% ---------------------------------------------------------------------------
 \subsection{Summary of Results}
 
-The experimental results demonstrate that predictive multiplicity is a structured and robust phenomenon, rather than a purely local or random effect. Across datasets, models, and analysis choices, several consistent patterns emerge.
+The experimental results show that predictive multiplicity is not merely a global
+disagreement summary, but a structured phenomenon with spatial, model-dependent, and
+interpretable components. Across datasets, model families, and robustness checks, several
+main patterns emerge.
 
 \begin{enumerate}
 
-\item \textbf{Spatial structure:} Predictive multiplicity is spatially clustered in feature space. Global Moran's $I$ is positive and statistically significant under the permutation null for the vast majority of runs (100\% for COMPAS and German, 70\% for Breast Cancer). This confirms that disagreement is not randomly distributed but concentrates in specific regions.
+\item \textbf{Spatial structure:} Predictive multiplicity is spatially clustered in feature
+space. Global Moran's $I$ is positive and statistically significant under the permutation
+null in all outer runs for COMPAS, German Credit, and Adult. This shows that
+disagreement is not randomly distributed over the test set, but systematically aligned
+with the geometry of the feature space.
 
-\item \textbf{Multi-scale and region-level behavior:} Spatial clustering persists across neighborhood scales and forms coherent hotspot regions. While individual HH points vary across runs (Jaccard $\sim$0.025), the same regions of feature space repeatedly exhibit elevated multiplicity. This indicates region-level stability despite point-level variability.
+\item \textbf{Magnitude and concentration differ across datasets:} Disagreement magnitude
+and spatial concentration are not the same. German Credit exhibits the largest overall
+predictive variance and conflict, whereas COMPAS shows the clearest spatial
+concentration of high-multiplicity observations. Adult has weaker Moran's $I$ but a
+larger absolute number of HH observations, indicating broader and more diffuse hotspot
+structure.
 
-\item \textbf{Complementary disagreement mechanisms:} Soft prediction variance and hard conflict ratio capture distinct aspects of multiplicity. Their low overlap (Jaccard $\approx 0.06$ on COMPAS) and quadrant analysis show that disagreement can occur either through probability spread or label instability, reinforcing the need for both metrics.
+\item \textbf{Region-level stability despite point-level instability:} Exact HH membership
+varies substantially across runs, with low pointwise Jaccard overlap on COMPAS
+($\approx 0.025$). However, connected-component analyses show that broader hotspot
+regions recur more consistently than individual HH labels. Predictive multiplicity should
+therefore be interpreted primarily as a region-level phenomenon rather than as a stable
+pointwise classification.
 
-\item \textbf{Model-driven multiplicity:} Model family is a primary driver of predictive variability, explaining 41--62\% of variance globally and up to 69\% within hotspots. Different families induce distinct spatial patterns, and these differences are amplified in high-multiplicity regions.
+\item \textbf{Complementary disagreement mechanisms:} Soft prediction variance and hard
+conflict ratio capture distinct forms of multiplicity. Their overlap is limited
+(Jaccard $\approx 0.06$ on COMPAS), and the quadrant analysis shows that observations
+can exhibit high probability spread without label flips, or high threshold sensitivity
+without especially large probability spread. Both metrics are therefore needed for a
+complete description of predictive disagreement.
 
-\item \textbf{Hyperparameter effects:} Within families, a small set of hyperparameters consistently drives disagreement. Regularization and complexity parameters dominate (e.g., LogReg $C$, kNN neighbors), while neural networks exhibit more distributed sensitivity. These patterns are stable across seeds.
+\item \textbf{Model family is a major driver:} Model family explains a substantial share of
+predictive variance, and this share often increases inside hotspot regions. In the
+Rashomon set, family importance rises from about $0.41$ to $0.52$ on COMPAS and
+from about $0.71$ to $0.79$ on Adult when moving from all observations to HH regions.
+German Credit also shows high family importance, although HH-specific estimates are
+less stable because very few HH points are detected.
 
-\item \textbf{Robustness to modeling choices:} The observed spatial structure is robust to key design choices. Varying Rashomon set size $K$ affects the magnitude of disagreement but not its spatial organization, while varying the neighborhood size $k$ changes the extent of detected regions but preserves clustering. Calibration and alternative graph constructions similarly leave the core structure intact.
+\item \textbf{Within-family hyperparameters add structured variation:} Within model families, disagreement is not diffuse across all hyperparameters. A small
+number of hyperparameters repeatedly explain much of the remaining variation, such as
+regularization strength $C$ for logistic regression, the number of neighbors for kNN,
+learning-rate and tree-depth parameters for GBM, and learning-rate initialization or
+architecture choices for MLPs.
 
-\item \textbf{Validation on synthetic data:} On datasets with known ambiguous regions, the method recovers ground-truth instability with high precision (0.99) and recall (0.91), demonstrating that detected hotspots correspond to genuine sources of predictive uncertainty.
+\item \textbf{Robustness to analytical choices:} The main spatial conclusions are robust to
+reasonable changes in the analysis design. Increasing Rashomon set size $K$ mainly
+increases the magnitude of disagreement, while the spatial pattern stabilizes after
+moderate values of $K$. Increasing the neighborhood size $k$ changes the smoothness
+and extent of detected regions, but does not remove positive spatial autocorrelation.
+Post-hoc calibration and alternative graph constructions likewise alter exact HH masks
+without eliminating the underlying clustering signal.
 
-\item \textbf{Interpretability of hotspots:} High-multiplicity regions can be described by compact and stable rules, with lift up to 12$\times$ the base rate. These rules consistently involve a small set of features (e.g., prior offence count and age), indicating that multiplicity affects identifiable subpopulations.
+\item \textbf{Validation on synthetic data:} On synthetic datasets with known ambiguous
+regions, the pipeline recovers the intended instability regions with high precision and
+substantial recall. In the single-island design, LISA HH detection achieves precision
+$0.97$, recall $0.80$, and Jaccard overlap $0.78$. In the three-islands design, it achieves
+precision $0.96$, recall $0.88$, and Jaccard overlap $0.85$. This supports the validity of
+the spatial pipeline under controlled ground-truth conditions.
 
-\item \textbf{Multiple sources of multiplicity:} Predictive multiplicity arises from different mechanisms across datasets. On COMPAS, it is largely independent of decision-boundary proximity ($r \approx -0.04$), indicating structural model disagreement. On Breast Cancer and German Credit, multiplicity is more strongly associated with boundary uncertainty.
+\item \textbf{Interpretability of hotspot regions:} High-multiplicity regions can be partly
+described by compact rules in the original feature space. Global HH rules show a strong
+support--purity trade-off, whereas component-level rules provide cleaner regional
+descriptions. On COMPAS, retained component-level rules repeatedly involve
+\texttt{priors\_count} and age, with representative component rules reaching very high
+lift and a median best-rule lift of $26.7$ across retained components.
 
-\item \textbf{Fairness implications:} Subgroup exposure analysis shows that certain groups (e.g., African-Americans on COMPAS) experience higher rates of multiplicity hotspots. However, these disparities are not consistently statistically significant across runs, indicating sensitivity to data splits and model selection.
+\item \textbf{Different mechanisms across datasets:} Predictive multiplicity is not driven
+by the same mechanism everywhere. On Adult and German Credit, high variance is
+strongly associated with proximity to the decision boundary, suggesting a link to
+boundary ambiguity. On COMPAS, the correlation between variance and margin is close
+to zero ($r \approx -0.04$), indicating that hotspot structure is better explained by
+structural disagreement among near-optimal models than by ordinary boundary
+uncertainty.
 
-\item \textbf{Consistency across seeds:} Driver importance, rule features, and spatial patterns remain stable across seeds, indicating that the observed multiplicity structure is not an artifact of specific training realizations.
+\item \textbf{Fairness implications are exploratory:} Subgroup exposure analysis on COMPAS
+suggests that some demographic groups may experience higher rates of HH or HV
+membership. However, these disparities are not consistently statistically significant
+across runs. The fairness analysis should therefore be interpreted as an auditing signal
+rather than as evidence of a stable causal disparity.
 
 \end{enumerate}
 
-Overall, these findings show that predictive multiplicity is not merely a global nuisance metric, but a structured phenomenon with spatial, model-dependent, and interpretable characteristics. It concentrates in identifiable regions of feature space, is driven by specific modeling choices, and remains robust across analytical variations.
+Overall, the findings support the central claim of this thesis: predictive multiplicity is a
+localized and structured property of the interaction between data geometry, model family,
+and hyperparameter choice. It concentrates in identifiable regions of feature space, remains
+visible under several robustness checks, and can be partially characterized by interpretable
+rules. This makes spatial multiplicity analysis a useful diagnostic for identifying
+predictions whose outputs are especially contingent on the choice among near-optimal
+models.

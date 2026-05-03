@@ -1,7 +1,6 @@
 This chapter instantiates the methodological framework of Chapter~3 on concrete datasets,
 model families, and experimental settings. We first specify the core experimental setup:
-datasets, data splitting, model families, preprocessing, Rashomon-set approximation,
-prediction matrices, spatial parameters, and null-model configuration. We then describe
+datasets, data splitting, model families, preprocessing, Rashomon-set approximation, spatial parameters, and null-model configuration. We then describe
 the additional analyses used to assess robustness, validate the pipeline, and interpret the
 resulting hotspot structure. Unless stated otherwise, all design choices are fixed across
 experiments.
@@ -243,24 +242,31 @@ For each benchmark dataset and each of the 10 outer seeds, we compute:
 
 \paragraph{Interpretable rule extraction.}
 To characterize high-multiplicity regions in terms of original features, interpretable rules
-are extracted on each benchmark dataset. Two target labels are defined per run:
-(1) \textbf{HV} (high variance), the top 10\% of test points by pointwise variance; and
-(2) \textbf{HH}, the LISA High--High hotspot points.
+are extracted using shallow decision trees. The primary target label is defined as
+\textbf{HH}, corresponding to LISA High--High hotspot observations.
 
-Four extraction methods are applied:
-(i) shallow decision trees (maximum depth 3),
-(ii) L1-regularized logistic regression ($C = 0.1$) to identify features with nonzero
-coefficients,
-(iii) beam search (beam width 10, maximum conjuncts 3, minimum support 10) to
-maximize lift, and
-(iv) cluster-describe, in which DBSCAN is applied to high-multiplicity points
-($\varepsilon_{\text{DB}} = 1.0$, minimum samples 5) and a decision tree is fitted within
-each cluster.
+We apply the rule extraction in two variants. First, for each run, a global rule model is
+fitted to predict membership in the full HH set. A decision tree with maximum depth 3 is
+trained on the original feature space, and positive leaf nodes are converted into
+conjunctive rules. These global rules describe broader subgroups that are enriched for
+HH observations, but they may mix several distinct hotspot regions.
 
-Rules are evaluated by purity, support, lift, and recall. Out-of-bag stability is assessed via
-200 bootstrap iterations. Permutation enrichment tests with 100 permutations are used
-to assess whether observed purity exceeds chance. Results are reported for COMPAS,
-German Credit, and Adult (seed 0).
+Second, we perform a component-level rule analysis. Connected components of the HH
+subgraph are treated separately, and for each retained component a shallow decision tree
+is fitted with membership in that component as the positive class and all other test
+observations as the negative class. This variant is motivated by the stability analysis,
+which shows that hotspots are better interpreted as localized regions than as
+pointwise-stable labels. Component-level rules therefore aim to describe compact
+high-multiplicity regions rather than the full HH set at once.
+
+Rules are evaluated using support (coverage), purity, recall, and lift. For global HH rules,
+purity is defined as $P(\text{HH} \mid \text{rule region})$, and lift is measured relative to
+the HH base rate. For component-level rules, purity is defined as
+$P(\text{component} \mid \text{rule region})$, and lift is measured relative to the base
+rate of the corresponding component. Stability is assessed across outer seeds by
+aggregating rule statistics and analyzing feature frequency. The main rule analysis is
+reported for COMPAS, where the hotspot structure is clearest and the retained
+components are sufficiently large for meaningful rule extraction.
 
 \subsection{Auxiliary Diagnostic Analyses}
 
