@@ -645,7 +645,7 @@ def plot_decomp_hp_grid_rashomon(
             if j == 0:
                 ax.set_ylabel(str(fam), fontsize=9)
     fig.suptitle(
-        "Secondary: within-family HP decomposition (unique values on P), Rashomon",
+        "Within-family HP decomposition ($V_m$-based grouping), Rashomon",
         fontsize=11,
     )
     fig.tight_layout()
