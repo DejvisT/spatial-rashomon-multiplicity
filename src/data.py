@@ -13,7 +13,6 @@ from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.datasets import fetch_openml
-from sklearn.datasets import load_breast_cancer as sk_load_breast_cancer
 
 
 # ---------------------------------------------------------------------
@@ -175,29 +174,6 @@ def load_german_credit() -> Tuple[pd.DataFrame, pd.Series, Dict[str, List[str]]]
     return X, y, feature_info
 
 
-def load_breast_cancer() -> Tuple[pd.DataFrame, pd.Series, Dict[str, List[str]]]:
-    """
-    Load Breast Cancer Wisconsin dataset from sklearn.
-    """
-
-    data = sk_load_breast_cancer(as_frame=True)
-    df = data.frame.copy()
-
-    target = "target"
-
-    numeric = [c for c in df.columns if c != target]
-
-    feature_info = {
-        "numeric": numeric,
-        "categorical": [],
-    }
-
-    X = df[numeric].copy()
-    y = df[target].astype(int)
-
-    return X, y, feature_info
-
-
 def load_adult() -> Tuple[pd.DataFrame, pd.Series, Dict[str, List[str]]]:
     """
     Load Adult (Census Income) dataset from OpenML (adult, data_id=1590).
@@ -244,8 +220,6 @@ def load_dataset(
         return load_compas()
     elif name == "german":
         return load_german_credit()
-    elif name == "breast_cancer":
-        return load_breast_cancer()
     elif name == "adult":
         return load_adult()
     else:
