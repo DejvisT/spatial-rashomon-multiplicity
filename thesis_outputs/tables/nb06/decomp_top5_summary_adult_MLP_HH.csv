@@ -1,5 +1,0 @@
-dataset,pool_type,subset,family,hp,mean_importance,std_importance,mean_rank,rank_freq_top1,rank_freq_top3,n_seeds
-adult,Rashomon,HH,MLP,learning_rate_init,0.18039528911311167,0.048171876235472776,1.9,0.4,0.9,10
-adult,Rashomon,HH,MLP,hidden_layer_sizes,0.1615954476418645,0.026237794774666968,2.0,0.4,0.9,10
-adult,Rashomon,HH,MLP,activation,0.14309173519133006,0.03272612478984044,2.8,0.1,0.8,10
-adult,Rashomon,HH,MLP,alpha,0.12775089639752293,0.039563627998934585,3.3,0.1,0.4,10

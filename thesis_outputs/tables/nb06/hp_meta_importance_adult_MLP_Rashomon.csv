@@ -1,6 +1,0 @@
-feature_group,importance
-hp_learning_rate_init,0.5492641718440213
-validation_brier,0.24331204139792478
-hp_hidden_layer_sizes,0.10151148852204901
-hp_activation,0.06063791549569815
-hp_alpha,0.04527438274030678

@@ -1,3 +1,0 @@
-dataset,family,pool_type,hp,mean_delta,std_delta,n_seeds
-german,RF,Rashomon,max_depth,-0.02879400931881319,0.022347863741401304,3
-german,RF,Rashomon,min_samples_split,-0.0010719400274745345,0.01907156420498798,3

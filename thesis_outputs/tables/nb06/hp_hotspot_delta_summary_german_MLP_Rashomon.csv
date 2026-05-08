@@ -1,5 +1,0 @@
-dataset,family,pool_type,hp,mean_delta,std_delta,n_seeds
-german,MLP,Rashomon,learning_rate_init,0.05327318203040401,0.05482415366746832,3
-german,MLP,Rashomon,hidden_layer_sizes,0.014149059978996834,0.04562242557062226,3
-german,MLP,Rashomon,activation,-0.0004642643406996688,0.0033985652029054074,3
-german,MLP,Rashomon,alpha,-0.008684064421591246,0.017254649860365935,3

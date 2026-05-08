@@ -1,2 +1,0 @@
-dataset,family,pool_type,hp,mean_delta,std_delta,n_seeds
-german,kNN,Rashomon,n_neighbors,0.04335579672648652,0.026579374746542324,3

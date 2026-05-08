@@ -1,5 +1,0 @@
-feature,grid_value,predicted_V_m,n_background_rows
-hp_max_depth,2.0,0.0009960227032400743,100
-hp_max_depth,3.0,0.0010426455517120229,100
-hp_max_depth,4.0,0.0012720955274303574,100
-hp_max_depth,5.0,0.0018756103746781683,100

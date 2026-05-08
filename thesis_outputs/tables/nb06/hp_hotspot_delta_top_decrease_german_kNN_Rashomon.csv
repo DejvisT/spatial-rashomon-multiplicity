@@ -1,3 +1,0 @@
-dataset,family,pool_type,hp,mean_delta,std_delta,n_seeds
-german,kNN,Rashomon,weights,-0.014538775739760298,0.01956857197488465,3
-german,kNN,Rashomon,p,-0.011213366983433337,0.03380233729284234,3

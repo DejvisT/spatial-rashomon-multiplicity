@@ -1,4 +1,0 @@
-dataset,pool_type,subset,family,hp,mean_importance,std_importance,mean_rank,rank_freq_top1,rank_freq_top3,n_seeds
-german,Rashomon,HH,kNN,n_neighbors,0.7647032674073037,0.0857138181336403,1.0,1.0,1.0,3
-german,Rashomon,HH,kNN,p,0.2110618427939701,0.04540714809668919,2.0,0.0,1.0,3
-german,Rashomon,HH,kNN,weights,0.006497297658849964,0.004102305956103468,3.0,0.0,1.0,3

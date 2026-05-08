@@ -1,4 +1,0 @@
-dataset,family,pool_type,target_vm,feature_group,mean_importance,std_importance,top1_frequency,top3_frequency,mean_rank,n_reps_used
-german,LogReg,full_pool,V_m_HH,validation_brier,0.9315873314692115,0.016273612796681755,1.0,1.0,1.0,12
-german,LogReg,full_pool,V_m_HH,hp_C,0.05564200929987126,0.01640138943386273,0.0,1.0,2.0,12
-german,LogReg,full_pool,V_m_HH,hp_l1_ratio,0.012770659230917197,0.003809879043137175,0.0,1.0,3.0,12
