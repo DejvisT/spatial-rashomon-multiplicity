@@ -37,7 +37,8 @@ def plot_meta_importance_and_stability_grids(
     top_hp: int,
     family_order: Sequence[str] = FAMILY_ORDER_DEFAULT,
     dataset_order: Sequence[str] = DATASET_ORDER_DEFAULT,
-    save_individual_importance: bool = True,
+    save_individual_importance: bool = False,
+    save_individual_rank_stability: bool = False,
 ) -> None:
     """
     Two overview figures:
@@ -150,24 +151,26 @@ def plot_meta_importance_and_stability_grids(
     fig2.savefig(p2, bbox_inches="tight")
     plt.show()
 
-    for _, row in groups.iterrows():
-        ds, fam = row["dataset"], row["family"]
-        grp = vm[(vm["dataset"] == ds) & (vm["family"] == fam)]
-        top = grp.nlargest(top_hp, "mean_importance").copy()
-        if top.empty:
-            continue
-        fig, ax = plt.subplots(figsize=(6, max(2.5, 0.35 * len(top))))
-        y = np.arange(len(top))
-        ax.barh(y, top["rank_freq_top3"], color="slategray")
-        ax.set_yticks(y)
-        ax.set_yticklabels(top["hp_name"])
-        ax.invert_yaxis()
-        ax.set_xlim(0, 1.05)
-        ax.set_xlabel("Frequency in top-3 within seed")
-        ax.set_title(f"{ds} — {fam}: rank stability (subset=all)")
-        fig.tight_layout()
-        fig.savefig(fig_dir / f"hp_rank_stability_{ds}_{fam}.pdf", bbox_inches="tight")
-        plt.close(fig)
+    if save_individual_rank_stability:
+        for _, row in groups.iterrows():
+            ds, fam = row["dataset"], row["family"]
+            grp = vm[(vm["dataset"] == ds) & (vm["family"] == fam)]
+            top = grp.nlargest(top_hp, "mean_importance").copy()
+            if top.empty:
+                continue
+
+            fig, ax = plt.subplots(figsize=(6, max(2.5, 0.35 * len(top))))
+            y = np.arange(len(top))
+            ax.barh(y, top["rank_freq_top3"], color="slategray")
+            ax.set_yticks(y)
+            ax.set_yticklabels(top["hp_name"])
+            ax.invert_yaxis()
+            ax.set_xlim(0, 1.05)
+            ax.set_xlabel("Frequency in top-3 within seed")
+            ax.set_title(f"{ds} — {fam}: rank stability (subset=all)")
+            fig.tight_layout()
+            fig.savefig(fig_dir / f"hp_rank_stability_{ds}_{fam}.pdf", bbox_inches="tight")
+            plt.close(fig)
 
     print("Saved grids:", p1.name, p2.name)
 
