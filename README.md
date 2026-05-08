@@ -4,7 +4,7 @@ MSc thesis project investigating **predictive multiplicity** in Rashomon sets us
 
 ## Overview
 
-Many datasets admit multiple near-optimal models that disagree on individual predictions. This project uses spatial autocorrelation (Moran's I, LISA, Getis-Ord Gi*) on kNN feature-space graphs to identify **where** models disagree — revealing coherent *multiplicity hotspot regions* rather than just global disagreement metrics. Extended analyses include soft (weighted) Rashomon sets, spatial correlograms for distance-decay structure, Gower-distance and PCA-based kNN for mixed-type features, and bootstrap ablation for robustness testing.
+Many datasets admit multiple near-optimal models that disagree on individual predictions. This project uses spatial autocorrelation (Moran's I and LISA) on kNN feature-space graphs to identify where near-optimal models disagree, revealing coherent multiplicity hotspot regions rather than only global disagreement metrics. Extended analyses include soft (weighted) Rashomon sets, spatial correlograms for distance-decay structure, Gower-distance and PCA-based kNN for mixed-type features, and bootstrap ablation for robustness testing.
 
 ## Datasets
 
@@ -18,7 +18,7 @@ Many datasets admit multiple near-optimal models that disagree on individual pre
 ```
 1. Train candidate models    →  run_training_pipeline.py
 2. Select Rashomon sets      →  analysis/run_analysis.py (hard threshold & soft/weighted)
-3. Compute spatial metrics   →  analysis/spatial.py, analysis/run_analysis.py (Moran, LISA, Gi*)
+3. Compute spatial metrics   →  analysis/spatial.py, analysis/run_analysis.py (Moran, LISA)
 4. Robustness testing        →  analysis/bootstrap_ablation.py
 5. Analyze in notebooks      →  notebooks/01–10
 ```
