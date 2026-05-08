@@ -26,7 +26,6 @@ Produces `results/{dataset}/seed=0/`, `seed=1/`, … `seed=9/` with 60/20/20 str
 ```powershell
 python run_training_pipeline.py --dataset compas
 python run_training_pipeline.py --dataset german
-python run_training_pipeline.py --dataset breast_cancer
 python run_training_pipeline.py --dataset adult
 ```
 
