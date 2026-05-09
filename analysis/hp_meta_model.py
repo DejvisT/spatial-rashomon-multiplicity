@@ -381,87 +381,6 @@ def stability_importance_tables(
     return pd.DataFrame(rows).sort_values("mean_importance", ascending=False).reset_index(drop=True)
 
 
-def _pdp_background(X: pd.DataFrame, random_state: int) -> pd.DataFrame:
-    if len(X) <= MAX_BACKGROUND_PDP:
-        return X.reset_index(drop=True)
-    rng = np.random.default_rng(random_state)
-    take = min(MAX_BACKGROUND_PDP, len(X))
-    idx = rng.choice(np.arange(len(X)), size=take, replace=False)
-    return X.iloc[idx].reset_index(drop=True)
-
-
-def pdp_grid_predictions_1d(
-    pipe: Pipeline,
-    X: pd.DataFrame,
-    feature: str,
-    grid_values: List[Any],
-    *,
-    random_state: int = 0,
-) -> pd.DataFrame:
-    """Average prediction over background rows with one column held at ``grid_value`` (PDP-style)."""
-    Xb = _pdp_background(X, random_state)
-    rows = []
-    for gv in grid_values:
-        Xm = Xb.copy()
-        Xm[feature] = gv
-        pred_mean = float(pipe.predict(Xm).mean())
-        rows.append(
-            {
-                "feature": feature,
-                "grid_value": gv,
-                "predicted_V_m": pred_mean,
-                "n_background_rows": int(len(Xb)),
-            }
-        )
-    return pd.DataFrame(rows)
-
-
-def pdp_grid_predictions_2d(
-    pipe: Pipeline,
-    X: pd.DataFrame,
-    f1: str,
-    f2: str,
-    g1: List[Any],
-    g2: List[Any],
-    *,
-    random_state: int = 0,
-) -> pd.DataFrame:
-    Xb = _pdp_background(X, random_state + 1)
-    rows = []
-    for a in g1:
-        for b in g2:
-            Xm = Xb.copy()
-            Xm[f1], Xm[f2] = a, b
-            pred_mean = float(pipe.predict(Xm).mean())
-            rows.append(
-                {
-                    "feature_1": f1,
-                    "feature_2": f2,
-                    "grid_value_1": a,
-                    "grid_value_2": b,
-                    "predicted_V_m": pred_mean,
-                    "n_background_rows": int(len(Xb)),
-                }
-            )
-    return pd.DataFrame(rows)
-
-
-def _numeric_quantile_grid(s: pd.Series, n: int = N_GRID_1D) -> List[float]:
-    s = pd.to_numeric(s, errors="coerce").dropna()
-    if s.empty:
-        return []
-    if s.nunique() <= n:
-        return sorted(s.unique().tolist())
-    return [float(x) for x in np.quantile(s, np.linspace(0, 1, n))]
-
-
-def _categorical_levels(s: pd.Series) -> List[Any]:
-    if not pd.api.types.is_numeric_dtype(s):
-        return sorted(s.dropna().map(_safe_obj_to_str).unique().tolist(), key=lambda x: str(x))
-    u = sorted(s.dropna().unique().tolist())
-    return u
-
-
 def meta_model_target_specs(meta_df: pd.DataFrame) -> List[Tuple[str, str]]:
     """(target_column, filename_suffix) pairs for pooled meta-models."""
     specs: List[Tuple[str, str]] = [("V_m", "")]
@@ -469,62 +388,6 @@ def meta_model_target_specs(meta_df: pd.DataFrame) -> List[Tuple[str, str]]:
         if alt in meta_df.columns and int(meta_df[alt].notna().sum()) >= MIN_GROUP_ROWS:
             specs.append((alt, tag))
     return specs
-
-
-def export_meta_effect_surfaces(
-    pipe_full: Pipeline,
-    X: pd.DataFrame,
-    *,
-    ds: str,
-    fam: str,
-    safe_pt: str,
-    non_perf: pd.DataFrame,
-    table_dir: Path,
-    random_state: int,
-) -> None:
-    """1D / 2D PDP-style grids for top non-performance HPs (``V_m`` target only)."""
-    top_np = non_perf.head(2)["feature_group"].tolist() if len(non_perf) else []
-    for feat in top_np[:2]:
-        if feat not in X.columns:
-            continue
-        s = X[feat]
-        if pd.api.types.is_numeric_dtype(s):
-            grid = _numeric_quantile_grid(s, N_GRID_1D)
-        else:
-            grid = _categorical_levels(s)
-        if not grid:
-            continue
-        eff = pdp_grid_predictions_1d(
-            pipe_full,
-            X,
-            feat,
-            grid,
-            random_state=random_state + sum(ord(c) for c in str(feat)) % 97,
-        )
-        eff.to_csv(
-            table_dir / f"hp_meta_effect_1d_{ds}_{fam}_{safe_pt}_{_safe_filename_part(feat)}.csv",
-            index=False,
-        )
-    if len(top_np) >= 2:
-        f1, f2 = top_np[0], top_np[1]
-        if f1 in X.columns and f2 in X.columns:
-            g1 = _numeric_quantile_grid(X[f1], N_GRID_2D) if pd.api.types.is_numeric_dtype(X[f1]) else _categorical_levels(X[f1])
-            g2 = _numeric_quantile_grid(X[f2], N_GRID_2D) if pd.api.types.is_numeric_dtype(X[f2]) else _categorical_levels(X[f2])
-            if g1 and g2 and len(g1) * len(g2) <= 400:
-                eff2 = pdp_grid_predictions_2d(
-                    pipe_full,
-                    X,
-                    f1,
-                    f2,
-                    g1,
-                    g2,
-                    random_state=random_state + sum(ord(c) for c in str(f1) + str(f2)) % 97,
-                )
-                eff2.to_csv(
-                    table_dir
-                    / f"hp_meta_effect_2d_{ds}_{fam}_{safe_pt}_{_safe_filename_part(f1)}_{_safe_filename_part(f2)}.csv",
-                    index=False,
-                )
 
 
 def write_hp_top2_driver_summary(meta_summary: pd.DataFrame, path: Path) -> None:
@@ -708,18 +571,6 @@ def run_hp_meta_model_suite(
                     top_stable["group_key"] = f"{ds}|{fam}|{pt}|{target_col}"
                     stability_summary_parts.append(top_stable)
 
-            if target_col == "V_m":
-                export_meta_effect_surfaces(
-                    pipe_full,
-                    X,
-                    ds=ds,
-                    fam=fam,
-                    safe_pt=safe_pt,
-                    non_perf=non_perf,
-                    table_dir=table_dir,
-                    random_state=random_state,
-                )
-
     if summary_rows:
         meta_summary = pd.DataFrame(summary_rows).sort_values(["dataset", "family", "pool_type", "target_vm"])
         meta_summary.to_csv(table_dir / "hp_meta_model_summary.csv", index=False)
@@ -760,7 +611,6 @@ def run_hp_meta_model_suite(
 
 
 __all__ = [
-    "export_meta_effect_surfaces",
     "grouped_importances_from_pipe",
     "leave_one_seed_out_scores",
     "meta_model_target_specs",
