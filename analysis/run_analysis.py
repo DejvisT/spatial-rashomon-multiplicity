@@ -60,18 +60,6 @@ def load_config(run_dir: PathLike) -> Dict[str, Any]:
         return json.load(f)
 
 
-def load_run(run_dir: PathLike) -> Dict[str, Any]:
-    """Load all standard artifacts from a run directory."""
-    run_dir = Path(run_dir)
-    return {
-        "meta": load_meta(run_dir),
-        "P_val": load_P_val(run_dir),
-        "P_test": load_P_test(run_dir),
-        "split": load_split(run_dir),
-        "config": load_config(run_dir),
-    }
-
-
 # ---------------------------------------------------------------------------
 # 1. Rashomon selection (global, top-K by validation Brier)
 # ---------------------------------------------------------------------------
@@ -157,71 +145,6 @@ def select_rashomon_per_family_k_each(
         order = np.argsort(fam_brier)[:n_take]
         idx_list.extend(fam_indices[order].tolist())
     return np.array(idx_list, dtype=int)
-
-
-def select_rashomon_per_family(
-    run_dir: PathLike,
-    K: int = 25,
-) -> np.ndarray:
-    """
-    Backwards-compatible alias for per-family TOTAL-K selection.
-
-    Prefer explicit calls to:
-      - select_rashomon_per_family_totalK(...)
-      - select_rashomon_per_family_k_each(...)
-    """
-    return select_rashomon_per_family_totalK(run_dir, K=K)
-
-
-def select_rashomon_soft(
-    run_dir: PathLike,
-    tau: float = 0.01,
-) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Soft Rashomon set: weight all models by performance proximity to best.
-    
-    w_i = exp(-(loss_i - loss_best) / tau)
-    
-    This avoids the hard cutoff of top-K selection and gives a smooth
-    weighting that can be used for weighted variance computation.
-    
-    Parameters
-    ----------
-    tau : temperature parameter. Smaller tau → sharper selection.
-    
-    Returns
-    -------
-    indices : all model indices (sorted by weight descending)
-    weights : corresponding weights (sum to 1)
-    """
-    meta = load_meta(run_dir)
-    losses = meta["val_brier"].values
-    best_loss = losses.min()
-    
-    raw_weights = np.exp(-(losses - best_loss) / tau)
-    weights = raw_weights / raw_weights.sum()
-    
-    order = np.argsort(-weights)
-    return order, weights[order]
-
-
-def weighted_pointwise_variance(
-    P: np.ndarray,
-    weights: np.ndarray,
-) -> np.ndarray:
-    """
-    Weighted variance across models per observation.
-    
-    Var_w = sum_m w_m * (p_m - p_mean_w)^2
-    where p_mean_w = sum_m w_m * p_m
-    """
-    weights = np.asarray(weights, dtype=float)
-    weights = weights / weights.sum()
-    
-    w_col = weights[:, np.newaxis]  # (n_models, 1)
-    p_mean = (w_col * P).sum(axis=0)  # (n_obs,)
-    var_w = (w_col * (P - p_mean[np.newaxis, :]) ** 2).sum(axis=0)
-    return var_w
 
 
 # ---------------------------------------------------------------------------
