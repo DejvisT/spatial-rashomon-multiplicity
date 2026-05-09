@@ -1,4 +1,0 @@
-Dataset,N,HH Count,HH %,Moran's I,Moran p-value,Components,Largest Comp,HH Mean Var,Non-HH Mean Var,Comp Mean Var
-Compas,2165,152,7.0%,0.2912,0.0003,11,30,0.006954,0.001963,0.006403
-German Credit,300,12,4.0%,0.1735,0.0003,1,11,0.006991,0.002321,0.007065
-Breast Cancer,171,14,8.2%,0.1821,0.0003,1,14,0.050290,0.007189,0.050290
