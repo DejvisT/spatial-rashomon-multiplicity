@@ -4,63 +4,226 @@ MSc thesis project investigating **predictive multiplicity** in Rashomon sets us
 
 ## Overview
 
-Many datasets admit multiple near-optimal models that disagree on individual predictions. This project uses spatial autocorrelation (Moran's I, LISA, Getis-Ord Gi*) on kNN feature-space graphs to identify **where** models disagree — revealing coherent *multiplicity hotspot regions* rather than just global disagreement metrics. Extended analyses include soft (weighted) Rashomon sets, spatial correlograms for distance-decay structure, Gower-distance and PCA-based kNN for mixed-type features, and bootstrap ablation for robustness testing.
+Many datasets admit multiple near-optimal models that disagree on individual predictions. This project uses observation-wise predictive variance and conflict ratio together with spatial autocorrelation methods (Moran's I and LISA) on kNN feature-space graphs to identify localized multiplicity hotspot regions.
+
+The final analyses cover benchmark datasets, null testing, hotspot stability, global vs. per-family Rashomon sets, robustness checks, hyperparameter and family importance, synthetic validation, interpretable rules, decision-boundary proximity, and subgroup exposure diagnostics.
 
 ## Datasets
 
-- **COMPAS** (recidivism prediction)
-- **German Credit** (UCI)
-- **Breast Cancer** (sklearn / UCI)
-- Synthetic datasets with planted ambiguous regions (for validation)
+- **COMPAS** (recidivism prediction; local CSV in `data/`)
+- **German Credit** (`credit-g`, loaded from OpenML)
+- **Adult** (income prediction, loaded from OpenML)
+- **Synthetic single-island and three-islands datasets** for controlled validation
 
 ## Pipeline
 
-```
-1. Train candidate models    →  run_training_pipeline.py
-2. Select Rashomon sets      →  analysis/run_analysis.py (hard threshold & soft/weighted)
-3. Compute spatial metrics   →  analysis/spatial.py, analysis/run_analysis.py (Moran, LISA, Gi*)
-4. Robustness testing        →  analysis/bootstrap_ablation.py
-5. Analyze in notebooks      →  notebooks/01–10
+```text
+1. Train candidate models       -> run_training_pipeline.py
+2. Train fixed-test runs        -> run_training_pipeline_fixed_test.py
+3. Select Rashomon sets         -> analysis/run_analysis.py
+4. Compute spatial metrics      -> analysis/spatial.py, analysis/run_analysis.py
+5. Run thesis analysis notebooks -> notebooks/01-10
 ```
 
-## Reproducing Results
+The main thesis setting uses `K = 25`, `R_null = 100`, 10 outer seeds, and 50 candidate configurations per model family.
+
+## Setup
+
+Create and activate a Python environment, then install the dependencies:
 
 ```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
 pip install -r requirements.txt
-
-# Train models (10 seeds x 3 datasets, 5 families x 50 candidates each)
-python run_training_pipeline.py
-
-# Train with fixed test set (for cross-seed stability in notebook 03)
-python run_training_pipeline_fixed_test.py
-
-# Run notebooks 01–10 in order
 ```
 
-## Project Structure
+On Windows PowerShell, activation is:
 
-| Directory     | Contents                                                      |
-|---------------|---------------------------------------------------------------|
-| `analysis/`   | Reusable analysis modules (spatial, stability, calibration, rules, hyperparams, bootstrap_ablation) |
-| `src/`        | Core utilities (data loading, training pipeline, synthetic data) |
-| `notebooks/`  | Analysis notebooks 01–10                                      |
-| `data/`       | Raw datasets (COMPAS CSV; others fetched via sklearn)         |
-| `scripts/`    | Thesis asset export scripts                                   |
-| `results/`    | Training artifacts (gitignored)                               |
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
 
-## Notebooks
+If you want to execute notebooks from the command line, also install Jupyter:
 
-| #  | Notebook                          | Purpose                                      |
-|----|-----------------------------------|----------------------------------------------|
-| 01 | Primary Experiment                | Rashomon selection, multiplicity + spatial metrics, summary tables |
-| 02 | Null Experiment                   | Permutation test for spatial significance     |
-| 03 | Spatial Patterns                  | HH stability across seeds, connected components |
-| 04 | Sensitivity to K                  | Rashomon set size sensitivity                 |
-| 05 | Sensitivity to kNN                | Neighborhood size sensitivity                 |
-| 06 | Hyperparameter Analysis           | Variance decomposition by family and HP       |
-| 07 | Calibration Robustness            | Platt + isotonic scaling; spatial survival    |
-| 08 | Synthetic Multiplicity            | Validation on synthetic data with ground truth |
-| 09 | Interpretable Rules               | Rule extraction for hotspot description       |
-| 10 | Robustness and Fairness           | Decision boundary, fairness, alternative kNN  |
+```bash
+pip install jupyter nbconvert ipykernel
+```
 
-See [NOTEBOOK_GUIDE.md](NOTEBOOK_GUIDE.md) for detailed documentation of each notebook.
+## How to run the analysis
+
+### 1. Train the main candidate model pools
+
+Run the standard 60/20/20 train/validation/test pipeline for all benchmark datasets:
+
+```bash
+python run_training_pipeline.py --dataset compas --n_outer 10 --n_candidates 50 --out_dir results
+python run_training_pipeline.py --dataset german --n_outer 10 --n_candidates 50 --out_dir results
+python run_training_pipeline.py --dataset adult  --n_outer 10 --n_candidates 50 --out_dir results
+```
+
+PowerShell equivalent:
+
+```powershell
+foreach ($d in "compas", "german", "adult") {
+    python run_training_pipeline.py --dataset $d --n_outer 10 --n_candidates 50 --out_dir results
+}
+```
+
+This creates:
+
+```text
+results/compas/seed=0 ... seed=9
+results/german/seed=0 ... seed=9
+results/adult/seed=0  ... seed=9
+```
+
+Each run stores the validation/test prediction matrices, candidate metadata, split indices, and configuration.
+
+### 2. Train fixed-test runs for hotspot stability
+
+Notebook 03 uses a fixed test set so that HH masks can be compared pointwise across seeds. Generate those artifacts with:
+
+```bash
+python run_training_pipeline_fixed_test.py --dataset compas --n_outer 10 --n_candidates 50 --out_dir results_fixed_test
+python run_training_pipeline_fixed_test.py --dataset german --n_outer 10 --n_candidates 50 --out_dir results_fixed_test
+python run_training_pipeline_fixed_test.py --dataset adult  --n_outer 10 --n_candidates 50 --out_dir results_fixed_test
+```
+
+PowerShell equivalent:
+
+```powershell
+foreach ($d in "compas", "german", "adult") {
+    python run_training_pipeline_fixed_test.py --dataset $d --n_outer 10 --n_candidates 50 --out_dir results_fixed_test
+}
+```
+
+This creates:
+
+```text
+results_fixed_test/compas/seed=0 ... seed=9
+results_fixed_test/german/seed=0 ... seed=9
+results_fixed_test/adult/seed=0  ... seed=9
+```
+
+### 3. Optional quick command-line summary
+
+The notebooks recompute the analysis outputs they need, but you can run a quick command-line aggregate check with:
+
+```bash
+python run_experiments.py --results_dir results --K 25 --R_null 100
+```
+
+For one dataset only:
+
+```bash
+python run_experiments.py --results_dir results --dataset compas --K 25 --R_null 100
+```
+
+### 4. Run the thesis notebooks
+
+Run the notebooks in numeric order:
+
+```text
+01_primary_experiment.ipynb
+02_null_experiment.ipynb
+03_spatial_patterns.ipynb
+04_sensitivity_K.ipynb
+05_sensitivity_kNN.ipynb
+06_hyperparameter_analysis.ipynb
+07_calibration_robustness.ipynb
+08_synthetic_multiplicity.ipynb
+09_interpretable_rules.ipynb
+10_robustness_and_fairness.ipynb
+```
+
+Recommended during final thesis updates: open them in Jupyter/VS Code and run them one by one, checking each output before moving on.
+
+Command-line execution is possible with:
+
+```bash
+jupyter nbconvert --to notebook --execute notebooks/01_primary_experiment.ipynb --inplace
+jupyter nbconvert --to notebook --execute notebooks/02_null_experiment.ipynb --inplace
+jupyter nbconvert --to notebook --execute notebooks/03_spatial_patterns.ipynb --inplace
+jupyter nbconvert --to notebook --execute notebooks/04_sensitivity_K.ipynb --inplace
+jupyter nbconvert --to notebook --execute notebooks/05_sensitivity_kNN.ipynb --inplace
+jupyter nbconvert --to notebook --execute notebooks/06_hyperparameter_analysis.ipynb --inplace
+jupyter nbconvert --to notebook --execute notebooks/07_calibration_robustness.ipynb --inplace
+jupyter nbconvert --to notebook --execute notebooks/08_synthetic_multiplicity.ipynb --inplace
+jupyter nbconvert --to notebook --execute notebooks/09_interpretable_rules.ipynb --inplace
+jupyter nbconvert --to notebook --execute notebooks/10_robustness_and_fairness.ipynb --inplace
+```
+
+If a notebook takes longer than the default timeout, use for example:
+
+```bash
+jupyter nbconvert --to notebook --execute notebooks/02_null_experiment.ipynb --inplace --ExecutePreprocessor.timeout=-1
+```
+
+### 5. Export thesis assets
+
+The notebooks write thesis-facing figures and tables into `thesis_outputs/`. If needed, run the export helper after rerunning notebooks:
+
+```bash
+python scripts/export_thesis_assets.py
+```
+
+For a quicker export pass:
+
+```bash
+python scripts/export_thesis_assets_quick.py
+```
+
+## Expected outputs
+
+After a full run, the important generated outputs are organized under:
+
+```text
+results/                    # main training artifacts
+results_fixed_test/          # fixed-test artifacts for stability analysis
+thesis_outputs/figures/      # thesis-facing figures
+thesis_outputs/tables/       # thesis-facing CSV/LaTeX tables
+```
+
+The repository intentionally does not need to keep every intermediate diagnostic figure or CSV. The final outputs should be compact enough to inspect manually.
+
+## Project structure
+
+| Directory / file | Contents |
+|---|---|
+| `analysis/` | Reusable analysis modules for Rashomon selection, spatial statistics, stability, calibration, rules, and hyperparameter/family analyses |
+| `src/` | Data loading, preprocessing, training pipeline, plotting helpers, and synthetic data generation |
+| `notebooks/` | Thesis analysis notebooks `01`-`10` |
+| `data/` | Local raw data files, mainly COMPAS |
+| `scripts/` | Thesis asset export scripts |
+| `results/` | Main training artifacts; usually generated locally |
+| `results_fixed_test/` | Fixed-test training artifacts for cross-seed hotspot stability |
+| `thesis_outputs/` | Generated figures and tables used by the thesis |
+| `run_training_pipeline.py` | Main candidate-training script |
+| `run_training_pipeline_fixed_test.py` | Fixed-test candidate-training script |
+| `run_experiments.py` | Command-line aggregate analysis over trained runs |
+
+## Notebook guide
+
+| # | Notebook | Purpose |
+|---|---|---|
+| 01 | `01_primary_experiment.ipynb` | Main Rashomon selection, multiplicity metrics, spatial metrics, and summary tables |
+| 02 | `02_null_experiment.ipynb` | Prediction-matrix permutation null for Moran's I and HH counts |
+| 03 | `03_spatial_patterns.ipynb` | HH hotspot stability, Jaccard overlap, connected components, and PCA visualizations |
+| 04 | `04_sensitivity_K.ipynb` | Sensitivity to Rashomon set size `K` |
+| 05 | `05_sensitivity_kNN.ipynb` | Sensitivity to kNN neighborhood size `k` |
+| 06 | `06_hyperparameter_analysis.ipynb` | Family importance, within-family hyperparameter importance, hotspot-specific shifts, and meta-model diagnostics |
+| 07 | `07_calibration_robustness.ipynb` | Platt/isotonic calibration robustness |
+| 08 | `08_synthetic_multiplicity.ipynb` | Single-island and three-islands synthetic validation |
+| 09 | `09_interpretable_rules.ipynb` | Global and component-level rule extraction for high-multiplicity regions |
+| 10 | `10_robustness_and_fairness.ipynb` | Alternative graph construction, decision-boundary proximity, and subgroup exposure diagnostics |
+
+## Notes for rerunning
+
+- The training step is the expensive part. The notebooks mostly consume the saved prediction matrices and metadata.
+- The scripts skip existing runs when `P_test.npy` and `meta.csv` are already present.
+- To force a clean rerun, move or delete the corresponding `results/<dataset>/seed=<n>/` directories first.
+- Use `--save_models` only if you need saved sklearn pipeline objects; it greatly increases disk usage.

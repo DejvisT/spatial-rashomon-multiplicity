@@ -499,42 +499,55 @@ def run_sensitivity_kNN_and_save_figure():
 
 def write_hh_component_summary_tex():
     """
-    HH connected-component summary (notebook 03, min component size 5).
-    Reads thesis_outputs/tables/nb03/hh_component_summary_<dataset>.csv (fallback: tables/).
+    HH connected-component summary for COMPAS only
+    (notebook 03, min component size 5).
+
+    Reads thesis_outputs/tables/nb03/hh_component_summary_compas.csv
+    with fallback to legacy tables/.
     """
+    ds = "compas"
+    label = "COMPAS"
+    name = f"hh_component_summary_{ds}.csv"
+
+    path = THESIS_TABLES_ROOT / "nb03" / name
+    if not path.is_file():
+        path = LEGACY_TABLES / name
+
     out = []
-    out.append(
-        r"% Auto-generated from notebook 03 CSVs: hh_component_summary_{compas,german,adult}.csv"
-    )
+    out.append(r"% Auto-generated from notebook 03 CSV: hh_component_summary_compas.csv")
     out.append(r"\begin{tabular}{lcccc}")
     out.append(r"\hline")
     out.append(
         r"Dataset & Mean $n$ components & Mean max comp.\ size & Median max comp.\ size & Max (over runs) \\"
     )
     out.append(r"\hline")
-    for ds in ("compas", "german", "adult"):
-        label = ds.replace("_", " ").title()
-        name = f"hh_component_summary_{ds}.csv"
-        path = THESIS_TABLES_ROOT / "nb03" / name
-        if not path.is_file():
-            path = LEGACY_TABLES / name
-        if not path.is_file():
-            print(f"Missing {name}; using --- row for {label}")
-            out.append(f"{label} & --- & --- & --- & --- \\\\")
-            continue
-        df = pd.read_csv(path)
-        if df.empty or "n_components" not in df.columns or "max_component_size" not in df.columns:
-            out.append(f"{label} & --- & --- & --- & --- \\\\")
-            continue
-        mn_c = float(df["n_components"].mean())
-        mn_mx = float(df["max_component_size"].mean())
-        med_mx = float(df["max_component_size"].median())
-        max_mx = int(df["max_component_size"].max())
-        out.append(
-            f"{label} & {mn_c:.2f} & {mn_mx:.2f} & {int(med_mx)} & {max_mx} \\\\"
+
+    if not path.is_file():
+        raise FileNotFoundError(
+            f"Missing {name}. Expected at {THESIS_TABLES_ROOT / 'nb03' / name} "
+            f"or {LEGACY_TABLES / name}."
         )
+
+    df = pd.read_csv(path)
+
+    required_cols = {"n_components", "max_component_size"}
+    missing_cols = required_cols - set(df.columns)
+    if df.empty:
+        raise ValueError(f"{name} is empty; cannot write COMPAS component summary.")
+    if missing_cols:
+        raise ValueError(f"{name} is missing required columns: {sorted(missing_cols)}")
+
+    mn_c = float(df["n_components"].mean())
+    mn_mx = float(df["max_component_size"].mean())
+    med_mx = float(df["max_component_size"].median())
+    max_mx = int(df["max_component_size"].max())
+
+    out.append(
+        f"{label} & {mn_c:.2f} & {mn_mx:.2f} & {int(med_mx)} & {max_mx} \\\\"
+    )
     out.append(r"\hline")
     out.append(r"\end{tabular}")
+
     (TAB_DIR / "hh_component_summary.tex").write_text("\n".join(out), encoding="utf-8")
     print("Wrote", TAB_DIR / "hh_component_summary.tex")
 
@@ -1060,6 +1073,19 @@ def _tex_escape(s: str) -> str:
     )
 
 
+def _tex_escape_rule_text(s: str) -> str:
+    """
+    Escape rule text for LaTeX while rendering comparison operators correctly.
+    This avoids LaTeX text-mode rendering of < and > as inverted punctuation.
+    """
+    s = _tex_escape(str(s))
+    return (
+        s.replace(">=", r"$\geq$")
+         .replace("<=", r"$\leq$")
+         .replace(">", r"$>$")
+         .replace("<", r"$<$")
+    )
+
 def _pretty_dataset(name: str) -> str:
     name = str(name).strip().lower()
     return {
@@ -1210,7 +1236,7 @@ def write_interpretable_rules_top_compas_tex():
     for _, r in df.iterrows():
         rows.append(
             f"{int(r['outer_seed'])} & "
-            f"{_tex_escape(str(r['rule_text']))} & "
+            f"{_tex_escape_rule_text(str(r['rule_text']))} & "
             f"{int(r['support'])} & "
             f"{r['purity']:.3f} & "
             f"{r['recall']:.3f} & "
@@ -1285,7 +1311,7 @@ def write_component_rules_compas_tex():
         rows.append(
             f"{int(r['outer_seed'])} & "
             f"{int(r['component_id'])} & "
-            f"{_tex_escape(str(r['rule_text']))} & "
+            f"{_tex_escape_rule_text(str(r['rule_text']))} & "
             f"{int(r['support'])} & "
             f"{r['component_purity']:.3f} & "
             f"{r['component_recall']:.3f} & "
@@ -1363,23 +1389,27 @@ def main():
         help="Remove PDFs under presentation_assets/fig/ not referenced by the thesis or this export script.",
     )
     args = parser.parse_args()
-    write_interpretable_rules_top_compas_tex()
-    write_interpretable_rule_features_compas_tex()
-    write_component_rules_compas_tex()
-    write_component_rule_features_compas_tex()
-"""
+
     write_dataset_summary_tex()
     write_global_summary_tex()
     write_family_summary_tex()
     write_null_significance_tex()
     write_hh_component_summary_tex()
     write_calibration_summary_tex()
+
+    write_hp_top2_driver_summary_tex()
+    write_hp_hotspot_delta_compas_tex()
+
+    write_interpretable_rules_top_compas_tex()
+    write_interpretable_rule_features_compas_tex()
+    write_component_rules_compas_tex()
+    write_component_rule_features_compas_tex()
+
     write_dataset_comparison_bars_figure()
     write_hh_moran_per_run_compas()
     write_spatial_patterns_figure()
     write_hh_by_family_figure()
-    write_hp_top2_driver_summary_tex()
-    write_hp_hotspot_delta_compas_tex()
+
     if not args.quick:
         run_sensitivity_K_and_save_figure()
         run_sensitivity_kNN_and_save_figure()
@@ -1392,7 +1422,6 @@ def main():
         overleaf_bundle=OVERLEAF_BUNDLE,
     )
     print("Done.")
-"""
 
 if __name__ == "__main__":
     main()

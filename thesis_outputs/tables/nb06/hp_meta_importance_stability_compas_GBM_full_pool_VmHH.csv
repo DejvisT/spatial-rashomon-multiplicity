@@ -1,6 +1,0 @@
-dataset,family,pool_type,target_vm,feature_group,mean_importance,std_importance,top1_frequency,top3_frequency,mean_rank,n_reps_used
-compas,GBM,full_pool,V_m_HH,validation_brier,0.7196328783355272,0.061901173415516035,1.0,1.0,1.0,12
-compas,GBM,full_pool,V_m_HH,hp_learning_rate,0.10481950574381477,0.022393258600976428,0.0,1.0,2.25,12
-compas,GBM,full_pool,V_m_HH,hp_n_estimators,0.08614239210049777,0.034993138916804986,0.0,0.9166666666666666,2.9166666666666665,12
-compas,GBM,full_pool,V_m_HH,hp_max_depth,0.05638808148225297,0.019207908873178286,0.0,0.08333333333333333,4.0,12
-compas,GBM,full_pool,V_m_HH,hp_subsample,0.03301714233790725,0.014107329217614734,0.0,0.0,4.833333333333333,12

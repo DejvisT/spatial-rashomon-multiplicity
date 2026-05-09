@@ -36,7 +36,7 @@ def parse_args():
         "--dataset",
         type=str,
         required=True,
-        choices=["compas", "german", "breast_cancer", "adult"],
+        choices=["compas", "german", "adult"],
     )
     p.add_argument("--out_dir", type=str, default="results_fixed_test", help="Base output directory")
     p.add_argument("--n_outer", type=int, default=10, help="Number of outer runs (seeds)")

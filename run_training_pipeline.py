@@ -26,7 +26,7 @@ from training_pipeline import (
 
 def parse_args():
     p = argparse.ArgumentParser(description="Main training pipeline (10 outer runs, 50 candidates/family)")
-    p.add_argument("--dataset", type=str, required=True, choices=["compas", "german", "breast_cancer", "adult"])
+    p.add_argument("--dataset", type=str, required=True, choices=["compas", "german", "adult"])
     p.add_argument("--out_dir", type=str, default="results", help="Base output directory")
     p.add_argument("--n_outer", type=int, default=10, help="Number of outer runs (seeds)")
     p.add_argument("--n_candidates", type=int, default=50, help="Candidates per model family per run")

@@ -20,8 +20,7 @@ from typing import Dict
 K_NN_BY_DATASET: Dict[str, int] = {
     "compas": 30,
     "german": 30,
-    "adult": 60,
-    "breast_cancer": 30,
+    "adult": 60
 }
 
 

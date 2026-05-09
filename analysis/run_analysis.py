@@ -60,18 +60,6 @@ def load_config(run_dir: PathLike) -> Dict[str, Any]:
         return json.load(f)
 
 
-def load_run(run_dir: PathLike) -> Dict[str, Any]:
-    """Load all standard artifacts from a run directory."""
-    run_dir = Path(run_dir)
-    return {
-        "meta": load_meta(run_dir),
-        "P_val": load_P_val(run_dir),
-        "P_test": load_P_test(run_dir),
-        "split": load_split(run_dir),
-        "config": load_config(run_dir),
-    }
-
-
 # ---------------------------------------------------------------------------
 # 1. Rashomon selection (global, top-K by validation Brier)
 # ---------------------------------------------------------------------------
@@ -157,71 +145,6 @@ def select_rashomon_per_family_k_each(
         order = np.argsort(fam_brier)[:n_take]
         idx_list.extend(fam_indices[order].tolist())
     return np.array(idx_list, dtype=int)
-
-
-def select_rashomon_per_family(
-    run_dir: PathLike,
-    K: int = 25,
-) -> np.ndarray:
-    """
-    Backwards-compatible alias for per-family TOTAL-K selection.
-
-    Prefer explicit calls to:
-      - select_rashomon_per_family_totalK(...)
-      - select_rashomon_per_family_k_each(...)
-    """
-    return select_rashomon_per_family_totalK(run_dir, K=K)
-
-
-def select_rashomon_soft(
-    run_dir: PathLike,
-    tau: float = 0.01,
-) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Soft Rashomon set: weight all models by performance proximity to best.
-    
-    w_i = exp(-(loss_i - loss_best) / tau)
-    
-    This avoids the hard cutoff of top-K selection and gives a smooth
-    weighting that can be used for weighted variance computation.
-    
-    Parameters
-    ----------
-    tau : temperature parameter. Smaller tau → sharper selection.
-    
-    Returns
-    -------
-    indices : all model indices (sorted by weight descending)
-    weights : corresponding weights (sum to 1)
-    """
-    meta = load_meta(run_dir)
-    losses = meta["val_brier"].values
-    best_loss = losses.min()
-    
-    raw_weights = np.exp(-(losses - best_loss) / tau)
-    weights = raw_weights / raw_weights.sum()
-    
-    order = np.argsort(-weights)
-    return order, weights[order]
-
-
-def weighted_pointwise_variance(
-    P: np.ndarray,
-    weights: np.ndarray,
-) -> np.ndarray:
-    """
-    Weighted variance across models per observation.
-    
-    Var_w = sum_m w_m * (p_m - p_mean_w)^2
-    where p_mean_w = sum_m w_m * p_m
-    """
-    weights = np.asarray(weights, dtype=float)
-    weights = weights / weights.sum()
-    
-    w_col = weights[:, np.newaxis]  # (n_models, 1)
-    p_mean = (w_col * P).sum(axis=0)  # (n_obs,)
-    var_w = (w_col * (P - p_mean[np.newaxis, :]) ** 2).sum(axis=0)
-    return var_w
 
 
 # ---------------------------------------------------------------------------
@@ -424,37 +347,6 @@ def spatial_analysis(
     }
 
 
-def _neighborhood_agreement_lcae(
-    P_sel: np.ndarray,
-    pointwise_var: np.ndarray,
-    W: Any,
-) -> Tuple[float, float]:
-    """
-    Compute neighborhood agreement (mean over points of fraction of neighbors with same consensus)
-    and LCAE (mean of local average variance). W is a PySAL weights object with .neighbors.
-    """
-    n_test = P_sel.shape[1]
-    consensus = (P_sel.mean(axis=0) >= 0.5).astype(int)
-    agreement_per_point = np.zeros(n_test)
-    local_avg_var = np.zeros(n_test)
-    neighbors = getattr(W, "neighbors", None)
-    if neighbors is None:
-        # Fallback: W might be sparse matrix with row indices
-        for i in range(n_test):
-            agreement_per_point[i] = 1.0
-            local_avg_var[i] = pointwise_var[i]
-        return float(np.mean(agreement_per_point)), float(np.mean(local_avg_var))
-    for i in range(n_test):
-        ne = neighbors.get(i, [])
-        if len(ne) == 0:
-            agreement_per_point[i] = 1.0
-            local_avg_var[i] = pointwise_var[i]
-        else:
-            agreement_per_point[i] = float(np.mean(consensus[ne] == consensus[i]))
-            local_avg_var[i] = float(np.mean(pointwise_var[ne]))
-    return float(np.mean(agreement_per_point)), float(np.mean(local_avg_var))
-
-
 # ---------------------------------------------------------------------------
 # 3b. Quadrant analysis: soft variance vs hard conflict
 # ---------------------------------------------------------------------------
@@ -463,8 +355,6 @@ def quadrant_analysis(
     var_p: np.ndarray,
     conflict: np.ndarray,
     *,
-    y_test: Optional[np.ndarray] = None,
-    P_mean: Optional[np.ndarray] = None,
     var_q: float = 0.9,
     conflict_q: float = 0.9,
     var_thresh: Optional[float] = None,
@@ -478,8 +368,6 @@ def quadrant_analysis(
     ----------
     var_p : pointwise variance, shape (n_obs,)
     conflict : pointwise conflict ratio, shape (n_obs,)
-    y_test : true labels (optional, for error rate / Brier)
-    P_mean : ensemble mean prediction (optional, for Brier)
     var_q, conflict_q : quantile thresholds (used when fixed thresholds are None)
     var_thresh, conflict_thresh : fixed thresholds (override quantile if given)
 
@@ -510,13 +398,6 @@ def quadrant_analysis(
             "mean_var_p": float(np.mean(var_p[mask])) if cnt > 0 else np.nan,
             "mean_conflict": float(np.mean(conflict[mask])) if cnt > 0 else np.nan,
         }
-        if y_test is not None and P_mean is not None and cnt > 0:
-            y_grp = np.asarray(y_test)[mask]
-            p_grp = np.asarray(P_mean)[mask]
-            pred_grp = (p_grp >= 0.5).astype(int)
-            row["error_rate"] = float(np.mean(pred_grp != y_grp))
-            row["brier"] = float(np.mean((p_grp - y_grp) ** 2))
-        rows.append(row)
 
     return {
         "var_thresh": vt,
@@ -725,9 +606,6 @@ def run_spatial(
         v, X_test, k=k, permutations=permutations, fdr_alpha=fdr_alpha, seed=seed
     )
     out["n_ll"] = int(np.sum(out["LL_mask"]))
-    na, lcae = _neighborhood_agreement_lcae(P_sel, v, out["W"])
-    out["neighborhood_agreement"] = na
-    out["lcae"] = lcae
 
     # Spatial analysis on conflict
     conflict_has_variance = float(np.var(c)) > 1e-15

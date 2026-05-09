@@ -1,3 +1,0 @@
-pool_type,n_dataset_family_groups,n_val_brier_rank_1,mean_validation_brier_importance,mean_top_non_performance_feature_importance
-Rashomon,15,7,0.2896745265180759,0.4980947591884819
-full_pool,15,11,0.5959161902578127,0.28464081281455234

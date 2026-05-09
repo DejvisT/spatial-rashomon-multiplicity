@@ -19,13 +19,13 @@ from __future__ import annotations
 
 from collections import Counter
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
 
-from analysis.run_analysis import load_meta, load_P_test, select_rashomon_per_family_k_each
-from analysis.hyperparams import ensure_hp_columns, make_hp_key
+from analysis.run_analysis import load_meta, select_rashomon_per_family_k_each
+from analysis.hyperparams import make_hp_key
 
 PathLike = Union[str, Path]
 
@@ -150,31 +150,6 @@ def select_pool_indices(
 # Core primitives
 # ---------------------------------------------------------------------------
 
-def select_rashomon_family(
-    run_dir: PathLike,
-    family: str,
-    K: int = 25,
-) -> Tuple[np.ndarray, int]:
-    """
-    Select top-K models within *family* by val_brier.
-
-    Returns
-    -------
-    idx : ndarray of int
-        Global indices into P_test / meta (row positions).
-    K_actual : int
-        Number of models actually selected (may be < K).
-    """
-    meta = load_meta(Path(run_dir))
-    family_mask = meta["model_name"] == family
-    fam_indices = np.where(family_mask)[0]
-    if len(fam_indices) == 0:
-        return np.array([], dtype=int), 0
-    K_actual = min(K, len(fam_indices))
-    fam_brier = meta.loc[family_mask, "val_brier"].values
-    order = np.argsort(fam_brier)[:K_actual]
-    return fam_indices[order], K_actual
-
 
 def compute_Vm(
     P_sel: np.ndarray,
@@ -296,157 +271,6 @@ def hp_importance_Vm(
     if not rows:
         return pd.DataFrame()
     return pd.DataFrame(rows).sort_values("ratio_of_sums", ascending=False).reset_index(drop=True)
-
-
-# ---------------------------------------------------------------------------
-# Marginal V_m by HP value (for marginal-effect plots)
-# ---------------------------------------------------------------------------
-
-def marginal_Vm_by_hp(
-    V_m: np.ndarray,
-    meta_sel: pd.DataFrame,
-    hp_col: str,
-) -> pd.DataFrame:
-    """
-    Group V_m by HP value and return mean/std/count per group.
-    Useful for marginal-effect scatter/bar plots.
-    """
-    keys = np.array([make_hp_key(v) for v in meta_sel[hp_col].values], dtype=object)
-    valid = keys != "nan"
-    V_v, keys_v = V_m[valid], keys[valid]
-
-    rows = []
-    for k in sorted(set(keys_v)):
-        group = V_v[keys_v == k]
-        rows.append({
-            "hp_value": k,
-            "mean_Vm": float(np.mean(group)),
-            "std_Vm": float(np.std(group)) if len(group) > 1 else 0.0,
-            "count": int(len(group)),
-        })
-    return pd.DataFrame(rows)
-
-
-# ---------------------------------------------------------------------------
-# Multi-seed loop
-# ---------------------------------------------------------------------------
-
-def run_hp_importance_all_seeds(
-    dataset_dir: Path,
-    dataset: str,
-    K: int = 25,
-    *,
-    pool_type: str = POOL_TYPE_RASHOMON,
-    rashomon_k_each: Optional[int] = None,
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """
-    Iterate over all seed runs and families. For each (seed, family) within the
-    selected candidate pool:
-
-      - restrict to that family's models in the pool
-      - compute V_m (disagreement contribution within the family)
-      - compute HP importance on V_m
-
-    Parameters
-    ----------
-    K
-        When ``rashomon_k_each`` is omitted, used as the per-family Rashomon size
-        (backward compatible).
-    pool_type, rashomon_k_each
-        See ``select_pool_indices``; default matches the historical top-K-per-family
-        Rashomon construction.
-    """
-    k_each = int(rashomon_k_each if rashomon_k_each is not None else K)
-
-    run_dirs = sorted(
-        [p for p in dataset_dir.iterdir() if p.is_dir() and p.name.startswith("seed=")],
-        key=lambda p: int(p.name.split("=")[1]),
-    )
-    if not run_dirs:
-        return pd.DataFrame(), pd.DataFrame()
-
-    # First pass: collect all meta for each family to determine grouping
-    family_hp_values = {}
-    for run_dir in run_dirs:
-        seed_val = int(run_dir.name.split("=")[1])
-        meta = load_meta(run_dir)
-        meta = ensure_hp_columns(meta)
-        pool_idx = select_pool_indices(run_dir, pool_type=pool_type, rashomon_k_each=k_each)
-        if pool_idx.size == 0:
-            continue
-        meta_pool = meta.iloc[pool_idx].reset_index(drop=True)
-        families = sorted(meta_pool["model_name"].unique())
-
-        for family in families:
-            fam_mask = (meta_pool["model_name"] == family).values
-            if fam_mask.sum() < 3:
-                continue
-            meta_sel = meta_pool.loc[fam_mask].reset_index(drop=True)
-            
-            if family not in family_hp_values:
-                family_hp_values[family] = {}
-            
-            for hp_col in [c for c in meta_sel.columns if c.startswith("hp_")]:
-                hp_name = hp_col.replace("hp_", "")
-                if hp_name not in family_hp_values[family]:
-                    family_hp_values[family][hp_name] = []
-                family_hp_values[family][hp_name].extend([make_hp_key(v) for v in meta_sel[hp_col].dropna()])
-
-    # Determine grouping per family-hp
-    grouping_info = {}
-    for family, hp_dict in family_hp_values.items():
-        grouping_info[family] = {}
-        for hp_name, values in hp_dict.items():
-            grouping_type, bins = determine_hp_grouping(pd.Series(values))
-            grouping_info[family][hp_name] = (grouping_type, bins)
-
-    # Second pass: compute importance per seed
-    imp_rows = []
-    vm_rows = []
-
-    for run_dir in run_dirs:
-        seed_val = int(run_dir.name.split("=")[1])
-        meta = load_meta(run_dir)
-        P_test = load_P_test(run_dir)
-        meta = ensure_hp_columns(meta)
-        pool_idx = select_pool_indices(run_dir, pool_type=pool_type, rashomon_k_each=k_each)
-        if pool_idx.size == 0:
-            continue
-        meta_pool = meta.iloc[pool_idx].reset_index(drop=True)
-        P_pool = P_test[pool_idx]
-        families = sorted(meta_pool["model_name"].unique())
-
-        for family in families:
-            fam_mask = (meta_pool["model_name"] == family).values
-            K_actual = int(fam_mask.sum())
-            if K_actual < 3:
-                continue
-            P_sel = P_pool[fam_mask]
-            meta_sel = meta_pool.loc[fam_mask].reset_index(drop=True)
-
-            V_m = compute_Vm(P_sel)
-            fam_grouping = grouping_info.get(family, {})
-            imp = hp_importance_Vm(V_m, meta_sel, fam_grouping)
-            if not imp.empty:
-                imp = imp.copy()
-                imp["dataset"] = dataset
-                imp["seed"] = seed_val
-                imp["family"] = family
-                imp["pool_type"] = pool_type
-                imp["subset"] = "all"
-                imp["K_actual"] = K_actual
-                imp_rows.append(imp)
-
-            vm_df = meta_sel[["model_name"] + [c for c in meta_sel.columns if c.startswith("hp_")]].copy()
-            vm_df["V_m"] = V_m
-            vm_df["seed"] = seed_val
-            vm_df["family"] = family
-            vm_df["pool_type"] = pool_type
-            vm_rows.append(vm_df)
-
-    df_per_seed = pd.concat(imp_rows, ignore_index=True) if imp_rows else pd.DataFrame()
-    df_Vm = pd.concat(vm_rows, ignore_index=True) if vm_rows else pd.DataFrame()
-    return df_per_seed, df_Vm
 
 
 # ---------------------------------------------------------------------------
