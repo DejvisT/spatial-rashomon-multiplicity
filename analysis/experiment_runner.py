@@ -24,24 +24,14 @@ if str(_ROOT / "src") not in sys.path:
 from analysis.run_analysis import (  # noqa: E402
     load_config,
     load_meta,
-    load_P_test,
-    load_split,
     run_multiplicity,
     run_spatial,
     run_null,
     run_spatial_per_family,
-    select_rashomon_global,
-    pointwise_conflict,
-    hard_vote_variance,
     quadrant_analysis,
 )
 from analysis.preprocessing import get_transformed_test_features  # noqa: E402
 from analysis.knn_defaults import default_k_nn  # noqa: E402
-
-try:
-    from sklearn.metrics import brier_score_loss  # noqa: E402
-except ImportError:
-    brier_score_loss = None
 
 PathLike = Union[str, Path]
 
@@ -237,9 +227,7 @@ def _run_single(
     dataset_name: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    For one run: multiplicity, spatial (Moran + HH count + n_ll, neighborhood_agreement, lcae),
-    null (empirical p-value). If dataset_name is provided, also compute performance
-    (acc_mean, brier_mean, acc_ensemble, brier_ensemble) over Rashomon and ensemble.
+    For one run: multiplicity, spatial metrics, conflict metrics, quadrant summaries, and null results.
     """
     mult = run_multiplicity(run_dir, K=K, epsilon=epsilon)
     spatial = run_spatial(run_dir, X_test, K=K, k=k_nn, seed=seed)
@@ -260,8 +248,6 @@ def _run_single(
     null_std = float(np.std(null_moran, ddof=1))
     moran_p_sim = float(spatial["moran_p_sim"])
     n_ll = int(spatial["n_ll"])
-    neighborhood_agreement = float(spatial["neighborhood_agreement"])
-    lcae = float(spatial["lcae"])
 
     out = {
         "mean_variance": mult["mean_variance"],
@@ -279,8 +265,6 @@ def _run_single(
         "conflict_n_hh": int(spatial.get("conflict_n_hh", 0)),
         "conflict_n_ll": int(spatial.get("conflict_n_ll", 0)),
         "hh_jaccard_var_conflict": float(spatial.get("hh_jaccard_var_conflict", np.nan)),
-        "neighborhood_agreement": neighborhood_agreement,
-        "lcae": lcae,
         "p_empirical": p_empirical,
         "significant_moran": p_empirical < 0.05,
         "p_empirical_hh": p_empirical_hh,
@@ -296,47 +280,13 @@ def _run_single(
     out["_pointwise_conflict"] = mult["pointwise_conflict"]
     out["_var_hard"] = mult["var_hard"]
 
-    if dataset_name is not None and brier_score_loss is not None:
-        from data import load_dataset  # noqa: E402
-        _, y, _ = load_dataset(dataset_name)
-        split = load_split(run_dir)
-        y_test = np.asarray(y.iloc[split["test"]].values).flatten()
-        P_test = load_P_test(run_dir)
-        idx = select_rashomon_global(run_dir, K=K)
-        P_sel = P_test[idx]
-        acc_per_model = []
-        brier_per_model = []
-        for m in range(P_sel.shape[0]):
-            p = P_sel[m]
-            y_pred = (p >= 0.5).astype(int)
-            acc_per_model.append(float(np.mean(y_pred == y_test)))
-            brier_per_model.append(float(brier_score_loss(y_test, p)))
-        P_ens = P_sel.mean(axis=0)
-        acc_ensemble = float(np.mean((P_ens >= 0.5).astype(int) == y_test))
-        brier_ensemble = float(brier_score_loss(y_test, P_ens))
-        out["acc_mean"] = float(np.mean(acc_per_model))
-        out["brier_mean"] = float(np.mean(brier_per_model))
-        out["acc_ensemble"] = acc_ensemble
-        out["brier_ensemble"] = brier_ensemble
-
-        # Quadrant analysis (requires labels)
-        qa = quadrant_analysis(
-            mult["pointwise_variance"],
-            mult["pointwise_conflict"],
-            y_test=y_test,
-            P_mean=P_ens,
-        )
-        out["_quadrant_summary"] = qa["summary"]
-        out["quadrant_var_thresh"] = qa["var_thresh"]
-        out["quadrant_conflict_thresh"] = qa["conflict_thresh"]
-    else:
-        qa = quadrant_analysis(
-            mult["pointwise_variance"],
-            mult["pointwise_conflict"],
-        )
-        out["_quadrant_summary"] = qa["summary"]
-        out["quadrant_var_thresh"] = qa["var_thresh"]
-        out["quadrant_conflict_thresh"] = qa["conflict_thresh"]
+    qa = quadrant_analysis(
+    mult["pointwise_variance"],
+    mult["pointwise_conflict"],
+    )
+    out["_quadrant_summary"] = qa["summary"]
+    out["quadrant_var_thresh"] = qa["var_thresh"]
+    out["quadrant_conflict_thresh"] = qa["conflict_thresh"]
 
     return out
 
@@ -401,12 +351,8 @@ def run_dataset_experiment(
                 "n_hh_mean", "n_ll_mean", "n_ll_std",
                 "conflict_moran_i_mean", "conflict_n_hh_mean",
                 "hh_jaccard_var_conflict_mean", "hh_jaccard_var_conflict_std",
-                "neighborhood_agreement_mean", "neighborhood_agreement_std",
-                "lcae_mean", "lcae_std",
                 "frac_significant_moran",
-                "null_mean", "null_std",
-                "acc_mean_mean", "acc_mean_std", "brier_mean_mean", "brier_mean_std",
-                "acc_ensemble_mean", "brier_ensemble_mean",
+                "null_mean", "null_std"
             ]
         )
 
@@ -462,16 +408,9 @@ def run_dataset_experiment(
             "p_empirical_hh": r["p_empirical_hh"],
             "null_n_hh_mean": r["null_n_hh_mean"],
             "null_n_hh_std": r["null_n_hh_std"],
-            "neighborhood_agreement": r["neighborhood_agreement"],
-            "lcae": r["lcae"],
             "null_mean": r["null_mean"],
             "null_std": r["null_std"],
         }
-        if "acc_mean" in r:
-            row["acc_mean"] = r["acc_mean"]
-            row["brier_mean"] = r["brier_mean"]
-            row["acc_ensemble"] = r["acc_ensemble"]
-            row["brier_ensemble"] = r["brier_ensemble"]
         return row
 
     per_run = pd.DataFrame([_row(r) for r in records])
@@ -525,8 +464,6 @@ def run_dataset_experiment(
     conflict_moran = np.array([r["conflict_moran_i"] for r in records])
     conflict_n_hh = np.array([r["conflict_n_hh"] for r in records])
     hh_jaccard_vc = np.array([r["hh_jaccard_var_conflict"] for r in records])
-    na = np.array([r["neighborhood_agreement"] for r in records])
-    lcae = np.array([r["lcae"] for r in records])
     sig = np.array([r["significant_moran"] for r in records])
     sig_hh = np.array([r["significant_hh"] for r in records])
     null_mean_arr = np.array([r["null_mean"] for r in records])
@@ -565,25 +502,12 @@ def run_dataset_experiment(
         "conflict_n_hh_mean": float(np.nanmean(conflict_n_hh)),
         "hh_jaccard_var_conflict_mean": hh_jaccard_mean,
         "hh_jaccard_var_conflict_std": hh_jaccard_std,
-        "neighborhood_agreement_mean": _mean_std(na)[0],
-        "neighborhood_agreement_std": _mean_std(na)[1],
-        "lcae_mean": _mean_std(lcae)[0],
-        "lcae_std": _mean_std(lcae)[1],
         "frac_significant_moran": float(np.mean(sig)),
         "frac_significant_hh": float(np.mean(sig_hh)),
         "null_mean": float(np.mean(null_mean_arr)),
         "null_std": float(np.mean(null_std_arr)),
         "null_n_hh_mean": float(np.mean(null_n_hh_mean_arr)),
     }
-    if "acc_mean" in records[0]:
-        acc_mean = np.array([r["acc_mean"] for r in records])
-        brier_mean = np.array([r["brier_mean"] for r in records])
-        acc_ens = np.array([r["acc_ensemble"] for r in records])
-        brier_ens = np.array([r["brier_ensemble"] for r in records])
-        row["acc_mean_mean"], row["acc_mean_std"] = _mean_std(acc_mean)
-        row["brier_mean_mean"], row["brier_mean_std"] = _mean_std(brier_mean)
-        row["acc_ensemble_mean"] = float(np.mean(acc_ens))
-        row["brier_ensemble_mean"] = float(np.mean(brier_ens))
 
     _run_per_family_spatial_across_seeds(
         dataset_dir,
