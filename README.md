@@ -4,22 +4,22 @@ MSc thesis project investigating **predictive multiplicity** in Rashomon sets us
 
 ## Overview
 
-Many datasets admit multiple near-optimal models that disagree on individual predictions. This project uses spatial autocorrelation (Moran's I and LISA) on kNN feature-space graphs to identify where near-optimal models disagree, revealing coherent multiplicity hotspot regions rather than only global disagreement metrics. Extended analyses include soft (weighted) Rashomon sets, spatial correlograms for distance-decay structure, Gower-distance and PCA-based kNN for mixed-type features, and bootstrap ablation for robustness testing.
+Many datasets admit multiple near-optimal models that disagree on individual predictions. This project uses observation-wise predictive variance and conflict ratio together with spatial autocorrelation methods (Moran's I and LISA) on kNN feature-space graphs to identify localized multiplicity hotspot regions. The final analyses cover benchmark datasets, null testing, hotspot stability, global vs per-family Rashomon sets, robustness checks, hyperparameter and family importance, synthetic validation, interpretable rules, decision-boundary proximity, and subgroup exposure diagnostics.
 
 ## Datasets
 
-- **COMPAS** (recidivism prediction)
-- **German Credit** (UCI)
-- **Breast Cancer** (sklearn / UCI)
-- Synthetic datasets with planted ambiguous regions (for validation)
+- COMPAS
+- German Credit
+- Adult
+- Synthetic single-island and three-islands datasets
 
 ## Pipeline
 
 ```
 1. Train candidate models    →  run_training_pipeline.py
-2. Select Rashomon sets      →  analysis/run_analysis.py (hard threshold & soft/weighted)
-3. Compute spatial metrics   →  analysis/spatial.py, analysis/run_analysis.py (Moran, LISA)
-4. Robustness testing        →  analysis/bootstrap_ablation.py
+2. Train fixed-test runs     →  run_training_pipeline_fixed_test.py
+3. Select Rashomon sets      →  analysis/run_analysis.py
+4. Compute spatial metrics   →  analysis/spatial.py, analysis/run_analysis.py (Moran, LISA)
 5. Analyze in notebooks      →  notebooks/01–10
 ```
 
@@ -41,7 +41,7 @@ python run_training_pipeline_fixed_test.py
 
 | Directory     | Contents                                                      |
 |---------------|---------------------------------------------------------------|
-| `analysis/`   | Reusable analysis modules (spatial, stability, calibration, rules, hyperparams, bootstrap_ablation) |
+| `analysis/`   | Reusable analysis modules (spatial, stability, calibration, rules, hyperparameter and family analyses) |
 | `src/`        | Core utilities (data loading, training pipeline, synthetic data) |
 | `notebooks/`  | Analysis notebooks 01–10                                      |
 | `data/`       | Raw datasets (COMPAS CSV; others fetched via sklearn)         |
