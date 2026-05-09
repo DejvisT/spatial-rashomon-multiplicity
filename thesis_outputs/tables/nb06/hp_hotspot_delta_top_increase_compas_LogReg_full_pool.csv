@@ -1,0 +1,3 @@
+dataset,family,pool_type,hp,mean_delta,std_delta,n_seeds
+compas,LogReg,full_pool,C,0.00393501932071072,0.0027515702653597178,10
+compas,LogReg,full_pool,l1_ratio,0.0005138204650906412,0.0028442844944509115,10

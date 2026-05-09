@@ -1,0 +1,4 @@
+dataset,family,pool_type,hp,mean_delta,std_delta,n_seeds
+adult,MLP,Rashomon,activation,0.028960867286111573,0.01097894896511687,10
+adult,MLP,Rashomon,learning_rate_init,0.016930859851327307,0.012354193073151488,10
+adult,MLP,Rashomon,alpha,0.004458322224112516,0.010405673332886896,10

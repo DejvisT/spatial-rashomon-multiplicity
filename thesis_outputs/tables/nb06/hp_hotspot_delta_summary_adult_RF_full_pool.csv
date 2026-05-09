@@ -1,0 +1,6 @@
+dataset,family,pool_type,hp,mean_delta,std_delta,n_seeds
+adult,RF,full_pool,max_features,0.01325956923185391,0.007984155789732744,10
+adult,RF,full_pool,min_samples_split,-0.0001382912419278147,0.005244283550350986,10
+adult,RF,full_pool,n_estimators,-0.0009294740559188181,0.0031392357383033375,10
+adult,RF,full_pool,min_samples_leaf,-0.005185245163871886,0.005330057851576678,10
+adult,RF,full_pool,max_depth,-0.017071944241849137,0.01685545929622331,10

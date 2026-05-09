@@ -1,0 +1,5 @@
+dataset,pool_type,subset,family,hp_name,mean_importance,std_importance,n_seeds,mean_V_m,mean_rank,rank_freq_top1,rank_freq_top3,grouping_type,n_groups,min_group_size
+compas,Rashomon,all,LogReg,C,0.469236513058357,0.26321590032432896,10,5.982223858097044e-05,1.0,1.0,1.0,numeric_tertile,2.8,5.1
+compas,Rashomon,all,LogReg,l1_ratio,0.06822170667782257,0.0497153183424786,10,5.982223858097044e-05,2.0,0.0,1.0,numeric_tertile,3.0,4.7
+compas,full_pool,all,LogReg,C,0.4157299322912157,0.09544786427407041,10,0.005934612332792318,1.0,1.0,1.0,numeric_tertile,3.0,13.3
+compas,full_pool,all,LogReg,l1_ratio,0.03175585587808007,0.021763519720938818,10,0.005934612332792318,2.0,0.0,1.0,numeric_tertile,3.0,10.5

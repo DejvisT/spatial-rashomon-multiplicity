@@ -19,6 +19,8 @@ _EXPORT_SENSITIVITY_DATASETS = ("compas", "german", "adult")
 
 _INCLUDEGRAPHICS_RE = re.compile(r"\\includegraphics(?:\[[^\]]*\])*\{([^}]+)\}")
 
+_ALWAYS_EXPORT_FIGURES = {"decomp_hp_secondary_bar_rashomon_grid.pdf"}
+
 
 def _iter_tex_sources(overleaf_bundle: Path) -> Iterator[Path]:
     thesis = overleaf_bundle / "thesis.tex"
@@ -97,8 +99,9 @@ def copy_notebook_figures(
     else:
         # Do not copy over PDFs this export script generates into fig_dir (notebooks may have stale homonyms).
         from_trees = thesis_refs - export_pdfs
-        to_copy = [(n, by_name[n]) for n in sorted(from_trees) if n in by_name]
-        missing_sources = from_trees - frozenset(by_name.keys())
+        allow_names = from_trees | _ALWAYS_EXPORT_FIGURES
+        to_copy = [(n, by_name[n]) for n in sorted(allow_names) if n in by_name]
+        missing_sources = allow_names - frozenset(by_name.keys())
         for n in sorted(missing_sources):
             print(
                 f"Warning: thesis references {n} but no PDF found under "
@@ -125,7 +128,7 @@ def copy_notebook_figures(
             )
 
     if prune_orphans:
-        keep = thesis_refs | export_pdfs
+        keep = thesis_refs | export_pdfs | _ALWAYS_EXPORT_FIGURES
         removed = 0
         for f in sorted(fig_dir.glob("*.pdf")):
             if f.name not in keep:

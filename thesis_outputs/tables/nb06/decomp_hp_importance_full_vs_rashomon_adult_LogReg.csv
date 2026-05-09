@@ -1,0 +1,5 @@
+dataset,pool_type,subset,family,hp,mean_importance,std_importance,n_seeds,mean_rank,rank_freq_top1,rank_freq_top3
+adult,Rashomon,all,LogReg,C,0.9672703301157248,0.022546210337018844,10,1.0,1.0,1.0
+adult,Rashomon,all,LogReg,l1_ratio,0.1005643614668641,0.05333003319648769,10,2.0,0.0,1.0
+adult,full_pool,all,LogReg,C,0.9753689607035817,0.012758954442056894,10,1.0,1.0,1.0
+adult,full_pool,all,LogReg,l1_ratio,0.052215327273106696,0.021162993042514275,10,2.0,0.0,1.0
