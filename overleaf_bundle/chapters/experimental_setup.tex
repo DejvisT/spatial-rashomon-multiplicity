@@ -197,48 +197,50 @@ significant.
 
 \subsection{Interpretation and Attribution Analyses}
 
-The following analyses are used to identify the sources of predictive multiplicity and to
-characterize hotspot regions in terms of original features.
-
-\paragraph{Hyperparameter variance decomposition.}
-\label{sec:exp-hp-decomp}
-To attribute predictive multiplicity to hyperparameters, we decompose disagreement among
-Rashomon models within each family. This requires per-family Rashomon selection
-(top-$K$ within each family; Section~\ref{sec:exp-rashomon}) so that hyperparameter
-values are family-specific.
-
-Let $P^{(j)} \in \mathbb{R}^{K_j \times N_{\text{test}}}$ denote the test predictions of the
-within-family Rashomon set for family $j$, and let $\bar{p}_i^{(j)}$ denote the
-family-ensemble mean prediction for observation $i$. The disagreement contribution of
-model $m$ is
-\begin{equation}
-  V_m = \frac{1}{N_{\text{test}}}\sum_{i=1}^{N_{\text{test}}}
-  \bigl(\hat{p}_{mi}^{(j)} - \bar{p}_i^{(j)}\bigr)^2.
-  \label{eq:Vm}
-\end{equation}
-For a hyperparameter $h$ with $G$ distinct values, the $K_j$ models are partitioned into
-groups $\{S_1,\dots,S_G\}$ according to their value of $h$. A one-way variance
-decomposition yields the between-group component
-$\mathrm{Var}_{\text{between}}(h)$ and the within-group component
-$\mathrm{Var}_{\text{within}}(h)$. The importance of hyperparameter $h$ is defined as
-\begin{equation}
-  \rho(h) = \frac{\mathrm{Var}_{\text{between}}(h)}{\mathrm{Var}_{\text{total}}}.
-  \label{eq:hp-importance}
-\end{equation}
-Hyperparameter columns with fewer than two unique values are excluded. The procedure
-is repeated over all outer seeds, and results are aggregated by mean importance, standard
-deviation, and rank stability. The same analysis can be restricted to HH observations in
-order to identify hotspot-specific drivers.
+The following analyses are used to identify which modeling choices drive predictive multiplicity and to characterize hotspot regions in terms of original features. The attribution analyses are descriptive rather than causal: they quantify how disagreement varies with model family and hyperparameter choices within the sampled candidate pool.
 
 \paragraph{Family importance.}
-\label{sec:exp-hp-family}
-For each benchmark dataset and each of the 10 outer seeds, we compute:
-(i) per-family Rashomon sets (top-25 within each family),
-(ii) between-family versus within-family variance decomposition,
-(iii) within-family hyperparameter importance $\rho(h)$
-(Eq.~\ref{eq:hp-importance}),
-(iv) HH-specific hyperparameter importance, and
-(v) family importance on all test points, HH points only, and non-HH points only.
+We first decompose predictive variance into between-family and within-family components. For each dataset and outer seed, we construct per-family Rashomon sets by selecting the top 25 models within each model family. Let \(\mathcal{F}\) denote the set of model families, and let \(\bar{p}_{fi}\) be the mean prediction of family \(f\) for observation \(i\). The overall ensemble mean is denoted by \(\bar{p}_i\). The between-family component measures how much the family-level mean predictions differ from the overall mean, while the within-family component measures residual variation among models inside each family. Family importance is defined as
+\[
+\mathrm{FI}
+=
+\frac{\mathrm{Var}_{\mathrm{between\ family}}}
+{\mathrm{Var}_{\mathrm{total}}}.
+\]
+A value close to one indicates that predictive multiplicity is mainly explained by broad model-family choice, whereas lower values indicate that more variation remains within families. This decomposition is computed on all test observations and repeated on the subsets of HH and non-HH observations to assess whether family choice is especially important inside multiplicity hotspots.
+
+\paragraph{Within-family hyperparameter importance.}
+After separating the between-family component, we analyze which hyperparameters explain the remaining disagreement within each family. Let \(P^{(j)} \in \mathbb{R}^{K_j \times N_{\mathrm{test}}}\) denote the test predictions of the within-family Rashomon set for family \(j\), and let \(\bar{p}^{(j)}_i\) denote the family-ensemble mean prediction for observation \(i\). The model-level disagreement contribution of model \(m\) is
+\[
+V_m =
+\frac{1}{N_{\mathrm{test}}}
+\sum_{i=1}^{N_{\mathrm{test}}}
+\left(
+\hat{p}^{(j)}_{mi} - \bar{p}^{(j)}_i
+\right)^2 .
+\]
+Thus, \(V_m\) measures how strongly model \(m\)'s predictions deviate from the average prediction of its own family.
+
+For each hyperparameter \(h\), models are grouped according to the observed value or range of that hyperparameter. Categorical hyperparameters and numeric hyperparameters with at most four distinct values are grouped by exact value. Numeric hyperparameters with more than four distinct values are discretized into three quantile bins. If the resulting groups have insufficient support, or fewer than two valid groups remain, the hyperparameter is excluded for that seed. A one-way variance decomposition of \(V_m\) across the groups yields a between-group component \(\mathrm{Var}_{\mathrm{between}}(h)\) and total component \(\mathrm{Var}_{\mathrm{total}}\). Hyperparameter importance is defined as
+\[
+\rho(h)
+=
+\frac{\mathrm{Var}_{\mathrm{between}}(h)}
+{\mathrm{Var}_{\mathrm{total}}}.
+\]
+The procedure is repeated across outer seeds, and results are aggregated by mean importance, standard deviation, and the number of valid seeds.
+
+\paragraph{Hotspot-specific hyperparameter shifts.}
+To assess whether hyperparameter effects differ inside multiplicity hotspots, the same \(V_m\)-based importance calculation is repeated on HH observations. For each hyperparameter, we compare its hotspot-specific importance to its global importance:
+\[
+\Delta \rho(h)
+=
+\rho_{\mathrm{HH}}(h) - \rho_{\mathrm{all}}(h).
+\]
+Positive values indicate that the hyperparameter explains a larger share of within-family disagreement inside HH regions, while negative values indicate lower importance inside hotspots. Because HH subsets can be small, especially on German Credit, these estimates are interpreted descriptively and are reported with seed coverage where relevant.
+
+\paragraph{Performance-control meta-model diagnostic.}
+Finally, we perform a diagnostic analysis to assess whether hyperparameter effects mainly proxy for validation performance. For each dataset--family combination, we fit a model-level meta-model predicting \(V_m\) from grouped hyperparameters and validation Brier score. This analysis is not used as the primary attribution result, because validation Brier score is a performance metric rather than a hyperparameter and the meta-model is descriptive rather than causal. Its purpose is to compare the role of validation performance with the role of non-performance hyperparameters, both in the Rashomon set and in the full candidate pool.
 
 \paragraph{Interpretable rule extraction.}
 To characterize high-multiplicity regions in terms of original features, interpretable rules

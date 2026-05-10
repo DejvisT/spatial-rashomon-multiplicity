@@ -37,17 +37,9 @@ Figure~\ref{fig:between_ratio_hist} shows the per-observation distribution of th
 
 
 
-\subsection{Alternative Local Statistics (Gi*)}
-\label{sec:appendix-gistar}
-
-To verify that the observed hotspot structure is not specific to local Moran's $I$, we also apply the Getis--Ord Gi* statistic. Whereas LISA detects relative local association, Gi* emphasizes regions of high absolute intensity.
-
-Empirically, Gi* hotspots form a subset of the LISA hotspots and exhibit substantially higher predictive variance. This suggests that the hotspot regions contain an internal structure, with a high-intensity core surrounded by a broader area of elevated instability. Thus, the existence of localized multiplicity does not depend on a single local statistic, even though different statistics emphasize different parts of the hotspot geometry.
 
 
-\begin{figure}[htbp] \centering \includegraphics[width=0.7\textwidth]{fairness_hh_rate_by_race_compas.pdf} \caption{HH rate by race on COMPAS (mean $\pm$ std across 10 seeds). African-Americans have a higher HH rate than Caucasians and Hispanics.} \label{fig:fairness_hh_race} \end{figure}
-
-
+\subsection{Additional Rule-Extraction Results}
 
 \begin{table}[htbp]
 \centering
@@ -64,3 +56,10 @@ Empirically, Gi* hotspots form a subset of the LISA hotspots and exhibit substan
 \label{tab:rules_compas_features_global}
 \input{presentation_assets/tab/interpretable_rule_features_compas.tex}
 \end{table}
+
+\FloatBarrier
+
+\subsection{Additional Fairness Exposure Diagnostics}
+
+
+\begin{figure}[htbp] \centering \includegraphics[width=0.7\textwidth]{fairness_hh_rate_by_race_compas.pdf} \caption{HH rate by race on COMPAS (mean $\pm$ std across 10 seeds). African-Americans have a higher HH rate than Caucasians and Hispanics.} \label{fig:fairness_hh_race} \end{figure}
