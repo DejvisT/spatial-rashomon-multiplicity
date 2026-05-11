@@ -25,7 +25,7 @@ import numpy as np
 import pandas as pd
 
 from analysis.run_analysis import load_meta, select_rashomon_per_family_k_each
-from analysis.hyperparams import make_hp_key
+from analysis.hp_decomposition import make_hp_key
 
 PathLike = Union[str, Path]
 

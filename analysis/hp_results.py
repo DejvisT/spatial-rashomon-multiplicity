@@ -25,7 +25,7 @@ from analysis.hp_analysis import (
     hp_importance_Vm,
     select_pool_indices,
 )
-from analysis.hyperparams import (
+from analysis.hp_decomposition import (
     compute_family_importance,
     compute_within_family_hp_importance,
     ensure_hp_columns,
