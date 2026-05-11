@@ -207,38 +207,3 @@ def summarize_hh_stability(
     }
     base.update(hh_point_level_support_metrics(freqs))
     return base
-
-
-# ---------------------------------------------------------------------
-# Region-level stability metrics
-# ---------------------------------------------------------------------
-
-def hh_frequency_mass(
-    hh_freq: np.ndarray,
-    components: Dict[int, np.ndarray],
-    top_n: int = 1,
-) -> float:
-    """
-    Proportion of total HH-frequency mass concentrated in the top-N components.
-
-    Parameters
-    ----------
-    hh_freq : per-point HH selection frequency (from hh_selection_frequency)
-    components : dict mapping comp_id -> array of point indices (from one seed)
-    top_n : number of top components (by total frequency mass) to consider
-
-    Returns
-    -------
-    Fraction of total HH frequency mass in the top-N components.
-    """
-    total_mass = float(hh_freq.sum())
-    if total_mass < 1e-12 or len(components) == 0:
-        return 0.0
-
-    comp_masses = []
-    for cid, indices in components.items():
-        comp_masses.append(float(hh_freq[indices].sum()))
-    comp_masses.sort(reverse=True)
-
-    top_mass = sum(comp_masses[:top_n])
-    return top_mass / total_mass
