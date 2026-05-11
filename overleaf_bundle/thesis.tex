@@ -3,14 +3,15 @@
 % All figures and generated tables live in presentation_assets/ to keep Overleaf portability.
 
 \usepackage[]{graphicx}
-% Figures: notebooks save to figures/, figures/nb01/, figures/nb02/, figures/nb03/. Add paths for Overleaf:
-\graphicspath{{presentation_assets/fig/}{../figures/}{../figures/nb01/}{../figures/nb02/}{../figures/nb03/}}
+\graphicspath{{presentation_assets/fig/}}
 \usepackage[]{color}
 \usepackage{alltt}
 \usepackage{amsmath}
 \usepackage{multirow}
 \usepackage{booktabs}
-\newcommand{\mytitle}{Predictive Multiplicity in Rashomon Sets via Observation-Wise Variance: Identifying Subgroups by Features and Hyperparameter Sensitivity}
+\usepackage{placeins}
+
+\newcommand{\mytitle}{Variance-Based Analysis of Predictive Multiplicity in Rashomon Sets}
 \newcommand{\myname}{Dejvis Toptani}
 \newcommand{\mysupervisor}{Dr. Giuseppe Casalicchio}
 
@@ -74,7 +75,7 @@ Ludwig-Maximilians-Universität München
 \vfill
 
 \large
-Munich, Month Day\textsuperscript{th}, Year
+Munich, June 29\textsuperscript{th}, 2026
       
 \vfill
 
@@ -99,13 +100,14 @@ Supervised by \mysupervisor
 
 \begin{abstract}
 
-Modern machine learning pipelines often produce many models with near-identical predictive performance, yet these models can disagree substantially on individual predictions---a phenomenon known as \emph{predictive multiplicity}. Existing metrics quantify this disagreement globally but do not reveal \emph{where} in the feature space instability concentrates or \emph{what} drives it.
+Modern machine learning pipelines often produce many models with near-identical predictive performance, yet these models can disagree substantially on individual predictions—a phenomenon known as \emph{predictive multiplicity}. Existing approaches quantify this disagreement at the aggregate level but do not reveal \emph{where} in the feature space it concentrates or \emph{which} modeling choices drive it.
 
-This thesis proposes a spatial analysis framework for predictive multiplicity. We compute observation-wise predictive variance across a Rashomon set of near-optimal models and apply spatial statistics---global Moran's $I$ and Local Indicators of Spatial Association (LISA)---to detect, localize, and test the significance of multiplicity hotspots in feature space. We decompose variance into between-family and within-family (hyperparameter) components and extract interpretable rules that describe high-multiplicity regions.
+This thesis introduces a spatial analysis framework for predictive multiplicity. We compute observation-wise predictive variance across a Rashomon set of near-optimal models and analyze its structure using spatial statistics, including global Moran’s $I$ and Local Indicators of Spatial Association (LISA). This enables the detection, localization, and statistical validation of \emph{multiplicity hotspots}—regions in feature space where predictions are particularly model-dependent. We further decompose predictive variance into between-family and within-family (hyperparameter) components and analyze how these drivers vary across the feature space.
 
-Experiments on three benchmark datasets (COMPAS, German Credit, Breast Cancer) with five model families, 250 candidate models, and 10 independent runs each show that: (i) predictive variance is spatially clustered (Moran's $I$ significant in 90\% of runs); (ii) model family explains 41--62\% of prediction variance, rising to 52--69\% inside hotspots; (iii) hotspot regions are robust to the Rashomon set size, neighborhood graph density, post-hoc calibration, and alternative distance metrics; and (iv) on COMPAS, hotspots are not reducible to decision-boundary proximity and can be described by compact rules involving age and prior criminal history. Validation on synthetic data with known ambiguous regions confirms that the pipeline recovers ground-truth instability with precision 0.99 and recall 0.91.
+Experiments on three benchmark datasets with five model families confirm that predictive multiplicity is consistently spatially structured and non-random. Model family accounts for a substantial share of disagreement, with particularly strong
+hotspot-specific contributions on COMPAS and Adult. These patterns are robust to changes in Rashomon set size, neighborhood definition, probability calibration, and graph construction. Synthetic experiments with known ambiguous regions validate the pipeline's ability to recover ground-truth instability. High-multiplicity regions can additionally be characterized by compact, interpretable rules in the original feature space.
 
-These findings demonstrate that predictive multiplicity is not merely a global nuisance but a spatially structured phenomenon that concentrates in identifiable subpopulations, with implications for the reliability, fairness, and interpretability of automated decision systems.
+The results suggest that predictive multiplicity is not merely a global property of model classes, but a localized phenomenon affecting specific subpopulations. The proposed framework provides a practical diagnostic for identifying predictions that are especially sensitive to model choice, with implications for the reliability, fairness, and governance of automated decision systems.
 
 \end{abstract}
 

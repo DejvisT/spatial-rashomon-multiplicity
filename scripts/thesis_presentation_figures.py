@@ -19,7 +19,10 @@ _EXPORT_SENSITIVITY_DATASETS = ("compas", "german", "adult")
 
 _INCLUDEGRAPHICS_RE = re.compile(r"\\includegraphics(?:\[[^\]]*\])*\{([^}]+)\}")
 
-_ALWAYS_EXPORT_FIGURES = {"decomp_hp_secondary_bar_rashomon_grid.pdf"}
+_ALWAYS_EXPORT_FIGURES = {
+    "decomp_hp_secondary_bar_rashomon_grid.pdf",
+    "sensitivity_K_curves_compas.pdf",
+    "sensitivity_kNN_curves_compas.pdf",}
 
 
 def _iter_tex_sources(overleaf_bundle: Path) -> Iterator[Path]:

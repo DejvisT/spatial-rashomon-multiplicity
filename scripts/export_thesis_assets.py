@@ -12,6 +12,7 @@ Run from repo root: python scripts/export_thesis_assets.py
 """
 from pathlib import Path
 import sys
+import shutil
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -86,7 +87,8 @@ def write_dataset_summary_tex():
     out = []
     out.append(r"\begin{tabular}{lccc}")
     out.append(r"\hline")
-    out.append(r"Dataset & Mean variance (mean $\pm$ std) & Moran's $I$ (mean $\pm$ std) & HH count (mean $\pm$ std) \\")
+    out.append(r"Dataset & Mean variance & Moran's $I$ & HH count \\")
+    out.append(r" & (mean $\pm$ std) & (mean $\pm$ std) & (mean $\pm$ std) \\")
     out.append(r"\hline")
     for _, r in df.iterrows():
         mv = f"{r['mean_variance_mean']:.4f} $\\pm$ {r['mean_variance_std']:.4f}"
@@ -108,10 +110,10 @@ def write_global_summary_tex():
         print("No dataset summary. Skipping global_summary.tex")
         return
     out = []
-    out.append(r"% Global Rashomon set (top-K=25). Source: summary_per_run.csv per dataset.")
     out.append(r"\begin{tabular}{lcccc}")
     out.append(r"\hline")
-    out.append(r"Dataset & Mean variance (mean $\pm$ std) & Moran's $I$ (mean $\pm$ std) & Mean HH count & Frac.\ sig. \\")
+    out.append(r"Dataset & Mean variance & Moran's $I$ & Mean HH count & Frac.\ sig. \\")
+    out.append(r" & (mean $\pm$ std) & (mean $\pm$ std) & mean & fraction \\")
     out.append(r"\hline")
     for _, r in df.iterrows():
         mv = f"{r['mean_variance_mean']:.4f} $\\pm$ {r['mean_variance_std']:.4f}"
@@ -126,42 +128,54 @@ def write_global_summary_tex():
 def write_family_summary_tex():
     """Per-family (top-25 per family): prefer aggregated CSV over seeds; else legacy single-run CSV."""
     agg_path = RESULTS_DIR / "compas" / "per_family_spatial_aggregated.csv"
+
     out = []
-    out.append(r"% Per-family Rashomon (top-K=25 per family), COMPAS. Mean $\pm$ std over outer seeds from experiment runner.")
-    out.append(r"\begin{tabular}{lcccc}")
+    out.append(
+        r"% Per-family Rashomon (top-K=25 per family), COMPAS. Mean $\pm$ std over outer seeds from experiment runner."
+    )
+    out.append(r"\begin{tabular}{lccc}")
     out.append(r"\hline")
-    out.append(r"Family & Mean variance (mean $\pm$ std) & Moran's $I$ (mean $\pm$ std) & Mean HH count (mean $\pm$ std) & Frac.\ sig. \\")
+    out.append(r"Family & Mean variance & Moran's $I$ & Mean HH count \\")
+    out.append(r" & (mean $\pm$ std) & (mean $\pm$ std) & (mean $\pm$ std) \\")
     out.append(r"\hline")
 
     if agg_path.is_file():
         df = pd.read_csv(agg_path)
+
         for _, r in df.iterrows():
             fam = r["family"]
             mv = f"{r['mean_variance_mean']:.6f} $\\pm$ {r['mean_variance_std']:.6f}"
             mi = f"{r['moran_i_mean']:.3f} $\\pm$ {r['moran_i_std']:.3f}"
             hh = f"{r['n_hh_mean']:.1f} $\\pm$ {r['n_hh_std']:.1f}"
-            fs = f"{float(r['frac_significant_moran']):.2f}"
-            out.append(f"{fam} & {mv} & {mi} & {hh} & {fs} \\\\")
+
+            out.append(f"{fam} & {mv} & {mi} & {hh} \\\\")
+
     else:
         path = resolve_csv("family_hv_hh_summary_compas.csv", "nb06")
         if path is None:
-            print("Missing per_family_spatial_aggregated.csv and family_hv_hh_summary_compas.csv. Skipping family_summary.tex")
+            print(
+                "Missing per_family_spatial_aggregated.csv and "
+                "family_hv_hh_summary_compas.csv. Skipping family_summary.tex"
+            )
             return
+
         df = pd.read_csv(path)
-        df["frac_sig"] = (df["moran_p"] < 0.05).astype(int)
         out[0] = (
-            r"% Per-family Rashomon (top-K=25 per family). Legacy single-run CSV; re-run notebook 01 to get mean$\pm$std."
+            r"% Per-family Rashomon (top-K=25 per family). "
+            r"Legacy single-run CSV; re-run notebook 01 to get mean$\pm$std."
         )
+
         for _, r in df.iterrows():
             fam = r["family"]
             mv = f"{r['mean_var']:.6f}"
             mi = f"{r['moran_I']:.3f}"
             hh = str(int(r["hh_count"]))
-            fs = "1.00" if r["frac_sig"] else "0.00"
-            out.append(f"{fam} & {mv} & {mi} & {hh} & {fs} \\\\")
+
+            out.append(f"{fam} & {mv} & {mi} & {hh} \\\\")
 
     out.append(r"\hline")
     out.append(r"\end{tabular}")
+
     (TAB_DIR / "family_summary.tex").write_text("\n".join(out), encoding="utf-8")
     print("Wrote", TAB_DIR / "family_summary.tex")
 
@@ -319,182 +333,7 @@ def write_null_significance_tex():
     print("Wrote", TAB_DIR / "null_significance.tex")
 
 
-def run_sensitivity_K_and_save_figure():
-    from analysis.experiment_runner import _get_run_dirs
-    from analysis.preprocessing import get_transformed_test_features
-    from analysis.run_analysis import load_meta, run_multiplicity, run_spatial
 
-    K_LIST = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
-    k_nn = 30
-    dataset_dirs = [p for p in RESULTS_DIR.iterdir() if p.is_dir() and p.name in SUPPORTED_DATASETS and _get_run_dirs(p)]
-    if not dataset_dirs:
-        print("No run dirs. Skipping sensitivity_K.pdf")
-        return
-
-    def run_one_k(run_dir, X_test, K):
-        n_cand = len(load_meta(run_dir))
-        if K > n_cand:
-            return None
-        K_actual = min(K, n_cand)
-        mult = run_multiplicity(run_dir, K=K_actual)
-        spatial = run_spatial(run_dir, X_test, K=K_actual, k=k_nn)
-        return {"mean_variance": mult["mean_variance"], "moran_i": spatial["moran_i"], "n_hh": int(np.sum(spatial["HH_mask"]))}
-
-    results_k = []
-    for dataset_dir in dataset_dirs:
-        dataset_name = dataset_dir.name
-        run_dirs = _get_run_dirs(dataset_dir)
-        for K in K_LIST:
-            for run_dir in run_dirs:
-                try:
-                    X_test = get_transformed_test_features(run_dir, dataset_name)
-                except Exception:
-                    continue
-                res = run_one_k(run_dir, X_test, K)
-                if res is not None:
-                    results_k.append({"dataset": dataset_name, "K": K, **res})
-
-    df_k = pd.DataFrame(results_k)
-    if df_k.empty:
-        print("No K sensitivity data. Skipping sensitivity_K.pdf")
-        return
-
-    agg_k = df_k.groupby(["dataset", "K"]).agg(
-        mean_variance_mean=("mean_variance", "mean"), mean_variance_std=("mean_variance", "std"),
-        moran_mean=("moran_i", "mean"), moran_std=("moran_i", "std"),
-        n_hh_mean=("n_hh", "mean"),
-    ).reset_index()
-
-    # Combined figure (all datasets)
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
-    colors = plt.cm.tab10(np.linspace(0, 1, agg_k["dataset"].nunique()))
-    for (ds, grp), c in zip(agg_k.groupby("dataset"), colors):
-        d = grp
-        ax1.errorbar(d["K"], d["mean_variance_mean"], yerr=d["mean_variance_std"], marker="o", capsize=3, label=ds, color=c)
-        ax2.errorbar(d["K"], d["moran_mean"], yerr=d["moran_std"], marker="o", capsize=3, label=ds, color=c)
-    ax1.set_xlabel("K (Rashomon size)")
-    ax1.set_ylabel("Mean variance")
-    ax1.set_title("Mean variance vs K")
-    ax1.legend()
-    ax2.set_xlabel("K (Rashomon size)")
-    ax2.set_ylabel("Moran's I")
-    ax2.set_title("Moran's I vs K")
-    ax2.legend()
-    plt.suptitle("K sensitivity (all datasets)")
-    plt.tight_layout()
-    fig.savefig(FIG_DIR / "sensitivity_K.pdf", bbox_inches="tight")
-    plt.close()
-    print("Wrote", FIG_DIR / "sensitivity_K.pdf")
-
-    # Per-dataset figures (3 panels: mean var, Moran, HH) for thesis
-    for ds_name, grp in agg_k.groupby("dataset"):
-        d = grp.sort_values("K")
-        fig3, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(12, 4))
-        ax1.errorbar(d["K"], d["mean_variance_mean"], yerr=d["mean_variance_std"], marker="o", capsize=3, color="steelblue")
-        ax1.set_xlabel("K (Rashomon size)")
-        ax1.set_ylabel("Mean variance")
-        ax1.set_title("Mean variance vs K")
-        ax2.errorbar(d["K"], d["moran_mean"], yerr=d["moran_std"], marker="o", capsize=3, color="seagreen")
-        ax2.set_xlabel("K (Rashomon size)")
-        ax2.set_ylabel("Moran's I")
-        ax2.set_title("Moran's I vs K")
-        ax3.plot(d["K"], d["n_hh_mean"], marker="o", color="coral")
-        ax3.set_xlabel("K (Rashomon size)")
-        ax3.set_ylabel("HH count")
-        ax3.set_title("HH count vs K")
-        plt.suptitle(f"K sensitivity ({ds_name})")
-        plt.tight_layout()
-        out_name = f"sensitivity_K_curves_{ds_name}.pdf"
-        fig3.savefig(FIG_DIR / out_name, bbox_inches="tight")
-        plt.close()
-        print("Wrote", FIG_DIR / out_name)
-
-
-def run_sensitivity_kNN_and_save_figure():
-    import warnings
-    warnings.filterwarnings("ignore", message=".*not fully connected.*", category=UserWarning)
-
-    from analysis.experiment_runner import _get_run_dirs
-    from analysis.preprocessing import get_transformed_test_features
-    from analysis.run_analysis import load_meta, run_multiplicity, run_spatial
-
-    K = 25
-    K_NN_LIST = [10, 20, 30, 50]
-    dataset_dirs = [p for p in RESULTS_DIR.iterdir() if p.is_dir() and p.name in SUPPORTED_DATASETS and _get_run_dirs(p)]
-    if not dataset_dirs:
-        print("No run dirs. Skipping sensitivity_kNN.pdf")
-        return
-
-    def run_one_knn(run_dir, X_test, k_nn):
-        n_cand = len(load_meta(run_dir))
-        K_actual = min(K, n_cand)
-        mult = run_multiplicity(run_dir, K=K_actual)
-        spatial = run_spatial(run_dir, X_test, K=K_actual, k=k_nn)
-        return {"mean_variance": mult["mean_variance"], "moran_i": spatial["moran_i"], "n_hh": int(np.sum(spatial["HH_mask"]))}
-
-    results_knn = []
-    for dataset_dir in dataset_dirs:
-        dataset_name = dataset_dir.name
-        run_dirs = _get_run_dirs(dataset_dir)
-        for k_nn in K_NN_LIST:
-            for run_dir in run_dirs:
-                try:
-                    X_test = get_transformed_test_features(run_dir, dataset_name)
-                except Exception:
-                    continue
-                res = run_one_knn(run_dir, X_test, k_nn)
-                results_knn.append({"dataset": dataset_name, "k_nn": k_nn, **res})
-
-    df_knn = pd.DataFrame(results_knn)
-    if df_knn.empty:
-        print("No kNN sensitivity data. Skipping sensitivity_kNN.pdf")
-        return
-
-    agg_knn = df_knn.groupby(["dataset", "k_nn"]).agg(
-        mean_variance_mean=("mean_variance", "mean"), mean_variance_std=("mean_variance", "std"),
-        moran_mean=("moran_i", "mean"), moran_std=("moran_i", "std"),
-        n_hh_mean=("n_hh", "mean"),
-    ).reset_index()
-
-    # Combined figure (all datasets)
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
-    colors = plt.cm.tab10(np.linspace(0, 1, agg_knn["dataset"].nunique()))
-    for (ds, grp), c in zip(agg_knn.groupby("dataset"), colors):
-        d = grp
-        ax1.errorbar(d["k_nn"], d["mean_variance_mean"], yerr=d["mean_variance_std"], marker="s", capsize=3, label=ds, color=c)
-        ax2.errorbar(d["k_nn"], d["moran_mean"], yerr=d["moran_std"], marker="s", capsize=3, label=ds, color=c)
-    ax1.set_xlabel("k (kNN neighbors)")
-    ax1.set_ylabel("Mean variance")
-    ax1.set_title("Mean variance vs k")
-    ax1.legend()
-    ax2.set_xlabel("k (kNN neighbors)")
-    ax2.set_ylabel("Moran's I")
-    ax2.set_title("Moran's I vs k")
-    ax2.legend()
-    plt.suptitle("kNN sensitivity (all datasets)")
-    plt.tight_layout()
-    fig.savefig(FIG_DIR / "sensitivity_kNN.pdf", bbox_inches="tight")
-    plt.close()
-    print("Wrote", FIG_DIR / "sensitivity_kNN.pdf")
-
-    # Per-dataset figures for thesis
-    for ds_name, grp in agg_knn.groupby("dataset"):
-        d = grp.sort_values("k_nn")
-        fig2, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
-        ax1.errorbar(d["k_nn"], d["mean_variance_mean"], yerr=d["mean_variance_std"], marker="s", capsize=3, color="steelblue")
-        ax1.set_xlabel("k (kNN neighbors)")
-        ax1.set_ylabel("Mean variance")
-        ax1.set_title("Mean variance vs k")
-        ax2.errorbar(d["k_nn"], d["moran_mean"], yerr=d["moran_std"], marker="s", capsize=3, color="seagreen")
-        ax2.set_xlabel("k (kNN neighbors)")
-        ax2.set_ylabel("Moran's I")
-        ax2.set_title("Moran's I vs k")
-        plt.suptitle(f"kNN sensitivity ({ds_name})")
-        plt.tight_layout()
-        out_name = f"sensitivity_kNN_curves_{ds_name}.pdf"
-        fig2.savefig(FIG_DIR / out_name, bbox_inches="tight")
-        plt.close()
-        print("Wrote", FIG_DIR / out_name)
 
 
 def write_hh_component_summary_tex():
@@ -1377,7 +1216,6 @@ def write_component_rule_features_compas_tex():
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Export thesis assets")
-    parser.add_argument("--quick", action="store_true", help="Skip slow sensitivity analysis (K, kNN)")
     parser.add_argument(
         "--copy-all-figures",
         action="store_true",
@@ -1409,12 +1247,6 @@ def main():
     write_hh_moran_per_run_compas()
     write_spatial_patterns_figure()
     write_hh_by_family_figure()
-
-    if not args.quick:
-        run_sensitivity_K_and_save_figure()
-        run_sensitivity_kNN_and_save_figure()
-    else:
-        print("Skipping sensitivity figures (--quick). Run without --quick for sensitivity_K_curves_*.pdf and sensitivity_kNN_curves_*.pdf")
     copy_notebook_figures(
         FIG_DIR,
         copy_all=args.copy_all_figures,
