@@ -22,7 +22,7 @@ import pandas as pd
 from analysis.experiment_runner import _get_run_dirs
 from analysis.hp_analysis import POOL_TYPE_FULL_POOL, POOL_TYPE_RASHOMON, aggregate_hp_importance
 from analysis.hp_meta_model import resolve_outer_seed_column, unify_validation_brier
-from analysis.hp_multiplicity_pipeline import (
+from analysis.hp_results import (
     aggregate_decomposition_hp,
     aggregate_family_importance_long,
     aggregate_hotspot_delta,
