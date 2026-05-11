@@ -1,15 +1,16 @@
 """
-Thesis Section 5.7 — hyperparameter / family multiplicity pipeline (notebook 06).
+Hyperparameter / family multiplicity pipeline for Notebook 06.
 
-Stages (mirrors the notebook narrative):
-1. **Canonical model-level table** — one tidy ``df_models`` (and per-seed wide tables).
-2. **Family decomposition** — main structural analysis (``metrics_long`` → aggregates).
-3. **Secondary HP decomposition** — unique HP values on predictions ``P`` (appendix-style).
-4. **Meta-model** — descriptive conditional RF on ``V_m`` (``hp_meta_model``).
-5. **Exports** — CSV splits and aggregates used by plots / thesis export scripts.
+Stages:
+1. Collect multi-seed model, family, and hyperparameter tables.
+2. Aggregate family-level variance decomposition across seeds.
+3. Aggregate within-family hyperparameter importance across seeds.
+4. Aggregate hotspot-vs-all hyperparameter shifts.
+5. Export compact CSV summaries used by Notebook 06 and thesis asset export.
 
-All downstream HP analyses should read from the **canonical** ``df_models`` built here
-(unified ``validation_brier`` when possible).
+This module intentionally writes only compact thesis-facing aggregate files.
+Detailed per-seed and per-family debug exports were removed to keep
+thesis_outputs/tables/nb06 manageable.
 """
 from __future__ import annotations
 
@@ -21,7 +22,7 @@ import pandas as pd
 
 from analysis.experiment_runner import _get_run_dirs
 from analysis.hp_analysis import POOL_TYPE_FULL_POOL, POOL_TYPE_RASHOMON, aggregate_hp_importance
-from analysis.hp_meta_model import resolve_outer_seed_column, unify_validation_brier
+
 from analysis.hp_results import (
     aggregate_decomposition_hp,
     aggregate_family_importance_long,
@@ -44,10 +45,6 @@ class HPAnalysisConfig:
     min_hh_obs: int = 5
     top_hp: int = 10
     illustrate_seed: Optional[int] = None
-    meta_stability_reps: int = 12
-    meta_random_state: int = 0
-    # Prefer training outer seed for LOSO / bootstrap when present on model rows.
-    seed_column_preference: Tuple[str, ...] = ("outer_seed", "seed")
 
 
 def run_all_pools_for_dataset(ds: str, config: HPAnalysisConfig) -> Dict[str, pd.DataFrame]:
@@ -159,7 +156,6 @@ def export_seed_aggregates_and_hotspot_delta(
             td / "hp_vm_unique_value_secondary_agg.csv",
             index=False,
         )
-
 
     if not df_delta_agg.empty:
         df_delta_agg.to_csv(td / "decomp_hp_hotspot_delta_agg.csv", index=False)
