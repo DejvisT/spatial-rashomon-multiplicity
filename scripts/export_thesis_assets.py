@@ -12,7 +12,7 @@ Run from repo root: python scripts/export_thesis_assets.py
 """
 from pathlib import Path
 import sys
-import shutil
+import re
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -390,196 +390,6 @@ def write_hh_component_summary_tex():
     (TAB_DIR / "hh_component_summary.tex").write_text("\n".join(out), encoding="utf-8")
     print("Wrote", TAB_DIR / "hh_component_summary.tex")
 
-def write_calibration_summary_tex():
-    """
-    Calibration robustness summary (mean ± std over runs), per dataset and method.
-
-    Reads thesis_outputs/tables/nb07/calibration_summary.csv, with fallback via
-    resolve_csv(). Writes only the two tables used by the thesis:
-
-      - calibration_summary.tex
-      - calibration_summary_extra.tex
-    """
-    path = resolve_csv("calibration_summary.csv", "nb07")
-
-    method_order = ["platt", "isotonic"]
-    method_labels = {
-        "platt": "Platt",
-        "isotonic": "Isotonic",
-    }
-
-    main_metrics = [
-        ("delta_mean_variance", 4, 4),
-        ("delta_moran_i", 4, 4),
-        ("jaccard_HH_before_after", 4, 4),
-    ]
-
-    extra_metrics = [
-        ("delta_n_HH", 1, 1),
-        ("brier_improvement", 4, 4),
-    ]
-
-    main_file = TAB_DIR / "calibration_summary.tex"
-    extra_file = TAB_DIR / "calibration_summary_extra.tex"
-
-    def write_placeholder():
-        main_out = [
-            r"% Placeholder: run notebook 07 and export nb07/calibration_summary.csv, then re-run.",
-            r"\begin{tabular}{llccc}",
-            r"\hline",
-            r"Dataset & Method & $\Delta$ mean var.\ & $\Delta$ Moran's $I$ & Jaccard HH \\",
-            r"\hline",
-        ]
-
-        extra_out = [
-            r"% Placeholder: run notebook 07 and export nb07/calibration_summary.csv, then re-run.",
-            r"\begin{tabular}{llcc}",
-            r"\hline",
-            r"Dataset & Method & $\Delta$ $n_{\mathrm{HH}}$ & $\Delta$ Brier \\",
-            r"\hline",
-        ]
-
-        for name in SUPPORTED_DATASETS:
-            label = name.replace("_", " ").title()
-            first_row = True
-
-            for method in ["Platt", "Isotonic"]:
-                if first_row:
-                    main_out.append(f"{label} & {method} & --- & --- & --- \\\\")
-                    extra_out.append(f"{label} & {method} & --- & --- \\\\")
-                    first_row = False
-                else:
-                    main_out.append(f" & {method} & --- & --- & --- \\\\")
-                    extra_out.append(f" & {method} & --- & --- \\\\")
-
-        main_out.extend([r"\hline", r"\end{tabular}"])
-        extra_out.extend([r"\hline", r"\end{tabular}"])
-
-        main_file.write_text("\n".join(main_out), encoding="utf-8")
-        extra_file.write_text("\n".join(extra_out), encoding="utf-8")
-
-        print("Wrote", main_file, "(placeholder)")
-        print("Wrote", extra_file, "(placeholder)")
-
-    if path is None or not path.is_file():
-        print(
-            "Missing calibration_summary.csv (nb07). "
-            "Writing placeholder calibration summary tables."
-        )
-        write_placeholder()
-        return
-
-    df = pd.read_csv(path)
-
-    required = {"dataset", "method", "metric", "mean", "std"}
-    if df.empty or not required.issubset(df.columns):
-        print(
-            "calibration_summary.csv empty or missing required columns. "
-            "Writing placeholder calibration summary tables."
-        )
-        write_placeholder()
-        return
-
-    df = df.copy()
-    df["dataset"] = df["dataset"].astype(str).str.lower()
-    df["method"] = df["method"].astype(str).str.lower()
-
-    def cell_for(dataset_key: str, method_key: str, metric: str, dm: int, ds: int) -> str:
-        sub = df[
-            (df["dataset"] == dataset_key)
-            & (df["method"] == method_key)
-            & (df["metric"] == metric)
-        ]
-
-        if sub.empty:
-            return "---"
-
-        mn = float(sub["mean"].iloc[0])
-        st = float(sub["std"].iloc[0])
-
-        if pd.isna(st):
-            st = 0.0
-
-        return f"{mn:.{dm}f} $\\pm$ {st:.{ds}f}"
-
-    # Main calibration table:
-    # Δ mean variance, Δ Moran's I, and Jaccard overlap of HH masks.
-    main_out = [
-        r"% Auto-generated from nb07/calibration_summary.csv.",
-        r"\begin{tabular}{llccc}",
-        r"\hline",
-        r"Dataset & Method & $\Delta$ mean var.\ & $\Delta$ Moran's $I$ & Jaccard HH \\",
-        r"\hline",
-    ]
-
-    for name in SUPPORTED_DATASETS:
-        label = name.replace("_", " ").title()
-        first_row = True
-
-        for method in method_order:
-            cells = [
-                cell_for(name, method, metric, dm, ds)
-                for metric, dm, ds in main_metrics
-            ]
-
-            if first_row:
-                main_out.append(
-                    f"{label} & {method_labels[method]} & "
-                    + " & ".join(cells)
-                    + r" \\"
-                )
-                first_row = False
-            else:
-                main_out.append(
-                    f" & {method_labels[method]} & "
-                    + " & ".join(cells)
-                    + r" \\"
-                )
-
-    main_out.extend([r"\hline", r"\end{tabular}"])
-
-    main_file.write_text("\n".join(main_out), encoding="utf-8")
-    print("Wrote", main_file)
-
-    # Extra calibration table:
-    # Δ n_HH and Δ Brier.
-    extra_out = [
-        r"% Auto-generated from nb07/calibration_summary.csv.",
-        r"\begin{tabular}{llcc}",
-        r"\hline",
-        r"Dataset & Method & $\Delta$ $n_{\mathrm{HH}}$ & $\Delta$ Brier \\",
-        r"\hline",
-    ]
-
-    for name in SUPPORTED_DATASETS:
-        label = name.replace("_", " ").title()
-        first_row = True
-
-        for method in method_order:
-            cells = [
-                cell_for(name, method, metric, dm, ds)
-                for metric, dm, ds in extra_metrics
-            ]
-
-            if first_row:
-                extra_out.append(
-                    f"{label} & {method_labels[method]} & "
-                    + " & ".join(cells)
-                    + r" \\"
-                )
-                first_row = False
-            else:
-                extra_out.append(
-                    f" & {method_labels[method]} & "
-                    + " & ".join(cells)
-                    + r" \\"
-                )
-
-    extra_out.extend([r"\hline", r"\end{tabular}"])
-
-    extra_file.write_text("\n".join(extra_out), encoding="utf-8")
-    print("Wrote", extra_file)
-
 
 def _tex_escape(s: str) -> str:
     s = str(s)
@@ -605,14 +415,6 @@ def _tex_escape_rule_text(s: str) -> str:
          .replace("<", r"$<$")
     )
 
-def _pretty_dataset(name: str) -> str:
-    name = str(name).strip().lower()
-    return {
-        "compas": "COMPAS",
-        "german": "German",
-        "adult": "Adult",
-    }.get(name, name.title())
-
 
 def _pretty_family(name: str) -> str:
     name = str(name).strip()
@@ -625,85 +427,67 @@ def _pretty_family(name: str) -> str:
     }.get(name, name)
 
 
-def write_hp_top2_driver_summary_tex():
-    path = resolve_csv("hp_top2_driver_summary.csv", "nb06")
-    if path is None or not path.is_file():
-        print("Missing hp_top2_driver_summary.csv (nb06). Skipping hp_top2_driver_summary.tex")
-        return
-
-    df = pd.read_csv(path)
-    required = {"dataset", "family", "Top-1 driver", "Top-2 driver"}
-    if df.empty or not required.issubset(df.columns):
-        print("hp_top2_driver_summary.csv empty or missing required columns. Skipping hp_top2_driver_summary.tex")
-        return
-
-    dataset_order = {"compas": 0, "german": 1, "adult": 2}
-    family_order = {"GBM": 0, "LogReg": 1, "MLP": 2, "RF": 3, "kNN": 4}
-
-    df = df.copy()
-    df["dataset_order"] = df["dataset"].astype(str).str.lower().map(dataset_order).fillna(999)
-    df["family_order"] = df["family"].map(family_order).fillna(999)
-    df = df.sort_values(["dataset_order", "family_order", "dataset", "family"])
-
-    out = []
-    out.append(r"% Auto-generated from nb06/hp_top2_driver_summary.csv")
-    out.append(r"\begin{tabular}{llp{4.8cm}p{4.8cm}}")
-    out.append(r"\hline")
-    out.append(r"Dataset & Family & Top-1 driver & Top-2 driver \\")
-    out.append(r"\hline")
-
-    last_dataset = None
-    for _, r in df.iterrows():
-        ds = _pretty_dataset(r["dataset"])
-        fam = _pretty_family(r["family"])
-        top1 = _tex_escape(r["Top-1 driver"])
-        top2 = _tex_escape(r["Top-2 driver"])
-
-        if last_dataset != ds:
-            out.append(f"{ds} & {fam} & {top1} & {top2} \\\\")
-            last_dataset = ds
-        else:
-            out.append(f" & {fam} & {top1} & {top2} \\\\")
-
-    out.append(r"\hline")
-    out.append(r"\end{tabular}")
-
-    (TAB_DIR / "hp_top2_driver_summary.tex").write_text("\n".join(out), encoding="utf-8")
-    print("Wrote", TAB_DIR / "hp_top2_driver_summary.tex")
-
-import re
-
-
-def _format_delta_cell(text: str) -> str:
+def _format_delta_cell(value):
     """
-    Convert strings like:
-        'subsample (mean_delta=0.0266)'
-        'n_estimators (mean_delta=-0.0094)'
-    into:
-        'subsample (+0.027)'
-        'n_estimators (-0.009)'
+    Format strings like:
+        'learning_rate_init (mean_delta=0.0475, n_seeds=10)'
+        'max_depth (mean_delta=-0.0399, n_seeds=10)'
+        'none'
+
+    as:
+        learning\_rate\_init $(+0.048)$
+        max\_depth $(-0.040)$
+        none
     """
-    s = str(text).strip()
+    if pd.isna(value):
+        return "none"
 
-    m = re.match(r"^(.*?)\s*\(mean_delta\s*=\s*([+-]?\d*\.?\d+)\)\s*$", s)
-    if not m:
-        return _tex_escape(s)
+    text = str(value).strip()
+    if not text or text.lower() == "none":
+        return "none"
 
-    hp = m.group(1).strip()
-    val = float(m.group(2))
-    return _tex_escape(f"{hp} ({val:+.3f})")
+    # Match current compact CSV format:
+    # "hp_name (mean_delta=0.0266, n_seeds=10)"
+    m = re.match(
+        r"^(.*?)\s*\(.*?mean_delta\s*=\s*([+-]?\d*\.?\d+(?:[eE][+-]?\d+)?).*?\)\s*$",
+        text,
+    )
+    if m:
+        hp = m.group(1).strip().replace("_", r"\_")
+        delta = float(m.group(2))
+        return f"{hp} $({delta:+.3f})$"
+
+    # Match already compact format:
+    # "hp_name (+0.027)"
+    m = re.match(
+        r"^(.*?)\s*\(([+-]?\d*\.?\d+(?:[eE][+-]?\d+)?)\)\s*$",
+        text,
+    )
+    if m:
+        hp = m.group(1).strip().replace("_", r"\_")
+        delta = float(m.group(2))
+        return f"{hp} $({delta:+.3f})$"
+
+    # Fallback: escape underscores only.
+    return text.replace("_", r"\_")
 
 
 def write_hp_hotspot_delta_compas_tex():
     path = resolve_csv("hp_hotspot_delta_compas_compact.csv", "nb06")
     if path is None or not path.is_file():
-        print("Missing hp_hotspot_delta_compas_compact.csv (nb06). Skipping hp_hotspot_delta_compas_compact.tex")
+        print(
+            "Missing hp_hotspot_delta_compas_compact.csv (nb06). "
+            "Skipping hp_hotspot_delta_compas_compact.tex"
+        )
         return
 
     df = pd.read_csv(path)
     required = {"Family", "Most increased in HH", "Most decreased in HH"}
     if df.empty or not required.issubset(df.columns):
-        print("hp_hotspot_delta_compas_compact.csv empty or missing required columns. Skipping hp_hotspot_delta_compas_compact.tex")
+        print(
+            "hp_hotspot_delta_compas_compact.csv empty or missing required columns. "
+            "Skipping hp_hotspot_delta_compas_compact.tex"
+        )
         return
 
     family_order = {"GBM": 0, "LogReg": 1, "MLP": 2, "RF": 3, "kNN": 4}
@@ -713,10 +497,12 @@ def write_hp_hotspot_delta_compas_tex():
 
     out = []
     out.append(r"% Auto-generated from nb06/hp_hotspot_delta_compas_compact.csv")
-    out.append(r"\begin{tabular}{lp{5.2cm}p{5.2cm}}")
-    out.append(r"\hline")
-    out.append(r"Family & Most increased in HH & Most decreased in HH \\")
-    out.append(r"\hline")
+    out.append(r"\begin{tabular}{lll}")
+    out.append(r"\toprule")
+    out.append(
+        r"Family & Largest positive HH shift & Largest negative HH shift \\"
+    )
+    out.append(r"\midrule")
 
     for _, r in df.iterrows():
         fam = _pretty_family(r["Family"])
@@ -724,10 +510,13 @@ def write_hp_hotspot_delta_compas_tex():
         dec = _format_delta_cell(r["Most decreased in HH"])
         out.append(f"{fam} & {inc} & {dec} \\\\")
 
-    out.append(r"\hline")
+    out.append(r"\bottomrule")
     out.append(r"\end{tabular}")
 
-    (TAB_DIR / "hp_hotspot_delta_compas_compact.tex").write_text("\n".join(out), encoding="utf-8")
+    (TAB_DIR / "hp_hotspot_delta_compas_compact.tex").write_text(
+        "\n".join(out),
+        encoding="utf-8",
+    )
     print("Wrote", TAB_DIR / "hp_hotspot_delta_compas_compact.tex")
 
 def write_interpretable_rules_top_compas_tex():
@@ -767,6 +556,99 @@ def write_interpretable_rules_top_compas_tex():
     out_path = TAB_DIR / "interpretable_rules_top_compas.tex"
     out_path.write_text("\n".join(rows), encoding="utf-8")
     print(f"Wrote {out_path}")
+
+
+def _pretty_dataset(name: str) -> str:
+    name = str(name).strip().lower()
+    return {
+        "compas": "COMPAS",
+        "german": "German",
+        "adult": "Adult",
+    }.get(name, name.title())
+
+
+def write_alternative_knn_comparison_tex():
+    """
+    Alternative graph construction summary from Notebook 10.
+
+    Reads:
+        thesis_outputs/tables/nb10/alternative_knn_comparison.csv
+
+    Writes:
+        overleaf_bundle/presentation_assets/tab/alternative_knn_comparison.tex
+    """
+    path = resolve_csv("alternative_knn_comparison.csv", "nb10")
+    if path is None or not path.is_file():
+        raise FileNotFoundError(
+            "Missing alternative_knn_comparison.csv from Notebook 10. "
+            "Run notebook 10 before exporting thesis assets."
+        )
+
+    df = pd.read_csv(path)
+
+    required = {
+        "dataset",
+        "method",
+        "moran_mean",
+        "moran_std",
+        "hh_mean",
+        "hh_std",
+    }
+    missing = required - set(df.columns)
+    if df.empty:
+        raise ValueError("alternative_knn_comparison.csv is empty.")
+    if missing:
+        raise ValueError(
+            f"alternative_knn_comparison.csv is missing required columns: {sorted(missing)}"
+        )
+
+    dataset_order = {"compas": 0, "german": 1, "adult": 2}
+    method_order = {"euclidean": 0, "pca_15": 1, "cosine": 2}
+    method_labels = {
+        "euclidean": "Euclidean (baseline)",
+        "pca_15": "PCA (15 comp.)",
+        "cosine": "Cosine",
+    }
+
+    df = df.copy()
+    df["dataset_key"] = df["dataset"].astype(str).str.lower()
+    df["method_key"] = df["method"].astype(str).str.lower()
+    df["dataset_order"] = df["dataset_key"].map(dataset_order).fillna(999)
+    df["method_order"] = df["method_key"].map(method_order).fillna(999)
+    df = df.sort_values(["dataset_order", "method_order", "dataset_key", "method_key"])
+
+    out = []
+    out.append(r"% Auto-generated from nb10/alternative_knn_comparison.csv")
+    out.append(r"\begin{tabular}{llcc}")
+    out.append(r"\toprule")
+    out.append(r"Dataset & Method & Moran's $I$ & HH count \\")
+    out.append(r"\midrule")
+
+    last_dataset = None
+    for _, r in df.iterrows():
+        ds_key = r["dataset_key"]
+        method_key = r["method_key"]
+
+        ds = _pretty_dataset(ds_key)
+        method = method_labels.get(method_key, _tex_escape(method_key))
+
+        moran = f"${float(r['moran_mean']):.3f} \\pm {float(r['moran_std']):.3f}$"
+        hh = f"${float(r['hh_mean']):.1f} \\pm {float(r['hh_std']):.1f}$"
+
+        if last_dataset is not None and ds_key != last_dataset:
+            out.append(r"\midrule")
+
+        ds_cell = ds if ds_key != last_dataset else ""
+        out.append(f"{ds_cell} & {method} & {moran} & {hh} \\\\")
+
+        last_dataset = ds_key
+
+    out.append(r"\bottomrule")
+    out.append(r"\end{tabular}")
+
+    out_path = TAB_DIR / "alternative_knn_comparison.tex"
+    out_path.write_text("\n".join(out), encoding="utf-8")
+    print("Wrote", out_path)
 
 
 def write_interpretable_rule_features_compas_tex():
@@ -893,6 +775,110 @@ def write_component_rule_features_compas_tex():
     print(f"Wrote {out_path}")
 
 
+def write_conflict_summary_tex():
+    """
+    Conflict metrics by dataset.
+
+    Reads:
+        results/<dataset>/summary_per_run.csv
+
+    Writes:
+        overleaf_bundle/presentation_assets/tab/conflict_summary.tex
+    """
+    rows = []
+
+    dataset_order = {"compas": 0, "german": 1, "adult": 2}
+
+    for ds in SUPPORTED_DATASETS:
+        path = RESULTS_DIR / ds / "summary_per_run.csv"
+        if not path.is_file():
+            print(f"Missing {path}. Skipping {ds} in conflict_summary.tex")
+            continue
+
+        df = pd.read_csv(path)
+
+        required = {
+            "mean_conflict",
+            "frac_conflict_gt0",
+            "frac_conflict_ge025",
+            "conflict_moran_i",
+            "conflict_n_hh",
+        }
+        missing = required - set(df.columns)
+        if df.empty or missing:
+            raise ValueError(
+                f"{path} is empty or missing required columns: {sorted(missing)}"
+            )
+
+        n = len(df)
+        ddof = 1 if n > 1 else 0
+
+        rows.append({
+            "dataset": ds,
+            "dataset_order": dataset_order.get(ds, 999),
+            "mean_conflict_mean": df["mean_conflict"].mean(),
+            "mean_conflict_std": df["mean_conflict"].std(ddof=ddof),
+            "frac_conflict_gt0_mean": 100.0 * df["frac_conflict_gt0"].mean(),
+            "frac_conflict_gt0_std": 100.0 * df["frac_conflict_gt0"].std(ddof=ddof),
+            "frac_conflict_ge025_mean": 100.0 * df["frac_conflict_ge025"].mean(),
+            "frac_conflict_ge025_std": 100.0 * df["frac_conflict_ge025"].std(ddof=ddof),
+            "conflict_moran_i_mean": df["conflict_moran_i"].mean(),
+            "conflict_moran_i_std": df["conflict_moran_i"].std(ddof=ddof),
+            "conflict_n_hh_mean": df["conflict_n_hh"].mean(),
+            "conflict_n_hh_std": df["conflict_n_hh"].std(ddof=ddof),
+        })
+
+    if not rows:
+        print("No conflict summary rows. Skipping conflict_summary.tex")
+        return
+
+    out_df = pd.DataFrame(rows).sort_values(["dataset_order", "dataset"])
+
+    out = []
+    out.append(r"% Auto-generated from results/<dataset>/summary_per_run.csv")
+    out.append(r"\begin{tabular}{lccccc}")
+    out.append(r"\toprule")
+    out.append(
+        r"Dataset & Mean $c_i$ & $c_i > 0$ (\%) & $c_i \geq 0.25$ (\%) & Conflict Moran's $I$ & Conflict HH \\"
+    )
+    out.append(r"\midrule")
+
+    for _, r in out_df.iterrows():
+        dataset = _pretty_dataset(r["dataset"])
+
+        mean_ci = (
+            f"${r['mean_conflict_mean']:.3f} "
+            f"\\pm {r['mean_conflict_std']:.3f}$"
+        )
+        frac_gt0 = (
+            f"${r['frac_conflict_gt0_mean']:.1f} "
+            f"\\pm {r['frac_conflict_gt0_std']:.1f}$"
+        )
+        frac_ge025 = (
+            f"${r['frac_conflict_ge025_mean']:.1f} "
+            f"\\pm {r['frac_conflict_ge025_std']:.1f}$"
+        )
+        conflict_moran = (
+            f"${r['conflict_moran_i_mean']:.2f} "
+            f"\\pm {r['conflict_moran_i_std']:.2f}$"
+        )
+        conflict_hh = (
+            f"${r['conflict_n_hh_mean']:.1f} "
+            f"\\pm {r['conflict_n_hh_std']:.1f}$"
+        )
+
+        out.append(
+            f"{dataset} & {mean_ci} & {frac_gt0} & {frac_ge025} & "
+            f"{conflict_moran} & {conflict_hh} \\\\"
+        )
+
+    out.append(r"\bottomrule")
+    out.append(r"\end{tabular}")
+
+    out_path = TAB_DIR / "conflict_summary.tex"
+    out_path.write_text("\n".join(out), encoding="utf-8")
+    print("Wrote", out_path)
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Export thesis assets")
@@ -913,9 +899,9 @@ def main():
     write_family_summary_tex()
     write_null_significance_tex()
     write_hh_component_summary_tex()
-    write_calibration_summary_tex()
+    write_alternative_knn_comparison_tex()
+    write_conflict_summary_tex()
 
-    write_hp_top2_driver_summary_tex()
     write_hp_hotspot_delta_compas_tex()
 
     write_interpretable_rules_top_compas_tex()
