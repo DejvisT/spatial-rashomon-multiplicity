@@ -171,15 +171,6 @@ def pointwise_conflict(P: np.ndarray, tau: float = 0.5) -> np.ndarray:
     return np.minimum(q, 1.0 - q)
 
 
-def hard_vote_variance(P: np.ndarray, tau: float = 0.5) -> np.ndarray:
-    """
-    Variance of hard votes: q*(1-q) per observation, where q = mean(1[p >= tau]).
-    Shape (n_obs,).
-    """
-    q = np.mean(P >= tau, axis=0)
-    return q * (1.0 - q)
-
-
 def ambiguity(P: np.ndarray) -> float:
     """
     Probability-space ambiguity (Rudin et al., Resolving Predictive Multiplicity):
@@ -235,12 +226,11 @@ def compute_multiplicity_metrics(
     """
     Compute predictive multiplicity metrics on predictions P of shape (n_models, n_obs).
     Returns dict with: mean_variance, ambiguity, disagreement_rate, discrepancy,
-    pointwise_variance (array), pointwise_conflict (array), var_hard (array),
+    pointwise_variance (array), pointwise_conflict (array),
     and summary conflict stats.
     """
     v = pointwise_variance(P, ddof=ddof)
     c = pointwise_conflict(P, tau=tau)
-    vh = hard_vote_variance(P, tau=tau)
     return {
         "mean_variance": mean_variance(P, ddof=ddof),
         "ambiguity": ambiguity(P),
@@ -248,7 +238,6 @@ def compute_multiplicity_metrics(
         "discrepancy": discrepancy(P),
         "pointwise_variance": v,
         "pointwise_conflict": c,
-        "var_hard": vh,
         "mean_conflict": float(np.mean(c)),
         "frac_conflict_gt0": float(np.mean(c > 0)),
         "frac_conflict_ge025": float(np.mean(c >= 0.25)),

@@ -105,42 +105,6 @@ def collect_multiseed_hp_tables(config: HPAnalysisConfig) -> Dict[str, pd.DataFr
     }
 
 
-def export_per_dataset_wide_tables(
-    tables: Dict[str, pd.DataFrame],
-    config: HPAnalysisConfig,
-) -> None:
-    """Write per-dataset slices of the raw multi-seed tables (debug / partial re-runs)."""
-    td = Path(config.table_dir)
-    td.mkdir(parents=True, exist_ok=True)
-    df_models = tables["models"]
-    df_metrics_long = tables["metrics_long"]
-    df_decomp_hp = tables["decomp_hp_wide"]
-    df_vm_hp = tables["vm_hp_wide"]
-
-    for ds in config.datasets:
-        for name, df in (
-            ("models", df_models),
-            ("metrics_long", df_metrics_long),
-            ("decomp_hp_per_seed", df_decomp_hp),
-            ("vm_hp_per_seed", df_vm_hp),
-        ):
-            sub = df[df["dataset"] == ds] if not df.empty and "dataset" in df.columns else df
-            if sub is not None and not sub.empty:
-                sub.to_csv(td / f"{name}_{ds}.csv", index=False)
-
-        if not df_vm_hp.empty:
-            legacy = df_vm_hp[(df_vm_hp["dataset"] == ds) & (df_vm_hp["subset"] == "all")]
-            if not legacy.empty:
-                legacy.to_csv(td / f"hp_importance_per_seed_{ds}.csv", index=False)
-
-
-def ensure_canonical_model_table(df_models: pd.DataFrame) -> pd.DataFrame:
-    """Return ``df_models`` with ``validation_brier`` unified for all HP / meta-model consumers."""
-    if df_models.empty:
-        return df_models
-    return unify_validation_brier(df_models.copy())
-
-
 def aggregate_hp_seed_tables(
     df_metrics_long: pd.DataFrame,
     df_decomp_hp: pd.DataFrame,
@@ -201,82 +165,10 @@ def export_seed_aggregates_and_hotspot_delta(
         df_delta_agg.to_csv(td / "decomp_hp_hotspot_delta_agg.csv", index=False)
 
 
-def build_canonical_model_analysis_exports(df_models: pd.DataFrame, table_dir: Path) -> None:
-    """
-    Stage 1b — thesis-friendly canonical model-level CSVs (wide table + compact summary).
-
-    Uses the same column detection logic in one place (replaces duplicated notebook cells).
-    """
-    td = Path(table_dir)
-    td.mkdir(parents=True, exist_ok=True)
-    if df_models.empty:
-        print("No model-level rows for canonical export.")
-        return
-
-    df = ensure_canonical_model_table(df_models)
-
-    base_cols = [
-        "dataset",
-        "seed",
-        "outer_seed",
-        "family",
-        "pool_type",
-        "V_m",
-        "V_m_HH",
-        "V_m_nonHH",
-        "val_brier",
-        "validation_brier",
-        "brier_val",
-        "brier_score",
-        "K_actual",
-    ]
-    model_cols_base = [c for c in base_cols if c in df.columns]
-    hp_cols = sorted([c for c in df.columns if c.startswith("hp_")])
-    model_analysis = df[model_cols_base + hp_cols].copy()
-
-    ordered_front = [
-        c
-        for c in [
-            "dataset",
-            "seed",
-            "outer_seed",
-            "family",
-            "pool_type",
-            "validation_brier",
-            "V_m",
-            "V_m_HH",
-            "V_m_nonHH",
-            "K_actual",
-        ]
-        if c in model_analysis.columns
-    ]
-    remaining = [c for c in model_analysis.columns if c not in ordered_front]
-    model_analysis = model_analysis[ordered_front + remaining]
-
-    model_analysis.to_csv(td / "hp_model_level_analysis_table.csv", index=False)
-
-    summary_group_cols = [c for c in ["dataset", "family", "pool_type"] if c in model_analysis.columns]
-    if summary_group_cols:
-        agg_dict: Dict[str, Any] = {"V_m": ["mean", "std", "count"]}
-        if "validation_brier" in model_analysis.columns:
-            agg_dict["validation_brier"] = ["mean", "std"]
-        model_summary = model_analysis.groupby(summary_group_cols).agg(agg_dict).reset_index()
-        model_summary.columns = [
-            "_".join([str(x) for x in c if str(x) != ""]).strip("_") if isinstance(c, tuple) else c
-            for c in model_summary.columns
-        ]
-        model_summary.to_csv(td / "hp_model_level_analysis_summary.csv", index=False)
-
-    print("Saved hp_model_level_analysis_table.csv and hp_model_level_analysis_summary.csv")
-
-
 __all__ = [
     "HPAnalysisConfig",
     "aggregate_hp_seed_tables",
-    "build_canonical_model_analysis_exports",
     "collect_multiseed_hp_tables",
-    "ensure_canonical_model_table",
-    "export_per_dataset_wide_tables",
     "export_seed_aggregates_and_hotspot_delta",
     "run_all_pools_for_dataset",
 ]

@@ -278,7 +278,6 @@ def _run_single(
     # Per-point arrays for optional saving
     out["_pointwise_variance"] = mult["pointwise_variance"]
     out["_pointwise_conflict"] = mult["pointwise_conflict"]
-    out["_var_hard"] = mult["var_hard"]
 
     qa = quadrant_analysis(
     mult["pointwise_variance"],
@@ -423,7 +422,6 @@ def run_dataset_experiment(
         pp_dir.mkdir(exist_ok=True)
         np.save(pp_dir / "var_p.npy", rec["_pointwise_variance"])
         np.save(pp_dir / "conflict.npy", rec["_pointwise_conflict"])
-        np.save(pp_dir / "var_hard.npy", rec["_var_hard"])
         if "_quadrant_summary" in rec:
             rec["_quadrant_summary"].to_csv(pp_dir / "quadrant_summary.csv", index=False)
 
