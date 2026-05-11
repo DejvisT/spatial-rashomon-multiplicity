@@ -493,78 +493,6 @@ def plot_family_importance_bars(
     plt.show()
 
 
-def plot_decomp_hp_bars(
-    df_agg: pd.DataFrame,
-    *,
-    dataset: str,
-    subset: str,
-    family: str,
-    top_n: int = 10,
-    fig_path: Optional[Path] = None,
-    show: bool = True,
-) -> None:
-    """Horizontal bar chart from ``aggregate_decomposition_hp`` output."""
-    import matplotlib.pyplot as plt
-
-    col = "hp" if "hp" in df_agg.columns else "hyperparameter"
-    sub = df_agg[(df_agg["dataset"] == dataset) & (df_agg["family"] == family)]
-    if "subset" in df_agg.columns:
-        sub = sub[sub["subset"] == subset]
-    sub = sub.sort_values("mean_importance", ascending=False).head(top_n)
-    if sub.empty:
-        return
-    fig, ax = plt.subplots(figsize=(6, max(2.5, 0.35 * len(sub))))
-    y = np.arange(len(sub))
-    ax.barh(y, sub["mean_importance"], xerr=sub["std_importance"], capsize=2, color="darkseagreen")
-    ax.set_yticks(y)
-    ax.set_yticklabels(sub[col].astype(str))
-    ax.invert_yaxis()
-    ax.set_xlabel("Within-family HP importance (decomposition ratio)")
-    ax.set_title(f"{dataset} — {family} — subset={subset}")
-    fig.tight_layout()
-    if fig_path is not None:
-        fig.savefig(fig_path, bbox_inches="tight")
-    if show:
-        plt.show()
-    else:
-        plt.close(fig)
-
-
-def plot_hotspot_hp_delta(
-    delta_agg: pd.DataFrame,
-    *,
-    dataset: str,
-    family: str,
-    top_n: int = 12,
-    fig_path: Optional[Path] = None,
-    show: bool = True,
-) -> None:
-    import matplotlib.pyplot as plt
-
-    sub = delta_agg[delta_agg["dataset"] == dataset]
-    if "family" in delta_agg.columns:
-        sub = sub[sub["family"] == family]
-    sub = sub.assign(_abs=np.abs(sub["mean_delta"])).sort_values("_abs", ascending=False).drop(columns="_abs").head(top_n)
-    if sub.empty:
-        return
-    fig, ax = plt.subplots(figsize=(6, max(2.5, 0.35 * len(sub))))
-    y = np.arange(len(sub))
-    ax.barh(y, sub["mean_delta"], xerr=sub["std_delta"], capsize=2, color="coral")
-    ax.set_yticks(y)
-    ax.set_yticklabels(sub["hp"].astype(str))
-    ax.invert_yaxis()
-    ax.axvline(0, color="gray", lw=0.8)
-    ax.set_xlabel("Δ importance (HH − all), mean ± std over seeds")
-    ax.set_title(f"{dataset} — {family}")
-    fig.tight_layout()
-    if fig_path is not None:
-        fig.savefig(fig_path, bbox_inches="tight")
-    if show:
-        plt.show()
-    else:
-        plt.close(fig)
-
-
 def plot_decomp_hp_grid_rashomon(
     df_agg: pd.DataFrame,
     *,
@@ -681,10 +609,8 @@ __all__ = [
     "compute_lisa_hh_mask",
     "hotspot_delta_decomp",
     "per_seed_analysis_tables",
-    "plot_decomp_hp_bars",
     "plot_decomp_hp_grid_rashomon",
     "plot_family_importance_bars",
-    "plot_hotspot_hp_delta",
     "plot_hotspot_hp_delta_grid",
     "run_dataset_all_seeds",
 ]
