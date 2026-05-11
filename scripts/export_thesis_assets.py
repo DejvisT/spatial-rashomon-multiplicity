@@ -392,269 +392,16 @@ def write_hh_component_summary_tex():
 
 def write_calibration_summary_tex():
     """
-    Calibration robustness summary (mean ± std over runs), split by method.
-
-    Reads ``thesis_outputs/tables/nb07/calibration_summary.csv`` (notebook 07),
-    then legacy ``tables/calibration_summary.csv``. Expects long-format rows with
-    ``dataset``, ``method``, ``metric``, ``mean``, and ``std`` columns.
-
-    Writes two LaTeX tables:
-      - calibration_summary_platt.tex
-      - calibration_summary_isotonic.tex
-    """
-    path = resolve_csv("calibration_summary.csv", "nb07")
-
-    metrics_order = [
-        ("delta_mean_variance", 4, 4),
-        ("delta_moran_i", 4, 4),
-        ("delta_n_HH", 1, 1),
-        ("jaccard_HH_before_after", 4, 4),
-        ("brier_improvement", 4, 4),
-    ]
-
-    method_order = ["platt", "isotonic"]
-    method_files = {
-        "platt": TAB_DIR / "calibration_summary_platt.tex",
-        "isotonic": TAB_DIR / "calibration_summary_isotonic.tex",
-    }
-
-    def write_placeholder():
-        for method in method_order:
-            out = [
-                rf"% Placeholder: run notebook 07 and export nb07/calibration_summary.csv, then re-run.",
-                r"\begin{tabular}{lccccc}",
-                r"\hline",
-                r"Dataset & $\Delta$ mean var.\ & $\Delta$ Moran's $I$ & $\Delta$ $n_{\mathrm{HH}}$ "
-                r"& Jaccard HH & $\Delta$ Brier \\",
-                r"\hline",
-            ]
-            for name in SUPPORTED_DATASETS:
-                label = name.replace("_", " ").title()
-                out.append(f"{label} & --- & --- & --- & --- & --- \\\\")
-            out.extend([r"\hline", r"\end{tabular}"])
-            method_files[method].write_text("\n".join(out), encoding="utf-8")
-            print("Wrote", method_files[method], "(placeholder)")
-
-    if path is None or not path.is_file():
-        print(
-            "Missing calibration_summary.csv (nb07). "
-            "Writing placeholder calibration summary tables."
-        )
-        write_placeholder()
-        return
-
-    df = pd.read_csv(path)
-    required = {"dataset", "method", "metric", "mean", "std"}
-    if df.empty or not required.issubset(df.columns):
-        print("calibration_summary.csv empty or missing required columns. Skipping calibration summary tables.")
-        return
-
-    df = df.copy()
-    df["dataset"] = df["dataset"].astype(str).str.lower()
-    df["method"] = df["method"].astype(str).str.lower()
-
-    def cell_for(dataset_key: str, method_key: str, metric: str, dm: int, ds: int) -> str:
-        sub = df[
-            (df["dataset"] == dataset_key)
-            & (df["method"] == method_key)
-            & (df["metric"] == metric)
-        ]
-        if sub.empty:
-            return "---"
-        mn = float(sub["mean"].iloc[0])
-        st = float(sub["std"].iloc[0])
-        if pd.isna(st):
-            st = 0.0
-        return f"{mn:.{dm}f} $\\pm$ {st:.{ds}f}"
-
-    for method in method_order:
-        out = []
-        out.append(
-            rf"% Auto-generated from nb07/calibration_summary.csv ({method.title()} scaling)."
-        )
-        out.append(r"\begin{tabular}{lccccc}")
-        out.append(r"\hline")
-        out.append(
-            r"Dataset & $\Delta$ mean var.\ & $\Delta$ Moran's $I$ & $\Delta$ $n_{\mathrm{HH}}$ "
-            r"& Jaccard HH & $\Delta$ Brier \\"
-        )
-        out.append(r"\hline")
-
-        for name in SUPPORTED_DATASETS:
-            label = name.replace("_", " ").title()
-            cells = [cell_for(name, method, m, dm, ds) for m, dm, ds in metrics_order]
-            out.append(f"{label} & " + " & ".join(cells) + r" \\")
-
-        out.append(r"\hline")
-        out.append(r"\end{tabular}")
-        method_files[method].write_text("\n".join(out), encoding="utf-8")
-        print("Wrote", method_files[method])
-    """
     Calibration robustness summary (mean ± std over runs), per dataset and method.
 
-    Reads ``thesis_outputs/tables/nb07/calibration_summary.csv`` (notebook 07),
-    then legacy ``tables/calibration_summary.csv``. Expects long-format rows with
-    ``dataset``, ``method``, ``metric``, ``mean``, and ``std`` columns.
+    Reads thesis_outputs/tables/nb07/calibration_summary.csv, with fallback via
+    resolve_csv(). Writes only the two tables used by the thesis:
 
-    Writes two LaTeX tables:
-      - calibration_summary_spatial.tex  (Δ mean var, Δ Moran's I, Jaccard HH)
-      - calibration_summary_support.tex  (Δ n_HH, Δ Brier)
+      - calibration_summary.tex
+      - calibration_summary_extra.tex
     """
     path = resolve_csv("calibration_summary.csv", "nb07")
-    method_order = ["platt", "isotonic"]
-    method_labels = {
-        "platt": "Platt",
-        "isotonic": "Isotonic",
-    }
 
-    spatial_metrics = [
-        ("delta_mean_variance", 4, 4),
-        ("delta_moran_i", 4, 4),
-        ("jaccard_HH_before_after", 4, 4),
-    ]
-    support_metrics = [
-        ("delta_n_HH", 1, 1),
-        ("brier_improvement", 4, 4),
-    ]
-
-    spatial_file = TAB_DIR / "calibration_summary_spatial.tex"
-    support_file = TAB_DIR / "calibration_summary_support.tex"
-
-    def write_placeholder():
-        spatial_out = [
-            r"% Placeholder: run notebook 07 and export nb07/calibration_summary.csv, then re-run.",
-            r"\begin{tabular}{llccc}",
-            r"\hline",
-            r"Dataset & Method & $\Delta$ mean var.\ & $\Delta$ Moran's $I$ & Jaccard HH \\",
-            r"\hline",
-        ]
-        support_out = [
-            r"% Placeholder: run notebook 07 and export nb07/calibration_summary.csv, then re-run.",
-            r"\begin{tabular}{llcc}",
-            r"\hline",
-            r"Dataset & Method & $\Delta$ $n_{\mathrm{HH}}$ & $\Delta$ Brier \\",
-            r"\hline",
-        ]
-
-        for name in SUPPORTED_DATASETS:
-            label = name.replace("_", " ").title()
-            first_row = True
-            for method in ["Platt", "Isotonic"]:
-                if first_row:
-                    spatial_out.append(f"{label} & {method} & --- & --- & --- \\\\")
-                    support_out.append(f"{label} & {method} & --- & --- \\\\")
-                    first_row = False
-                else:
-                    spatial_out.append(f" & {method} & --- & --- & --- \\\\")
-                    support_out.append(f" & {method} & --- & --- \\\\")
-
-        spatial_out.extend([r"\hline", r"\end{tabular}"])
-        support_out.extend([r"\hline", r"\end{tabular}"])
-
-        spatial_file.write_text("\n".join(spatial_out), encoding="utf-8")
-        support_file.write_text("\n".join(support_out), encoding="utf-8")
-        print("Wrote", spatial_file, "(placeholder)")
-        print("Wrote", support_file, "(placeholder)")
-
-    if path is None or not path.is_file():
-        print(
-            "Missing calibration_summary.csv (nb07). "
-            "Writing placeholder calibration summary tables"
-        )
-        write_placeholder()
-        return
-
-    df = pd.read_csv(path)
-    required = {"dataset", "method", "metric", "mean", "std"}
-    if df.empty or not required.issubset(df.columns):
-        print("calibration_summary.csv empty or missing required columns. Skipping calibration summary tables.")
-        return
-
-    df = df.copy()
-    df["dataset"] = df["dataset"].astype(str).str.lower()
-    df["method"] = df["method"].astype(str).str.lower()
-
-    def cell_for(dataset_key: str, method_key: str, metric: str, dm: int, ds: int) -> str:
-        sub = df[
-            (df["dataset"] == dataset_key)
-            & (df["method"] == method_key)
-            & (df["metric"] == metric)
-        ]
-        if sub.empty:
-            return "---"
-        mn = float(sub["mean"].iloc[0])
-        st = float(sub["std"].iloc[0])
-        if pd.isna(st):
-            st = 0.0
-        return f"{mn:.{dm}f} $\\pm$ {st:.{ds}f}"
-
-    # Spatial table
-    spatial_out = []
-    spatial_out.append(
-        r"% Auto-generated from nb07/calibration_summary.csv (spatial calibration summary)."
-    )
-    spatial_out.append(r"\begin{tabular}{llccc}")
-    spatial_out.append(r"\hline")
-    spatial_out.append(
-        r"Dataset & Method & $\Delta$ mean var.\ & $\Delta$ Moran's $I$ & Jaccard HH \\"
-    )
-    spatial_out.append(r"\hline")
-
-    for name in SUPPORTED_DATASETS:
-        label = name.replace("_", " ").title()
-        first_row = True
-        for method in method_order:
-            cells = [cell_for(name, method, m, dm, ds) for m, dm, ds in spatial_metrics]
-            if first_row:
-                spatial_out.append(f"{label} & {method_labels[method]} & " + " & ".join(cells) + r" \\")
-                first_row = False
-            else:
-                spatial_out.append(f" & {method_labels[method]} & " + " & ".join(cells) + r" \\")
-
-    spatial_out.append(r"\hline")
-    spatial_out.append(r"\end{tabular}")
-    spatial_file.write_text("\n".join(spatial_out), encoding="utf-8")
-    print("Wrote", spatial_file)
-
-    # Support table
-    support_out = []
-    support_out.append(
-        r"% Auto-generated from nb07/calibration_summary.csv (support calibration summary)."
-    )
-    support_out.append(r"\begin{tabular}{llcc}")
-    support_out.append(r"\hline")
-    support_out.append(
-        r"Dataset & Method & $\Delta$ $n_{\mathrm{HH}}$ & $\Delta$ Brier \\"
-    )
-    support_out.append(r"\hline")
-
-    for name in SUPPORTED_DATASETS:
-        label = name.replace("_", " ").title()
-        first_row = True
-        for method in method_order:
-            cells = [cell_for(name, method, m, dm, ds) for m, dm, ds in support_metrics]
-            if first_row:
-                support_out.append(f"{label} & {method_labels[method]} & " + " & ".join(cells) + r" \\")
-                first_row = False
-            else:
-                support_out.append(f" & {method_labels[method]} & " + " & ".join(cells) + r" \\")
-
-    support_out.append(r"\hline")
-    support_out.append(r"\end{tabular}")
-    support_file.write_text("\n".join(support_out), encoding="utf-8")
-    print("Wrote", support_file)
-    """
-    Calibration robustness summary (mean ± std over runs), per dataset and method.
-
-    Reads ``thesis_outputs/tables/nb07/calibration_summary.csv`` (notebook 07),
-    then legacy ``tables/calibration_summary.csv``. Expects long-format rows with
-    ``dataset``, ``method``, ``metric``, ``mean``, and ``std`` columns.
-
-    Writes two LaTeX tables:
-      - calibration_summary.tex        (main table: Δ mean var, Δ Moran's I, Jaccard HH)
-      - calibration_summary_extra.tex  (secondary table: Δ n_HH, Δ Brier)
-    """
-    path = resolve_csv("calibration_summary.csv", "nb07")
     method_order = ["platt", "isotonic"]
     method_labels = {
         "platt": "Platt",
@@ -666,10 +413,14 @@ def write_calibration_summary_tex():
         ("delta_moran_i", 4, 4),
         ("jaccard_HH_before_after", 4, 4),
     ]
+
     extra_metrics = [
         ("delta_n_HH", 1, 1),
         ("brier_improvement", 4, 4),
     ]
+
+    main_file = TAB_DIR / "calibration_summary.tex"
+    extra_file = TAB_DIR / "calibration_summary_extra.tex"
 
     def write_placeholder():
         main_out = [
@@ -679,6 +430,7 @@ def write_calibration_summary_tex():
             r"Dataset & Method & $\Delta$ mean var.\ & $\Delta$ Moran's $I$ & Jaccard HH \\",
             r"\hline",
         ]
+
         extra_out = [
             r"% Placeholder: run notebook 07 and export nb07/calibration_summary.csv, then re-run.",
             r"\begin{tabular}{llcc}",
@@ -690,6 +442,7 @@ def write_calibration_summary_tex():
         for name in SUPPORTED_DATASETS:
             label = name.replace("_", " ").title()
             first_row = True
+
             for method in ["Platt", "Isotonic"]:
                 if first_row:
                     main_out.append(f"{label} & {method} & --- & --- & --- \\\\")
@@ -702,23 +455,29 @@ def write_calibration_summary_tex():
         main_out.extend([r"\hline", r"\end{tabular}"])
         extra_out.extend([r"\hline", r"\end{tabular}"])
 
-        (TAB_DIR / "calibration_summary.tex").write_text("\n".join(main_out), encoding="utf-8")
-        (TAB_DIR / "calibration_summary_extra.tex").write_text("\n".join(extra_out), encoding="utf-8")
-        print("Wrote", TAB_DIR / "calibration_summary.tex (placeholder)")
-        print("Wrote", TAB_DIR / "calibration_summary_extra.tex (placeholder)")
+        main_file.write_text("\n".join(main_out), encoding="utf-8")
+        extra_file.write_text("\n".join(extra_out), encoding="utf-8")
+
+        print("Wrote", main_file, "(placeholder)")
+        print("Wrote", extra_file, "(placeholder)")
 
     if path is None or not path.is_file():
         print(
             "Missing calibration_summary.csv (nb07). "
-            "Writing placeholder calibration_summary.tex and calibration_summary_extra.tex"
+            "Writing placeholder calibration summary tables."
         )
         write_placeholder()
         return
 
     df = pd.read_csv(path)
+
     required = {"dataset", "method", "metric", "mean", "std"}
     if df.empty or not required.issubset(df.columns):
-        print("calibration_summary.csv empty or missing required columns. Skipping calibration summary tables.")
+        print(
+            "calibration_summary.csv empty or missing required columns. "
+            "Writing placeholder calibration summary tables."
+        )
+        write_placeholder()
         return
 
     df = df.copy()
@@ -731,174 +490,95 @@ def write_calibration_summary_tex():
             & (df["method"] == method_key)
             & (df["metric"] == metric)
         ]
+
         if sub.empty:
             return "---"
+
         mn = float(sub["mean"].iloc[0])
         st = float(sub["std"].iloc[0])
+
         if pd.isna(st):
             st = 0.0
+
         return f"{mn:.{dm}f} $\\pm$ {st:.{ds}f}"
 
-    # -------------------------
-    # Main table
-    # -------------------------
-    main_out = []
-    main_out.append(
-        r"% Auto-generated from nb07/calibration_summary.csv (main calibration table)."
-    )
-    main_out.append(r"\begin{tabular}{llccc}")
-    main_out.append(r"\hline")
-    main_out.append(
-        r"Dataset & Method & $\Delta$ mean var.\ & $\Delta$ Moran's $I$ & Jaccard HH \\"
-    )
-    main_out.append(r"\hline")
-
-    for name in SUPPORTED_DATASETS:
-        label = name.replace("_", " ").title()
-        first_row = True
-        for method in method_order:
-            cells = [cell_for(name, method, m, dm, ds) for m, dm, ds in main_metrics]
-            if first_row:
-                main_out.append(f"{label} & {method_labels[method]} & " + " & ".join(cells) + r" \\")
-                first_row = False
-            else:
-                main_out.append(f" & {method_labels[method]} & " + " & ".join(cells) + r" \\")
-
-    main_out.append(r"\hline")
-    main_out.append(r"\end{tabular}")
-    (TAB_DIR / "calibration_summary.tex").write_text("\n".join(main_out), encoding="utf-8")
-    print("Wrote", TAB_DIR / "calibration_summary.tex")
-
-    # -------------------------
-    # Secondary / appendix table
-    # -------------------------
-    extra_out = []
-    extra_out.append(
-        r"% Auto-generated from nb07/calibration_summary.csv (secondary calibration table)."
-    )
-    extra_out.append(r"\begin{tabular}{llcc}")
-    extra_out.append(r"\hline")
-    extra_out.append(
-        r"Dataset & Method & $\Delta$ $n_{\mathrm{HH}}$ & $\Delta$ Brier \\"
-    )
-    extra_out.append(r"\hline")
-
-    for name in SUPPORTED_DATASETS:
-        label = name.replace("_", " ").title()
-        first_row = True
-        for method in method_order:
-            cells = [cell_for(name, method, m, dm, ds) for m, dm, ds in extra_metrics]
-            if first_row:
-                extra_out.append(f"{label} & {method_labels[method]} & " + " & ".join(cells) + r" \\")
-                first_row = False
-            else:
-                extra_out.append(f" & {method_labels[method]} & " + " & ".join(cells) + r" \\")
-
-    extra_out.append(r"\hline")
-    extra_out.append(r"\end{tabular}")
-    (TAB_DIR / "calibration_summary_extra.tex").write_text("\n".join(extra_out), encoding="utf-8")
-    print("Wrote", TAB_DIR / "calibration_summary_extra.tex")
-
-    """
-    Calibration robustness summary (mean ± std over runs), per dataset and method.
-
-    Reads ``thesis_outputs/tables/nb07/calibration_summary.csv`` (notebook 07),
-    then legacy ``tables/calibration_summary.csv``. Expects long-format rows with
-    ``dataset``, ``method``, ``metric``, ``mean``, and ``std`` columns.
-
-    Writes a table with one row per (dataset, method), so both Platt and isotonic
-    scaling are included when present.
-    """
-    path = resolve_csv("calibration_summary.csv", "nb07")
-    if path is None or not path.is_file():
-        print(
-            "Missing calibration_summary.csv (nb07). "
-            "Writing placeholder calibration_summary.tex"
-        )
-        out = [
-            r"% Placeholder: run notebook 07 and export nb07/calibration_summary.csv, then re-run.",
-            r"\begin{tabular}{llccccc}",
-            r"\hline",
-            r"Dataset & Method & $\Delta$ mean var.\ & $\Delta$ Moran's $I$ & $\Delta$ $n_{\mathrm{HH}}$ "
-            r"& Jaccard HH & $\Delta$ Brier \\",
-            r"\hline",
-        ]
-        for name in SUPPORTED_DATASETS:
-            label = name.replace("_", " ").title()
-            for method in ["Platt", "Isotonic"]:
-                out.append(
-                    f"{label} & {method} & --- & --- & --- & --- & --- \\\\"
-                )
-        out.extend([r"\hline", r"\end{tabular}"])
-        (TAB_DIR / "calibration_summary.tex").write_text("\n".join(out), encoding="utf-8")
-        print("Wrote", TAB_DIR / "calibration_summary.tex (placeholder)")
-        return
-
-    df = pd.read_csv(path)
-    required = {"dataset", "method", "metric", "mean", "std"}
-    if df.empty or not required.issubset(df.columns):
-        print("calibration_summary.csv empty or missing required columns. Skipping calibration_summary.tex")
-        return
-
-    df = df.copy()
-    df["dataset"] = df["dataset"].astype(str).str.lower()
-    df["method"] = df["method"].astype(str).str.lower()
-
-    metrics_order = [
-        ("delta_mean_variance", 4, 4),
-        ("delta_moran_i", 4, 4),
-        ("delta_n_HH", 1, 1),
-        ("jaccard_HH_before_after", 4, 4),
-        ("brier_improvement", 4, 4),
+    # Main calibration table:
+    # Δ mean variance, Δ Moran's I, and Jaccard overlap of HH masks.
+    main_out = [
+        r"% Auto-generated from nb07/calibration_summary.csv.",
+        r"\begin{tabular}{llccc}",
+        r"\hline",
+        r"Dataset & Method & $\Delta$ mean var.\ & $\Delta$ Moran's $I$ & Jaccard HH \\",
+        r"\hline",
     ]
 
-    method_order = ["platt", "isotonic"]
-    method_labels = {
-        "platt": "Platt",
-        "isotonic": "Isotonic",
-    }
+    for name in SUPPORTED_DATASETS:
+        label = name.replace("_", " ").title()
+        first_row = True
 
-    def cell_for(dataset_key: str, method_key: str, metric: str, dm: int, ds: int) -> str:
-        sub = df[
-            (df["dataset"] == dataset_key)
-            & (df["method"] == method_key)
-            & (df["metric"] == metric)
-        ]
-        if sub.empty:
-            return "---"
-        mn = float(sub["mean"].iloc[0])
-        st = float(sub["std"].iloc[0])
-        if pd.isna(st):
-            st = 0.0
-        return f"{mn:.{dm}f} $\\pm$ {st:.{ds}f}"
+        for method in method_order:
+            cells = [
+                cell_for(name, method, metric, dm, ds)
+                for metric, dm, ds in main_metrics
+            ]
 
-    out = []
-    out.append(
-        r"% Auto-generated from nb07/calibration_summary.csv (all calibration methods)."
-    )
-    out.append(r"\begin{tabular}{llccccc}")
-    out.append(r"\hline")
-    out.append(
-        r"Dataset & Method & $\Delta$ mean var.\ & $\Delta$ Moran's $I$ & $\Delta$ $n_{\mathrm{HH}}$ "
-        r"& Jaccard HH & $\Delta$ Brier \\"
-    )
-    out.append(r"\hline")
+            if first_row:
+                main_out.append(
+                    f"{label} & {method_labels[method]} & "
+                    + " & ".join(cells)
+                    + r" \\"
+                )
+                first_row = False
+            else:
+                main_out.append(
+                    f" & {method_labels[method]} & "
+                    + " & ".join(cells)
+                    + r" \\"
+                )
+
+    main_out.extend([r"\hline", r"\end{tabular}"])
+
+    main_file.write_text("\n".join(main_out), encoding="utf-8")
+    print("Wrote", main_file)
+
+    # Extra calibration table:
+    # Δ n_HH and Δ Brier.
+    extra_out = [
+        r"% Auto-generated from nb07/calibration_summary.csv.",
+        r"\begin{tabular}{llcc}",
+        r"\hline",
+        r"Dataset & Method & $\Delta$ $n_{\mathrm{HH}}$ & $\Delta$ Brier \\",
+        r"\hline",
+    ]
 
     for name in SUPPORTED_DATASETS:
         label = name.replace("_", " ").title()
         first_row = True
+
         for method in method_order:
-            cells = [cell_for(name, method, m, dm, ds) for m, dm, ds in metrics_order]
+            cells = [
+                cell_for(name, method, metric, dm, ds)
+                for metric, dm, ds in extra_metrics
+            ]
+
             if first_row:
-                out.append(f"{label} & {method_labels[method]} & " + " & ".join(cells) + r" \\")
+                extra_out.append(
+                    f"{label} & {method_labels[method]} & "
+                    + " & ".join(cells)
+                    + r" \\"
+                )
                 first_row = False
             else:
-                out.append(f" & {method_labels[method]} & " + " & ".join(cells) + r" \\")
+                extra_out.append(
+                    f" & {method_labels[method]} & "
+                    + " & ".join(cells)
+                    + r" \\"
+                )
 
-    out.append(r"\hline")
-    out.append(r"\end{tabular}")
-    (TAB_DIR / "calibration_summary.tex").write_text("\n".join(out), encoding="utf-8")
-    print("Wrote", TAB_DIR / "calibration_summary.tex")
+    extra_out.extend([r"\hline", r"\end{tabular}"])
+
+    extra_file.write_text("\n".join(extra_out), encoding="utf-8")
+    print("Wrote", extra_file)
 
 
 def _tex_escape(s: str) -> str:
