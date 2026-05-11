@@ -1,5 +1,0 @@
-dataset,family,pool_type,hp,mean_delta,std_delta,n_seeds
-german,GBM,full_pool,learning_rate,0.03963872408063302,0.08711821424355876,6
-german,GBM,full_pool,subsample,0.017458085822687066,0.07946083950243317,6
-german,GBM,full_pool,n_estimators,0.007588987718471295,0.03613482392108088,6
-german,GBM,full_pool,max_depth,-0.024540129339731643,0.04035799587704478,6

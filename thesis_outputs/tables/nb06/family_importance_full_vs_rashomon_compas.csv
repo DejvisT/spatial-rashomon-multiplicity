@@ -1,3 +1,0 @@
-dataset,pool_type,subset,mean_ratio,std_ratio,n_seeds
-compas,Rashomon,all,0.4126133441609182,0.03018243785296555,10
-compas,full_pool,all,0.4231168751186306,0.017829453996635103,10

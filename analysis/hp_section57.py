@@ -170,7 +170,7 @@ def export_seed_aggregates_and_hotspot_delta(
     aggs: Dict[str, Any],
     config: HPAnalysisConfig,
 ) -> None:
-    """Write family + secondary HP aggregates and pooled hotspot delta CSV."""
+    """Write compact family + secondary HP aggregates and pooled hotspot delta CSVs."""
     td = Path(config.table_dir)
     td.mkdir(parents=True, exist_ok=True)
     df_fam_agg = aggs["fam_agg"]
@@ -183,14 +183,19 @@ def export_seed_aggregates_and_hotspot_delta(
             sub_f = df_fam_agg[df_fam_agg["dataset"] == ds]
             if not sub_f.empty:
                 sub_f.to_csv(td / f"family_importance_agg_{ds}.csv", index=False)
-        if not df_decomp_agg.empty:
-            sub = df_decomp_agg[df_decomp_agg["dataset"] == ds]
-            if not sub.empty:
-                sub.to_csv(td / f"decomp_hp_unique_value_secondary_agg_{ds}.csv", index=False)
-        if not df_vm_agg.empty:
-            sub = df_vm_agg[df_vm_agg["dataset"] == ds]
-            if not sub.empty:
-                sub.to_csv(td / f"hp_vm_unique_value_secondary_agg_{ds}.csv", index=False)
+
+    if not df_decomp_agg.empty:
+        df_decomp_agg.to_csv(
+            td / "decomp_hp_unique_value_secondary_agg.csv",
+            index=False,
+        )
+
+    if not df_vm_agg.empty:
+        df_vm_agg.to_csv(
+            td / "hp_vm_unique_value_secondary_agg.csv",
+            index=False,
+        )
+
 
     if not df_delta_agg.empty:
         df_delta_agg.to_csv(td / "decomp_hp_hotspot_delta_agg.csv", index=False)

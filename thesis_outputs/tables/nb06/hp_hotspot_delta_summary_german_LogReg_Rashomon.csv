@@ -1,3 +1,0 @@
-dataset,family,pool_type,hp,mean_delta,std_delta,n_seeds
-german,LogReg,Rashomon,C,0.009176061043962033,0.006393180645523624,3
-german,LogReg,Rashomon,l1_ratio,-0.0009733905030732797,0.0162210106048743,3

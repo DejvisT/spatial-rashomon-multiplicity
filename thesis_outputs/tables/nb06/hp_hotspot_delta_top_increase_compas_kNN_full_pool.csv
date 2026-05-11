@@ -1,2 +1,0 @@
-dataset,family,pool_type,hp,mean_delta,std_delta,n_seeds
-compas,kNN,full_pool,weights,0.09352095342170938,0.05940172094230682,10

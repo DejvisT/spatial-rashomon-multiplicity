@@ -1,6 +1,0 @@
-dataset,family,subset,hp_name,rashomon_mean_importance,full_pool_mean_importance,rashomon_mean_rank,full_pool_mean_rank,delta_rashomon_minus_full
-compas,RF,all,max_features,0.14735921694524157,0.037024576528808174,2.9,4.3,0.1103346404164334
-compas,RF,all,n_estimators,0.0428676562311092,0.03699360596498539,3.9,4.4,0.005874050266123809
-compas,RF,all,min_samples_split,0.10751794708636,0.11916570658789405,3.1,2.8,-0.011647759501534044
-compas,RF,all,min_samples_leaf,0.11297918574321283,0.21088709457065868,3.0,2.4,-0.09790790882744585
-compas,RF,all,max_depth,0.3028536949477415,0.4205956801766333,2.1,1.1,-0.11774198522889179

@@ -1,3 +1,0 @@
-dataset,family,subset,hp_name,rashomon_mean_importance,full_pool_mean_importance,rashomon_mean_rank,full_pool_mean_rank,rashomon_n_seeds,full_pool_n_seeds,rashomon_std_importance,full_pool_std_importance,delta_rashomon_minus_full,abs_delta
-german,LogReg,all,C,0.29472385870745643,0.674406305565389,1.0,1.0,10,10,0.13204968457868263,0.20068986426920626,-0.3796824468579326,0.3796824468579326
-german,LogReg,all,l1_ratio,0.04325215278052256,0.048983194561460476,2.0,2.0,10,10,0.0405914294453678,0.027440980512533873,-0.005731041780937918,0.005731041780937918

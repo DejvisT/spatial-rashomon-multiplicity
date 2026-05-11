@@ -1,3 +1,0 @@
-dataset,pool_type,subset,family,hp_name,mean_importance,std_importance,mean_rank,rank_freq_top1,rank_freq_top3,n_seeds
-german,Rashomon,non_HH,LogReg,C,0.29378725588981836,0.13424500293311178,1.0,1.0,1.0,10
-german,Rashomon,non_HH,LogReg,l1_ratio,0.04330946678402283,0.040676465255842814,2.0,0.0,1.0,10

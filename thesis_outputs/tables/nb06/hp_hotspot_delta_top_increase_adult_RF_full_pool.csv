@@ -1,2 +1,0 @@
-dataset,family,pool_type,hp,mean_delta,std_delta,n_seeds
-adult,RF,full_pool,max_features,0.01325956923185391,0.007984155789732744,10

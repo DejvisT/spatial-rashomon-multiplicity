@@ -1,4 +1,0 @@
-dataset,family,pool_type,hp,mean_delta,std_delta,n_seeds
-adult,kNN,full_pool,p,0.050978919126127384,0.009049626781315732,10
-adult,kNN,full_pool,weights,-0.019035709708615123,0.0051977438855423655,10
-adult,kNN,full_pool,n_neighbors,-0.03050468946854945,0.01225168272611992,10
