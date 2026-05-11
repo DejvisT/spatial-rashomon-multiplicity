@@ -270,11 +270,6 @@ def build_canonical_model_analysis_exports(df_models: pd.DataFrame, table_dir: P
     print("Saved hp_model_level_analysis_table.csv and hp_model_level_analysis_summary.csv")
 
 
-def resolve_meta_seed_column(df: pd.DataFrame, preference: Sequence[str]) -> str:
-    """Delegate to :func:`analysis.hp_meta_model.resolve_outer_seed_column`."""
-    return resolve_outer_seed_column(df, preference)
-
-
 __all__ = [
     "HPAnalysisConfig",
     "aggregate_hp_seed_tables",
@@ -283,6 +278,5 @@ __all__ = [
     "ensure_canonical_model_table",
     "export_per_dataset_wide_tables",
     "export_seed_aggregates_and_hotspot_delta",
-    "resolve_meta_seed_column",
     "run_all_pools_for_dataset",
 ]

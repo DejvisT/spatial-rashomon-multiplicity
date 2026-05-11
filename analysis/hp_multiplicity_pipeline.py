@@ -530,41 +530,6 @@ def plot_decomp_hp_bars(
         plt.close(fig)
 
 
-def plot_vm_hp_bars(
-    df_agg: pd.DataFrame,
-    *,
-    dataset: str,
-    family: str,
-    subset: str = "all",
-    pool_type: Optional[str] = None,
-    top_n: int = 10,
-    fig_path: Optional[Path] = None,
-) -> None:
-    """Horizontal bars from ``aggregate_hp_importance`` (V_m-based ratios)."""
-    import matplotlib.pyplot as plt
-
-    sub = df_agg[(df_agg["dataset"] == dataset) & (df_agg["family"] == family)]
-    if "subset" in df_agg.columns:
-        sub = sub[sub["subset"] == subset]
-    if pool_type is not None and "pool_type" in df_agg.columns:
-        sub = sub[sub["pool_type"] == pool_type]
-    sub = sub.sort_values("mean_importance", ascending=False).head(top_n)
-    if sub.empty or "hp_name" not in sub.columns:
-        return
-    fig, ax = plt.subplots(figsize=(6, max(2.5, 0.35 * len(sub))))
-    y = np.arange(len(sub))
-    ax.barh(y, sub["mean_importance"], xerr=sub["std_importance"], capsize=2, color="steelblue", alpha=0.85)
-    ax.set_yticks(y)
-    ax.set_yticklabels(sub["hp_name"].astype(str))
-    ax.invert_yaxis()
-    ax.set_xlabel("V_m-based HP importance (mean ± std over seeds)")
-    ax.set_title(f"{dataset} — {family} — subset={subset}")
-    fig.tight_layout()
-    if fig_path is not None:
-        fig.savefig(fig_path, bbox_inches="tight")
-    plt.show()
-
-
 def plot_hotspot_hp_delta(
     delta_agg: pd.DataFrame,
     *,
@@ -719,74 +684,10 @@ __all__ = [
     "plot_decomp_hp_bars",
     "plot_decomp_hp_grid_rashomon",
     "plot_family_importance_bars",
-    "plot_vm_hp_bars",
     "plot_hotspot_hp_delta",
     "plot_hotspot_hp_delta_grid",
     "run_dataset_all_seeds",
 ]
-
-
-def plot_vm_hp_compare_bars(
-    df_agg: pd.DataFrame,
-    *,
-    dataset: str,
-    family: str,
-    subset: str = "all",
-    top_n: int = 10,
-    fig_path: Optional[Path] = None,
-    show: bool = True,
-) -> None:
-    import matplotlib.pyplot as plt
-    import numpy as np
-
-    sub = df_agg[(df_agg["dataset"] == dataset) & (df_agg["family"] == family)]
-    if "subset" in sub.columns:
-        sub = sub[sub["subset"] == subset]
-    if sub.empty or "pool_type" not in sub.columns:
-        return
-
-    hp_order = (
-        sub.groupby("hp_name")["mean_importance"]
-        .max()
-        .sort_values(ascending=False)
-        .head(top_n)
-        .index.tolist()
-    )
-    sub = sub[sub["hp_name"].isin(hp_order)].copy()
-
-    pool_types = list(sub["pool_type"].dropna().unique())
-    x = np.arange(len(hp_order))
-    width = 0.8 / max(len(pool_types), 1)
-
-    fig, ax = plt.subplots(figsize=(7, max(3, 0.45 * len(hp_order))))
-    for i, pt in enumerate(pool_types):
-        s = (
-            sub[sub["pool_type"] == pt]
-            .set_index("hp_name")
-            .reindex(hp_order)
-            .reset_index()
-        )
-        ax.bar(
-            x + (i - (len(pool_types) - 1) / 2) * width,
-            s["mean_importance"],
-            width=width,
-            yerr=s["std_importance"],
-            capsize=2,
-            label=str(pt),
-        )
-
-    ax.set_xticks(x)
-    ax.set_xticklabels(hp_order, rotation=45, ha="right")
-    ax.set_ylabel("V_m-based HP importance")
-    ax.set_title(f"{dataset} — {family} — subset={subset}")
-    ax.legend()
-    fig.tight_layout()
-    if fig_path is not None:
-        fig.savefig(fig_path, bbox_inches="tight")
-    if show:
-        plt.show()
-    else:
-        plt.close(fig)
 
 
 def plot_family_importance_compare_bars(
