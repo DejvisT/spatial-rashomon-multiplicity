@@ -116,39 +116,58 @@ def write_dataset_summary_tex():
 
 
 def write_global_summary_tex():
-    """Global Rashomon set: mean variance, Moran's I, HH count, frac sig per dataset."""
     df = build_dataset_summary()
     if df.empty:
-        print("No dataset summary. Skipping global_summary.tex")
+        print("No global summary. Skipping global_summary.tex")
         return
+
     out = []
-    out.append(r"\begin{tabular}{lcccc}")
+    out.append(r"\begin{tabular}{lccccc}")
     out.append(r"\hline")
-    out.append(r"Dataset & Mean variance & Moran's $I$ & Mean HH count & Frac.\ sig. \\")
-    out.append(r" & (mean $\pm$ std) & (mean $\pm$ std) & mean & fraction \\")
+    out.append(
+        r"Dataset & Mean variance & Moran's $I$ & \shortstack{HH count} & \shortstack{HH rate} & \shortstack{Significant\\runs} \\"
+    )
+    out.append(
+        r" & (mean $\pm$ std) & (mean $\pm$ std) & (mean $\pm$ std) & (mean $\pm$ std) & (\%) \\"
+    )
     out.append(r"\hline")
+
     for _, r in df.iterrows():
         mv = f"{r['mean_variance_mean']:.4f} $\\pm$ {r['mean_variance_std']:.4f}"
         mi = f"{r['moran_i_mean']:.3f} $\\pm$ {r['moran_i_std']:.3f}"
-        out.append(f"{r['dataset']} & {mv} & {mi} & {r['n_hh_mean']:.1f} & {r['frac_significant']:.2f} \\\\")
+        hh = f"{r['n_hh_mean']:.1f} $\\pm$ {r['n_hh_std']:.1f}"
+        hh_rate = f"{100 * r['hh_rate_mean']:.1f}\\% $\\pm$ {100 * r['hh_rate_std']:.1f}\\%"
+        sig = f"{100 * r['frac_significant']:.0f}\\%"
+
+        out.append(
+            f"{r['dataset']} & {mv} & {mi} & {hh} & {hh_rate} & {sig} \\\\"
+        )
+
     out.append(r"\hline")
     out.append(r"\end{tabular}")
+
     (TAB_DIR / "global_summary.tex").write_text("\n".join(out), encoding="utf-8")
     print("Wrote", TAB_DIR / "global_summary.tex")
-
 
 def write_family_summary_tex():
     """Per-family (top-25 per family): prefer aggregated CSV over seeds; else legacy single-run CSV."""
     agg_path = RESULTS_DIR / "compas" / "per_family_spatial_aggregated.csv"
 
+    # Used only if the per-family CSV does not yet contain hh_rate columns.
+    compas_n_test = 1443
+
     out = []
     out.append(
         r"% Per-family Rashomon (top-K=25 per family), COMPAS. Mean $\pm$ std over outer seeds from experiment runner."
     )
-    out.append(r"\begin{tabular}{lccc}")
+    out.append(r"\begin{tabular}{lcccc}")
     out.append(r"\hline")
-    out.append(r"Family & Mean variance & Moran's $I$ & Mean HH count \\")
-    out.append(r" & (mean $\pm$ std) & (mean $\pm$ std) & (mean $\pm$ std) \\")
+    out.append(
+        r"Family & Mean variance & Moran's $I$ & HH count & HH rate \\"
+    )
+    out.append(
+        r" & (mean $\pm$ std) & (mean $\pm$ std) & (mean $\pm$ std) & (mean $\pm$ std) \\"
+    )
     out.append(r"\hline")
 
     if agg_path.is_file():
@@ -160,7 +179,19 @@ def write_family_summary_tex():
             mi = f"{r['moran_i_mean']:.3f} $\\pm$ {r['moran_i_std']:.3f}"
             hh = f"{r['n_hh_mean']:.1f} $\\pm$ {r['n_hh_std']:.1f}"
 
-            out.append(f"{fam} & {mv} & {mi} & {hh} \\\\")
+            if "hh_rate_mean" in df.columns and "hh_rate_std" in df.columns:
+                hh_rate_mean = r["hh_rate_mean"]
+                hh_rate_std = r["hh_rate_std"]
+            else:
+                hh_rate_mean = r["n_hh_mean"] / compas_n_test
+                hh_rate_std = r["n_hh_std"] / compas_n_test
+
+            hh_rate = (
+                f"{100 * hh_rate_mean:.1f}\\% $\\pm$ "
+                f"{100 * hh_rate_std:.1f}\\%"
+            )
+
+            out.append(f"{fam} & {mv} & {mi} & {hh} & {hh_rate} \\\\")
 
     else:
         path = resolve_csv("family_hv_hh_summary_compas.csv", "nb06")
@@ -181,9 +212,11 @@ def write_family_summary_tex():
             fam = r["family"]
             mv = f"{r['mean_var']:.6f}"
             mi = f"{r['moran_I']:.3f}"
-            hh = str(int(r["hh_count"]))
+            hh_count = int(r["hh_count"])
+            hh = str(hh_count)
+            hh_rate = f"{100 * hh_count / compas_n_test:.1f}\\%"
 
-            out.append(f"{fam} & {mv} & {mi} & {hh} \\\\")
+            out.append(f"{fam} & {mv} & {mi} & {hh} & {hh_rate} \\\\")
 
     out.append(r"\hline")
     out.append(r"\end{tabular}")
