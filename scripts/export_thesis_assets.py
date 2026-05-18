@@ -1025,6 +1025,90 @@ def write_quadrant_compas_tex():
     (TAB_DIR / "quadrant_compas.tex").write_text("\n".join(out), encoding="utf-8")
     print("Wrote", TAB_DIR / "quadrant_compas.tex")
 
+
+def write_fairness_subgroup_rates_compas_tex():
+    """Write COMPAS subgroup HH exposure table from notebook 10 CSV."""
+    path = resolve_csv("fairness_subgroup_rates_compas.csv", "nb10")
+    if path is None:
+        print(
+            "Missing fairness_subgroup_rates_compas.csv (nb10). "
+            "Skipping fairness_subgroup_rates_compas.tex"
+        )
+        return
+
+    df = pd.read_csv(path)
+
+    required = {
+        "group_col",
+        "group_val",
+        "n_group_mean",
+        "hh_rate_mean",
+        "hh_rate_std",
+        "mean_var_mean",
+        "mean_var_std",
+    }
+    missing = required - set(df.columns)
+    if missing:
+        print(
+            "fairness_subgroup_rates_compas.csv is missing columns "
+            f"{sorted(missing)}. Skipping fairness_subgroup_rates_compas.tex"
+        )
+        return
+
+    # Keep only groups that are meaningful for the thesis table.
+    # This avoids very tiny race categories if they are present in the CSV.
+    if "n_seed_eligible" in df.columns:
+        df = df[df["n_seed_eligible"] > 0].copy()
+
+    attr_labels = {
+        "race": "Race",
+        "sex": "Sex",
+    }
+
+    group_order = {
+        "race": ["African-American", "Caucasian", "Hispanic", "Other"],
+        "sex": ["Female", "Male"],
+    }
+
+    out = []
+    out.append(r"\begin{tabular}{llccc}")
+    out.append(r"\hline")
+    out.append(r"Attribute & Subgroup & Test observations & HH rate & Predictive variance \\")
+    out.append(r"\hline")
+
+    for group_col in ["race", "sex"]:
+        sub = df[df["group_col"] == group_col].copy()
+        if sub.empty:
+            continue
+
+        order = group_order.get(group_col, sorted(sub["group_val"].astype(str).unique()))
+        sub["group_order"] = sub["group_val"].apply(
+            lambda x: order.index(x) if x in order else len(order)
+        )
+        sub = sub.sort_values("group_order")
+
+        n_rows = len(sub)
+        attr = attr_labels.get(group_col, str(group_col).title())
+
+        for i, (_, r) in enumerate(sub.iterrows()):
+            attr_cell = rf"\multirow{{{n_rows}}}{{*}}{{{attr}}}" if i == 0 else ""
+            group = str(r["group_val"])
+
+            n_mean = f"{r['n_group_mean']:.0f}"
+            hh = f"{100 * r['hh_rate_mean']:.1f}\\% $\\pm$ {100 * r['hh_rate_std']:.1f}\\%"
+            mean_var = f"{r['mean_var_mean']:.4f} $\\pm$ {r['mean_var_std']:.4f}"
+
+            out.append(f"{attr_cell} & {group} & {n_mean} & {hh} & {mean_var} \\\\")
+
+        out.append(r"\hline")
+
+    out.append(r"\end{tabular}")
+
+    (TAB_DIR / "fairness_subgroup_rates_compas.tex").write_text(
+        "\n".join(out), encoding="utf-8"
+    )
+    print("Wrote", TAB_DIR / "fairness_subgroup_rates_compas.tex")
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Export thesis assets")
@@ -1047,6 +1131,7 @@ def main():
     write_conflict_null_significance_tex()
     write_hh_component_summary_tex()
     write_alternative_knn_comparison_tex()
+    write_fairness_subgroup_rates_compas_tex()
     write_conflict_summary_tex()
     write_aggregate_multiplicity_summary_tex()
     write_hp_hotspot_delta_compas_tex()
