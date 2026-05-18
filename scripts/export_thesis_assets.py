@@ -60,6 +60,8 @@ def build_dataset_summary():
         mi_std = df["moran_i"].std(ddof=1) if n > 1 else 0.0
         n_hh_mean = df["n_hh"].mean()
         n_hh_std = df["n_hh"].std(ddof=1) if n > 1 else 0.0
+        hh_rate_mean = df["hh_rate"].mean()
+        hh_rate_std = df["hh_rate"].std(ddof=1) if n > 1 else 0.0
         mc_mean = df["mean_conflict"].mean() if "mean_conflict" in df.columns else 0.0
         mc_std = df["mean_conflict"].std(ddof=1) if n > 1 and "mean_conflict" in df.columns else 0.0
         sig = (df["p_empirical"] < 0.05).mean()
@@ -72,6 +74,8 @@ def build_dataset_summary():
             "moran_i_std": mi_std,
             "n_hh_mean": n_hh_mean,
             "n_hh_std": n_hh_std,
+            "hh_rate_mean": hh_rate_mean,
+            "hh_rate_std": hh_rate_std,
             "mean_conflict_mean": mc_mean,
             "mean_conflict_std": mc_std,
             "frac_significant": sig,
@@ -84,21 +88,29 @@ def write_dataset_summary_tex():
     if df.empty:
         print("No dataset summary (missing summary_per_run.csv). Skipping dataset_summary.tex")
         return
+
     out = []
-    out.append(r"\begin{tabular}{lccc}")
+    out.append(r"\begin{tabular}{lcccc}")
     out.append(r"\hline")
-    out.append(r"Dataset & Mean variance & Moran's $I$ & HH count \\")
-    out.append(r" & (mean $\pm$ std) & (mean $\pm$ std) & (mean $\pm$ std) \\")
+    out.append(r"Dataset & Mean variance & Moran's $I$ & HH count & HH rate \\")
+    out.append(
+        r" & (mean $\pm$ std) & (mean $\pm$ std) & (mean $\pm$ std) & (mean $\pm$ std) \\"
+    )
     out.append(r"\hline")
+
     for _, r in df.iterrows():
         mv = f"{r['mean_variance_mean']:.4f} $\\pm$ {r['mean_variance_std']:.4f}"
         mi = f"{r['moran_i_mean']:.3f} $\\pm$ {r['moran_i_std']:.3f}"
         hh = f"{r['n_hh_mean']:.1f} $\\pm$ {r['n_hh_std']:.1f}"
+        hh_rate = f"{100 * r['hh_rate_mean']:.1f}\\% $\\pm$ {100 * r['hh_rate_std']:.1f}\\%"
+
         out.append(
-            f"{r['dataset']} & {mv} & {mi} & {hh} \\\\"
+            f"{r['dataset']} & {mv} & {mi} & {hh} & {hh_rate} \\\\"
         )
+
     out.append(r"\hline")
     out.append(r"\end{tabular}")
+
     (TAB_DIR / "dataset_summary.tex").write_text("\n".join(out), encoding="utf-8")
     print("Wrote", TAB_DIR / "dataset_summary.tex")
 

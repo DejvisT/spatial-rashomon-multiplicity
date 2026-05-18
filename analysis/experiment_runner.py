@@ -241,6 +241,12 @@ def _run_single(
         (1 + np.sum(null_moran >= observed_moran)) / (len(null_moran) + 1)
     )
     n_hh = int(np.sum(spatial["HH_mask"]))
+    n_test = int(X_test.shape[0])
+    hh_rate = n_hh / n_test if n_test > 0 else np.nan
+
+    conflict_n_hh = int(spatial.get("conflict_n_hh", 0))
+    conflict_hh_rate = conflict_n_hh / n_test if n_test > 0 else np.nan
+
     p_empirical_hh = float(
         (1 + np.sum(null_n_hh >= n_hh)) / (len(null_n_hh) + 1)
     )
@@ -259,10 +265,13 @@ def _run_single(
         "frac_conflict_ge025": mult["frac_conflict_ge025"],
         "moran_i": observed_moran,
         "moran_p_sim": moran_p_sim,
+        "n_test": n_test,
         "n_hh": n_hh,
+        "hh_rate": hh_rate,
         "n_ll": n_ll,
         "conflict_moran_i": float(spatial.get("conflict_moran_i", np.nan)),
-        "conflict_n_hh": int(spatial.get("conflict_n_hh", 0)),
+        "conflict_n_hh": conflict_n_hh,
+        "conflict_hh_rate": conflict_hh_rate,
         "conflict_n_ll": int(spatial.get("conflict_n_ll", 0)),
         "hh_jaccard_var_conflict": float(spatial.get("hh_jaccard_var_conflict", np.nan)),
         "p_empirical": p_empirical,
@@ -398,10 +407,13 @@ def run_dataset_experiment(
             "moran_i": r["moran_i"],
             "moran_p_sim": r["moran_p_sim"],
             "p_empirical": r["p_empirical"],
+            "n_test": r["n_test"],
             "n_hh": r["n_hh"],
+            "hh_rate": r["hh_rate"],
             "n_ll": r["n_ll"],
             "conflict_moran_i": r["conflict_moran_i"],
             "conflict_n_hh": r["conflict_n_hh"],
+            "conflict_hh_rate": r["conflict_hh_rate"],
             "conflict_n_ll": r["conflict_n_ll"],
             "hh_jaccard_var_conflict": r["hh_jaccard_var_conflict"],
             "p_empirical_hh": r["p_empirical_hh"],
@@ -461,6 +473,9 @@ def run_dataset_experiment(
     n_ll = np.array([r["n_ll"] for r in records])
     conflict_moran = np.array([r["conflict_moran_i"] for r in records])
     conflict_n_hh = np.array([r["conflict_n_hh"] for r in records])
+    n_test = np.array([r["n_test"] for r in records])
+    hh_rate = np.array([r["hh_rate"] for r in records])
+    conflict_hh_rate = np.array([r["conflict_hh_rate"] for r in records])
     hh_jaccard_vc = np.array([r["hh_jaccard_var_conflict"] for r in records])
     sig = np.array([r["significant_moran"] for r in records])
     sig_hh = np.array([r["significant_hh"] for r in records])
@@ -493,11 +508,19 @@ def run_dataset_experiment(
         "frac_conflict_ge025_mean": _mean_std(frac_conf_ge025)[0],
         "moran_i_mean": _mean_std(moran)[0],
         "moran_i_std": _mean_std(moran)[1],
+        "n_test_mean": float(np.mean(n_test)),
+        "n_test_std": _mean_std(n_test)[1],
         "n_hh_mean": float(np.mean(n_hh)),
+        "n_hh_std": _mean_std(n_hh)[1],
+        "hh_rate_mean": _mean_std(hh_rate)[0],
+        "hh_rate_std": _mean_std(hh_rate)[1],
         "n_ll_mean": float(np.mean(n_ll)),
         "n_ll_std": _mean_std(n_ll)[1],
         "conflict_moran_i_mean": _mean_std(conflict_moran)[0],
         "conflict_n_hh_mean": float(np.nanmean(conflict_n_hh)),
+        "conflict_n_hh_std": _mean_std(conflict_n_hh)[1],
+        "conflict_hh_rate_mean": _mean_std(conflict_hh_rate)[0],
+        "conflict_hh_rate_std": _mean_std(conflict_hh_rate)[1],
         "hh_jaccard_var_conflict_mean": hh_jaccard_mean,
         "hh_jaccard_var_conflict_std": hh_jaccard_std,
         "frac_significant_moran": float(np.mean(sig)),
