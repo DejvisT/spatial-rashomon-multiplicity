@@ -79,48 +79,6 @@ def select_rashomon_global(
     return order[:K]
 
 
-def select_rashomon_per_family_totalK(
-    run_dir: PathLike,
-    K: int = 25,
-) -> np.ndarray:
-    """
-    Select top models per family such that the TOTAL count is K.
-
-    With 5 families and K=25, each family contributes 5 models.
-    Any remainder from integer division is assigned to families with the
-    best (lowest) family-wise validation Brier.
-
-    Returns indices into the candidate list (rows of meta / P_test).
-    """
-    meta = load_meta(run_dir)
-    families = sorted(meta["model_name"].unique())
-    if len(families) == 0:
-        return np.array([], dtype=int)
-
-    n_families = len(families)
-    base_per_fam = K // n_families
-    remainder = K % n_families
-
-    # Rank families by best validation Brier (lowest first) for remainder
-    fam_best = []
-    for fam in families:
-        best = meta.loc[meta["model_name"] == fam, "val_brier"].min()
-        fam_best.append((best, fam))
-    fam_best.sort()
-    fam_rank = {fam: rank for rank, (_, fam) in enumerate(fam_best)}
-
-    idx_list = []
-    for family in families:
-        mask = meta["model_name"] == family
-        fam_indices = np.where(mask)[0]
-        fam_brier = meta.loc[mask, "val_brier"].values
-        n_take = base_per_fam + (1 if fam_rank[family] < remainder else 0)
-        n_take = min(n_take, len(fam_indices))
-        order = np.argsort(fam_brier)[:n_take]
-        idx_list.extend(fam_indices[order].tolist())
-    return np.array(idx_list, dtype=int)
-
-
 def select_rashomon_per_family_k_each(
     run_dir: PathLike,
     K_each: int = 25,
@@ -560,33 +518,17 @@ def run_spatial(
     permutations: int = 999,
     fdr_alpha: float = 0.05,
     seed: Optional[int] = 42,
-    selection: str = "global",
     tau: float = 0.5,
 ) -> Dict[str, Any]:
     """
-    Load run, select Rashomon set (global or per-family total-K), compute pointwise
-    variance on test, then spatial analysis (Moran's I, HH/LL masks, etc.).
-    Also runs spatial analysis on conflict and reports HH Jaccard overlap.
-
-    Parameters
-    ----------
-    selection : "global" or "per_family"
-        - "global": top-K pooled across all families
-        - "per_family": total-K distributed across families
-    tau : decision threshold for hard conflict
+    Load run, select the global top-K Rashomon set, compute pointwise variance
+    on the test set, then run spatial analysis (Moran's I, HH/LL masks, etc.).
+    Also runs spatial analysis on hard conflict and reports HH Jaccard overlap.
     """
-    valid_selection = {"global", "per_family"}
-    if selection not in valid_selection:
-        raise ValueError(
-            f"selection must be one of {sorted(valid_selection)}, got '{selection}'"
-        )
-
     run_dir = Path(run_dir)
     P_test = load_P_test(run_dir)
-    if selection == "per_family":
-        idx = select_rashomon_per_family_totalK(run_dir, K=K)
-    else:
-        idx = select_rashomon_global(run_dir, K=K)
+
+    idx = select_rashomon_global(run_dir, K=K)
     P_sel = P_test[idx]
     v = pointwise_variance(P_sel, ddof=0)
     c = pointwise_conflict(P_sel, tau=tau)
