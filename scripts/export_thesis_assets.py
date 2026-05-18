@@ -292,24 +292,40 @@ def write_null_significance_tex():
     if path is None:
         print("Missing null_significance_summary.csv (nb02 / legacy tables). Skipping null_significance.tex")
         return
+
     df = pd.read_csv(path)
+
+    dataset_labels = {
+        "compas": "COMPAS",
+        "german": "German Credit",
+        "adult": "Adult",
+    }
+
     out = []
     out.append(r"\begin{tabular}{lccc}")
     out.append(r"\hline")
-    out.append(r"Dataset & $n$ runs & Frac.\ significant ($p < 0.05$) & Moran's $I$ (mean $\pm$ std) \\")
+    out.append(r"Dataset & Runs & Significant runs & Moran's $I$ \\")
     out.append(r"\hline")
+
     for _, r in df.iterrows():
-        ds = r["dataset"].replace("_", " ").title()
+        ds_key = str(r["dataset"]).lower()
+        ds = dataset_labels.get(ds_key, str(r["dataset"]).replace("_", " ").title())
+
         frac_sig = r.get("frac_sig_moran", r.get("frac_significant", 0))
-        moran_fmt = f"{r['obs_mean_moran']:.3f} $\\pm$ {r['obs_std_moran']:.3f}" if "obs_mean_moran" in r else str(r.get("mean_moran ± std", ""))
-        out.append(f"{ds} & {int(r['n_runs'])} & {frac_sig:.2f} & {moran_fmt} \\\\")
+        sig_fmt = f"{100 * frac_sig:.0f}\\%"
+
+        if "obs_mean_moran" in df.columns and "obs_std_moran" in df.columns:
+            moran_fmt = f"{r['obs_mean_moran']:.3f} $\\pm$ {r['obs_std_moran']:.3f}"
+        else:
+            moran_fmt = str(r.get("mean_moran ± std", ""))
+
+        out.append(f"{ds} & {int(r['n_runs'])} & {sig_fmt} & {moran_fmt} \\\\")
+
     out.append(r"\hline")
     out.append(r"\end{tabular}")
+
     (TAB_DIR / "null_significance.tex").write_text("\n".join(out), encoding="utf-8")
     print("Wrote", TAB_DIR / "null_significance.tex")
-
-
-
 
 
 def write_hh_component_summary_tex():
