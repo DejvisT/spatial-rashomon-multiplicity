@@ -51,7 +51,6 @@ def collect_referenced_pdf_basenames(overleaf_bundle: Path | None = None) -> fro
 def export_script_pdf_basenames() -> frozenset[str]:
     """PDFs written by export_thesis_assets.py / quick export into presentation_assets/fig/."""
     s = {
-        "dataset_comparison_bars.pdf",
         "hh_moran_per_run_compas.pdf",
         "spatial_patterns_per_run.pdf",
         "hh_by_family.pdf",

@@ -180,42 +180,6 @@ def write_family_summary_tex():
     print("Wrote", TAB_DIR / "family_summary.tex")
 
 
-def write_dataset_comparison_bars_figure():
-    """Four-panel bar chart: Moran's I, HH count, mean variance, mean conflict (dataset_comparison_bars.pdf)."""
-    df = build_dataset_summary()
-    if df.empty:
-        print("No dataset summary. Skipping dataset_comparison_bars.pdf")
-        return
-    fig, axes = plt.subplots(2, 2, figsize=(10, 8))
-    x = np.arange(len(df))
-    labels = df["dataset"].values
-
-    axes[0, 0].bar(x, df["moran_i_mean"], yerr=df["moran_i_std"], capsize=4, color="seagreen", edgecolor="black")
-    axes[0, 0].set_xticks(x)
-    axes[0, 0].set_xticklabels(labels, rotation=15)
-    axes[0, 0].set_ylabel("Moran's I")
-
-    axes[0, 1].bar(x, df["n_hh_mean"], yerr=df.get("n_hh_std", 0), capsize=4, color="steelblue", edgecolor="black")
-    axes[0, 1].set_xticks(x)
-    axes[0, 1].set_xticklabels(labels, rotation=15)
-    axes[0, 1].set_ylabel("HH count")
-
-    axes[1, 0].bar(x, df["mean_variance_mean"], yerr=df["mean_variance_std"], capsize=4, color="steelblue", edgecolor="black")
-    axes[1, 0].set_xticks(x)
-    axes[1, 0].set_xticklabels(labels, rotation=15)
-    axes[1, 0].set_ylabel("Mean variance")
-
-    axes[1, 1].bar(x, df["mean_conflict_mean"], yerr=df["mean_conflict_std"], capsize=4, color="coral", edgecolor="black")
-    axes[1, 1].set_xticks(x)
-    axes[1, 1].set_xticklabels(labels, rotation=15)
-    axes[1, 1].set_ylabel("Mean conflict")
-
-    plt.tight_layout()
-    fig.savefig(FIG_DIR / "dataset_comparison_bars.pdf", bbox_inches="tight")
-    plt.close()
-    print("Wrote", FIG_DIR / "dataset_comparison_bars.pdf")
-
-
 def write_hh_moran_per_run_compas():
     """HH count and Moran's I per run for COMPAS only -> hh_moran_per_run_compas.pdf."""
     path = RESULTS_DIR / "compas" / "summary_per_run.csv"
@@ -879,6 +843,41 @@ def write_conflict_summary_tex():
     out_path.write_text("\n".join(out), encoding="utf-8")
     print("Wrote", out_path)
 
+
+def write_aggregate_multiplicity_summary_tex():
+    path = THESIS_TABLES_ROOT / "nb01" / "dataset_summary.csv"
+    if not path.exists():
+        print("Missing nb01/dataset_summary.csv. Skipping aggregate_multiplicity_summary.tex")
+        return
+
+    df = pd.read_csv(path)
+
+    out = []
+    out.append(r"\begin{tabular}{lccc}")
+    out.append(r"\hline")
+    out.append(r"Dataset & Ambiguity & Disagreement rate & Discrepancy \\")
+    out.append(r" & (mean $\pm$ std) & (mean $\pm$ std) & (mean $\pm$ std) \\")
+    out.append(r"\hline")
+
+    for _, r in df.iterrows():
+        dataset = str(r["dataset"]).replace("_", " ").title()
+        if dataset.lower() == "German":
+            dataset = "German Credit"
+
+        ambiguity = f"{r['ambiguity_mean']:.3f} $\\pm$ {r['ambiguity_std']:.3f}"
+        disagreement = f"{r['disagreement_rate_mean']:.3f} $\\pm$ {r['disagreement_rate_std']:.3f}"
+        discrepancy = f"{r['discrepancy_mean']:.3f} $\\pm$ {r['discrepancy_std']:.3f}"
+
+        out.append(f"{dataset} & {ambiguity} & {disagreement} & {discrepancy} \\\\")
+
+    out.append(r"\hline")
+    out.append(r"\end{tabular}")
+
+    (TAB_DIR / "aggregate_multiplicity_summary.tex").write_text(
+        "\n".join(out), encoding="utf-8"
+    )
+    print("Wrote", TAB_DIR / "aggregate_multiplicity_summary.tex")
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Export thesis assets")
@@ -901,7 +900,7 @@ def main():
     write_hh_component_summary_tex()
     write_alternative_knn_comparison_tex()
     write_conflict_summary_tex()
-
+    write_aggregate_multiplicity_summary_tex()
     write_hp_hotspot_delta_compas_tex()
 
     write_interpretable_rules_top_compas_tex()
@@ -909,7 +908,6 @@ def main():
     write_component_rules_compas_tex()
     write_component_rule_features_compas_tex()
 
-    write_dataset_comparison_bars_figure()
     write_hh_moran_per_run_compas()
     write_spatial_patterns_figure()
     write_hh_by_family_figure()
