@@ -1109,6 +1109,81 @@ def write_fairness_subgroup_rates_compas_tex():
     )
     print("Wrote", TAB_DIR / "fairness_subgroup_rates_compas.tex")
 
+
+def write_margin_summary_tex():
+    """Write variance-margin relationship table from notebook 10 CSV."""
+    path = resolve_csv("variance_vs_margin_summary.csv", "nb10")
+    if path is None:
+        print(
+            "Missing variance_vs_margin_summary.csv (nb10). "
+            "Skipping margin_summary.tex"
+        )
+        return
+
+    df = pd.read_csv(path)
+
+    required = {
+        "dataset",
+        "pearson_r_mean",
+        "pearson_r_std",
+        "spearman_r_mean",
+        "spearman_r_std",
+        "margin_hh_mean",
+        "margin_hh_std",
+        "margin_non_hh_mean",
+        "margin_non_hh_std",
+    }
+    missing = required - set(df.columns)
+    if missing:
+        print(
+            "variance_vs_margin_summary.csv is missing columns "
+            f"{sorted(missing)}. Skipping margin_summary.tex"
+        )
+        return
+
+    dataset_labels = {
+        "adult": "Adult",
+        "compas": "COMPAS",
+        "german": "German Credit",
+    }
+
+    dataset_order = ["adult", "compas", "german"]
+    df["dataset_key"] = df["dataset"].astype(str).str.lower()
+    df["dataset_order"] = df["dataset_key"].apply(
+        lambda x: dataset_order.index(x) if x in dataset_order else len(dataset_order)
+    )
+    df = df.sort_values("dataset_order")
+
+    out = []
+    out.append(r"\begin{tabular}{lcccc}")
+    out.append(r"\hline")
+    out.append(
+        r"Dataset & Pearson $r$ & Spearman $\rho$ & "
+        r"Margin in HH & Margin outside HH  \\"
+    )
+    out.append(r"\hline")
+
+    for _, r in df.iterrows():
+        key = str(r["dataset"]).lower()
+        ds = dataset_labels.get(key, str(r["dataset"]).replace("_", " ").title())
+
+        pearson = f"{r['pearson_r_mean']:.2f} $\\pm$ {r['pearson_r_std']:.2f}"
+        spearman = f"{r['spearman_r_mean']:.2f} $\\pm$ {r['spearman_r_std']:.2f}"
+        margin_hh = f"{r['margin_hh_mean']:.2f} $\\pm$ {r['margin_hh_std']:.2f}"
+        margin_non_hh = (
+            f"{r['margin_non_hh_mean']:.2f} $\\pm$ {r['margin_non_hh_std']:.2f}"
+        )
+
+        out.append(
+            f"{ds} & {pearson} & {spearman} & {margin_hh} & {margin_non_hh} \\\\"
+        )
+
+    out.append(r"\hline")
+    out.append(r"\end{tabular}")
+
+    (TAB_DIR / "margin_summary.tex").write_text("\n".join(out), encoding="utf-8")
+    print("Wrote", TAB_DIR / "margin_summary.tex")
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Export thesis assets")
@@ -1132,6 +1207,7 @@ def main():
     write_hh_component_summary_tex()
     write_alternative_knn_comparison_tex()
     write_fairness_subgroup_rates_compas_tex()
+    write_margin_summary_tex()
     write_conflict_summary_tex()
     write_aggregate_multiplicity_summary_tex()
     write_hp_hotspot_delta_compas_tex()
