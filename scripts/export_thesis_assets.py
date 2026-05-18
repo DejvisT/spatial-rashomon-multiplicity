@@ -671,10 +671,10 @@ def write_alternative_knn_comparison_tex():
         )
 
     dataset_order = {"compas": 0, "german": 1, "adult": 2}
-    method_order = {"euclidean": 0, "pca_15": 1, "cosine": 2}
+    method_order = {"euclidean": 0, "pca_5": 1, "cosine": 2}
     method_labels = {
         "euclidean": "Euclidean (baseline)",
-        "pca_15": "PCA (15 comp.)",
+        "pca_5": "PCA (5 comp.)",
         "cosine": "Cosine",
     }
 
