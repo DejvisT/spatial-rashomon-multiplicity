@@ -890,6 +890,49 @@ def write_aggregate_multiplicity_summary_tex():
     )
     print("Wrote", TAB_DIR / "aggregate_multiplicity_summary.tex")
 
+
+def write_quadrant_compas_tex():
+    """Write COMPAS variance/conflict quadrant table from aggregated CSV."""
+    path = RESULTS_DIR / "compas" / "quadrant_breakdown_aggregated.csv"
+    if not path.exists():
+        print("Missing compas/quadrant_breakdown_aggregated.csv. Skipping quadrant_compas.tex")
+        return
+
+    df = pd.read_csv(path)
+
+    labels = {
+        "A": "A (high var, high conflict)",
+        "B": "B (high var, low conflict)",
+        "C": "C (low var, high conflict)",
+        "D": "D (low var, low conflict)",
+    }
+
+    out = []
+    out.append(r"\begin{tabular}{lcccc}")
+    out.append(r"\hline")
+    out.append(
+        r"Quadrant & \shortstack{Number of test\\observations} & \shortstack{Share of test\\observations} & \shortstack{Predictive\\variance $v_i$} & \shortstack{Conflict\\ratio $c_i$} \\"
+    )
+    out.append(r"\hline")
+
+    for q in ["A", "B", "C", "D"]:
+        r = df[df["quadrant"] == q].iloc[0]
+
+        count = f"{r['count_mean']:.1f} $\\pm$ {r['count_std']:.1f}"
+        share = f"{100 * r['fraction_mean']:.1f}\\% $\\pm$ {100 * r['fraction_std']:.1f}\\%"
+        mean_vi = f"{r['mean_var_p_mean']:.4f} $\\pm$ {r['mean_var_p_std']:.4f}"
+        mean_ci = f"{r['mean_conflict_mean']:.3f} $\\pm$ {r['mean_conflict_std']:.3f}"
+
+        out.append(
+            f"{labels[q]} & {count} & {share} & {mean_vi} & {mean_ci} \\\\"
+        )
+
+    out.append(r"\hline")
+    out.append(r"\end{tabular}")
+
+    (TAB_DIR / "quadrant_compas.tex").write_text("\n".join(out), encoding="utf-8")
+    print("Wrote", TAB_DIR / "quadrant_compas.tex")
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Export thesis assets")
@@ -920,6 +963,7 @@ def main():
     write_component_rules_compas_tex()
     write_component_rule_features_compas_tex()
 
+    write_quadrant_compas_tex()
     write_hh_moran_per_run_compas()
     write_spatial_patterns_figure()
     write_hh_by_family_figure()
