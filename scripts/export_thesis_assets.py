@@ -328,6 +328,49 @@ def write_null_significance_tex():
     print("Wrote", TAB_DIR / "null_significance.tex")
 
 
+def write_conflict_null_significance_tex():
+    path = resolve_csv("conflict_null_significance_summary.csv", "nb02")
+    if path is None:
+        print(
+            "Missing conflict_null_significance_summary.csv (nb02 / legacy tables). "
+            "Skipping conflict_null_significance.tex"
+        )
+        return
+
+    df = pd.read_csv(path)
+
+    dataset_labels = {
+        "compas": "COMPAS",
+        "german": "German Credit",
+        "adult": "Adult",
+    }
+
+    out = []
+    out.append(r"\begin{tabular}{lccc}")
+    out.append(r"\hline")
+    out.append(r"Dataset & Runs & Significant runs & Conflict Moran's $I$ \\")
+    out.append(r"\hline")
+
+    for _, r in df.iterrows():
+        ds_key = str(r["dataset"]).lower()
+        ds = dataset_labels.get(ds_key, str(r["dataset"]).replace("_", " ").title())
+
+        sig_fmt = f"{100 * r['frac_sig']:.0f}\\%"
+        moran_fmt = f"{r['obs_mean']:.3f} $\\pm$ {r['obs_std']:.3f}"
+
+        out.append(
+            f"{ds} & {int(r['n_runs'])} & {sig_fmt} & {moran_fmt} \\\\"
+        )
+
+    out.append(r"\hline")
+    out.append(r"\end{tabular}")
+
+    (TAB_DIR / "conflict_null_significance.tex").write_text(
+        "\n".join(out), encoding="utf-8"
+    )
+    print("Wrote", TAB_DIR / "conflict_null_significance.tex")
+
+
 def write_hh_component_summary_tex():
     """
     HH connected-component summary for COMPAS only
@@ -968,6 +1011,7 @@ def main():
     write_global_summary_tex()
     write_family_summary_tex()
     write_null_significance_tex()
+    write_conflict_null_significance_tex()
     write_hh_component_summary_tex()
     write_alternative_knn_comparison_tex()
     write_conflict_summary_tex()
