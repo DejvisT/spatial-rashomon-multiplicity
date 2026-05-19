@@ -52,7 +52,7 @@ The variance of Alice's predicted risk across these equally accurate models is h
 
 An auditor then asks whether cases like Alice are isolated exceptions or part of a broader pattern. By mapping prediction-instability scores across the feature space, the auditor finds that high-instability observations are not randomly scattered. Instead, they cluster in specific regions.
 
-These clusters correspond to subpopulations for whom predictions are systematically more model-dependent than for others. In such regions, the choice among equally accurate models has an especially large effect on the final output. Reliability is therefore no longer only a question of overall model performance, but also of where in the population predictions are especially contingent on model choice.
+These clusters correspond to subpopulations for whom predictions are systematically more model-dependent than for others. In such regions, the choice among equally accurate models has an especially large effect on the final output. Reliability is therefore no longer only a question of overall model performance, but also of where in the population predictions are especially sensitive to model choice.
 
 \subsubsection{Example 3: Drivers of Instability}
 
@@ -93,10 +93,9 @@ observations are most affected, or how different modeling choices contribute to 
 
 As a result, users of automated decision systems lack a principled way to distinguish
 between predictions that are robust across acceptable models and those that are highly
-contingent on arbitrary modeling choices. The problem addressed in this thesis is
-therefore to characterize predictive multiplicity at the observation level, with a focus on
-its \emph{spatial structure} in feature space and its \emph{drivers} across model families
-and hyperparameters.
+sensitive to model choice. The problem addressed in this thesis is therefore to characterize
+predictive multiplicity at the observation level, with a focus on its \emph{spatial structure}
+in feature space and its \emph{drivers} across model families and hyperparameters.
 
 \subsection{Research Questions}
 

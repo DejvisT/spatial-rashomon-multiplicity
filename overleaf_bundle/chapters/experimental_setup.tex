@@ -83,24 +83,23 @@ The fitted transformer is applied identically to validation and test data withou
 thereby avoiding data leakage. The same transformed feature space is used both for model
 training and for constructing the kNN graph (Section~\ref{sec:exp-knn-graph}), so that
 spatial neighborhoods reflect the representation on which the models operate.
-
 \subsection{Rashomon Set Approximation}
 \label{sec:exp-rashomon}
 
 In the experiments, the Rashomon set is approximated by selecting the \textbf{top-$K$}
-models ranked by validation Brier score, with $K = 25$ unless otherwise stated. Three
+models ranked by validation Brier score, with $K = 25$ unless otherwise stated. Two
 selection modes are used:
 
 \begin{itemize}
-    \item \textbf{Global:} the 25 models with the lowest validation Brier score from the full candidate pool (all families combined).
-    \item \textbf{Per-family (total-$K$):} for global-versus-family comparisons, the total budget $K=25$ is distributed approximately equally across families, with deterministic tie-breaking based on the best family-level validation Brier score.
-    \item \textbf{Per-family ($K$-each):} for within-family driver analyses, the top 25 models are selected separately within each family (up to 125 models total), so that sufficient within-family hyperparameter variation is retained.
+    \item \textbf{Global:} the 25 models with the lowest validation Brier score from the full candidate pool, with all model families combined.
+    \item \textbf{Per-family ($K$-each):} the top 25 models are selected separately within each model family. This mode is used for family-wise comparisons and for within-family driver analyses, because it retains sufficient variation within each family.
 \end{itemize}
 
 Unless otherwise stated, the global selection mode is used. Sensitivity to the Rashomon-set
 size is examined by varying $K \in \{5, 10, 15, 20, 25, 30, \ldots\}$ in separate analyses.
-Results are reported both for the global Rashomon approximation and for the per-family
-variants (Sections~\ref{sec:results-global-vs-family} and~\ref{sec:results-hp}).
+Results are reported for the global Rashomon approximation and, where relevant, for the
+per-family $K$-each construction (Sections~\ref{sec:results-global-vs-family}
+and~\ref{sec:results-hp}).
 
 \subsection{Prediction Matrix and Multiplicity Metrics}
 
@@ -177,7 +176,7 @@ design.
 \paragraph{Alternative graph constructions.}
 To verify that the spatial results are not artifacts of Euclidean distance on the full one-hot
 encoded feature space, we compare the baseline graph with two alternatives:
-(i) kNN in PCA-reduced space (retaining 15 components), and
+(i) kNN in PCA-reduced space (retaining 5 components), and
 (ii) kNN using cosine distance on $\ell_2$-normalized features. All other pipeline
 parameters remain fixed, and Moran's $I$ and HH counts are compared across graph
 definitions.
@@ -271,6 +270,7 @@ reported for COMPAS, where the hotspot structure is clearest and the retained
 components are sufficiently large for meaningful rule extraction.
 
 \subsection{Auxiliary Diagnostic Analyses}
+\label{sec:exp-auxiliary}
 
 The following analyses provide additional context for interpreting hotspot regions, but are
 not part of the core methodology.

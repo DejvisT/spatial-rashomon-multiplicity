@@ -22,7 +22,7 @@ Taken together, these results support the central claim of the thesis: predictiv
 
 The broader implication of these findings is that average predictive performance is not sufficient to assess the reliability of individual predictions. Even when several models are nearly indistinguishable in validation performance, they may disagree substantially for specific observations. The spatial perspective developed in this thesis shows that such disagreement is not uniformly distributed, but concentrates in identifiable regions of feature space.
 
-This makes predictive multiplicity a practical reliability issue rather than only an abstract property of model classes. Predictions in hotspot regions should be interpreted as more model-contingent than predictions in stable regions, and may therefore warrant additional caution, monitoring, or review in high-stakes settings. At the same time, the goal is not necessarily to eliminate all multiplicity: the Rashomon set is informative precisely because it reveals where equally defensible modeling choices lead to different outcomes.
+This makes predictive multiplicity a practical reliability issue rather than only an abstract property of model classes. Predictions in hotspot regions should therefore be interpreted as more sensitive to model choice than predictions in stable regions, and may warrant additional caution, monitoring, or review in high-stakes settings. At the same time, the goal is not necessarily to eliminate all multiplicity: the Rashomon set is informative precisely because it reveals where equally defensible modeling choices lead to different outcomes.
 
 \subsection{Limitations}
 
@@ -35,7 +35,7 @@ Several extensions follow naturally from this work.
 \begin{itemize}
     \item \textbf{Continuous Rashomon approximations.} Replacing the discrete model pool with continuous or optimization-based approximations could provide a tighter view of multiplicity and reduce dependence on sampled candidate sets.
 
-    \item \textbf{Multiplicity-aware deployment policies.} Hotspot information could be incorporated into selective prediction, abstention, or human-in-the-loop review workflows, so that especially model-contingent cases are handled differently from stable ones.
+    \item \textbf{Multiplicity-aware deployment policies.} Hotspot information could be incorporated into selective prediction, abstention, or human-in-the-loop review workflows, so that cases that are especially sensitive to model choice are handled differently from stable ones.
 
     \item \textbf{Temporal analysis under distribution shift.} Studying whether hotspot locations remain stable over time would connect multiplicity analysis to drift monitoring and deployment reliability.
 
