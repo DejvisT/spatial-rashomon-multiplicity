@@ -2,3 +2,4 @@
 __pycache__/
 results/*/seed*
 results_fixed_test/
+thesis_outputs/cache/
