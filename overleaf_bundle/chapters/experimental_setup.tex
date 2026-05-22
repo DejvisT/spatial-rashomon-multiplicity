@@ -124,6 +124,7 @@ datasets, we select dataset-specific values of $k$ so that the graph is sufficie
 while still preserving meaningful local structure. In particular, we use $k = 30$ for
 COMPAS and German Credit, and a larger value of $k = 60$ for Adult when smaller
 values lead to disconnected graph components.
+Following Section~\ref{sec:method-spatial}, the initial directed $k$NN adjacency is symmetrized before row-standardization. The reported values of $k$ refer to the initial directed nearest-neighbor query; after symmetrization, individual nodes may have more than $k$ neighbors.
 
 Distances are Euclidean and the adjacency matrix is row-standardized. Global Moran's $I$
 significance is assessed with 999 permutations. Local Moran (LISA) also uses 999

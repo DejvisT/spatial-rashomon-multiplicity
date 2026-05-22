@@ -16,9 +16,9 @@ Moran's $I$, LISA HH hotspots, and connected hotspot components. Thus, a dataset
 exhibit high overall disagreement without strong spatial concentration, or lower overall
 disagreement with clearer localized hotspot structure.
 
-The three datasets differ clearly in both the magnitude and the spatial organization of predictive multiplicity. COMPAS exhibits the strongest spatial clustering, with the largest mean Moran's $I$ ($0.20 \pm 0.08$), indicating that high-variance observations are concentrated in localized regions of the feature space. German Credit shows weaker spatial clustering ($0.10 \pm 0.04$), but the largest overall disagreement magnitude, with the highest mean predictive variance among the three datasets. Adult, in contrast, displays comparatively low disagreement magnitude and the weakest Moran's $I$ ($0.07 \pm 0.02$), though the clustering signal remains consistently positive across runs.
+The three datasets differ clearly in both the magnitude and the spatial organization of predictive multiplicity. COMPAS exhibits the strongest spatial clustering, with the largest mean Moran's $I$ ($0.210 \pm 0.081$). German Credit shows weaker spatial clustering ($0.088 \pm 0.039$), but the largest overall disagreement magnitude. Adult displays comparatively low disagreement magnitude and the weakest Moran's $I$ ($0.075 \pm 0.022$), though its clustering signal remains positive across runs.
 
-The HH hotspot counts provide additional context, but should be interpreted with care. In absolute terms, Adult contains the largest number of HH observations ($286.1$ on average), followed by COMPAS ($86.7$), while German Credit contains very few HH points. However, these counts are not directly comparable across datasets because both dataset size and the dataset-specific neighborhood parameter $k$ differ. For this reason, Moran's $I$ is the more informative cross-dataset measure of spatial concentration. Under this interpretation, COMPAS shows the clearest localized hotspot structure, whereas Adult is better characterized by broader and more diffuse regions of instability.
+The HH hotspot counts provide additional context, but should be interpreted with care. In absolute terms, Adult contains the largest number of HH observations ($631.0$ on average), followed by COMPAS ($128.4$), while German Credit contains very few HH points ($5.4$ on average). However, these counts are not directly comparable across datasets because both dataset size and the dataset-specific neighborhood parameter $k$ differ. For this reason, Moran's $I$ is the more informative cross-dataset measure of spatial concentration. Under this interpretation, COMPAS shows the clearest localized hotspot structure, whereas Adult is better characterized by broader and more diffuse regions of instability.
 
 \begin{table}[htbp]
 \centering
@@ -66,7 +66,7 @@ Thus, high disagreement frequency does not necessarily imply strong spatial stru
 
 \subsubsection{Overlap Between Variance-Based and Conflict-Based Hotspots}
 
-The overlap between variance-based and conflict-based HH hotspots is limited across all datasets. On COMPAS, the Jaccard similarity is only $0.06 \pm 0.05$, showing that the two metrics identify largely different observations as hotspots. This is consistent with their definitions: variance-based hotspots reflect broad probability spread, whereas conflict-based hotspots reflect threshold-crossing disagreement. Adult shows similarly low overlap ($0.10 \pm 0.05$), and although the mean overlap is numerically higher on German Credit ($0.21 \pm 0.42$), this estimate is unstable because both hotspot sets are often very small. Overall, the two metrics should therefore be interpreted as complementary rather than interchangeable.
+The overlap between variance-based and conflict-based HH hotspots is limited across all datasets. On COMPAS, the Jaccard similarity is only $0.078 \pm 0.057$, showing that the two metrics identify largely different observations as hotspots. Adult shows somewhat higher but still limited overlap ($0.184 \pm 0.052$). On German Credit, the mean overlap is $0.118 \pm 0.312$, but this estimate is unstable because both hotspot sets are often very small.
 
 \subsubsection{Quadrant Analysis}
 \label{sec:results-quadrant}
@@ -96,7 +96,7 @@ Taken together, these results show that soft variance and hard conflict represen
 
 To test whether the observed spatial structure could arise by chance, we compare the observed Moran's $I$ values to a permutation-based null distribution (Section~\ref{sec:exp-null}). In this null model, each model's test-set predictions are independently permuted across observations ($R=100$ permutations per run), preserving the marginal prediction distribution of each model while removing any systematic alignment between disagreement and feature-space location.
 
-Table~\ref{tab:null_significance} summarizes the null-test results. The conclusion is unambiguous: all three datasets exhibit significant variance-based Moran's $I$ in 100\% of outer runs. In every case, the empirical permutation p-value reaches the minimum possible value under $R=100$ permutations, namely $p = 1/101 \approx 0.0099$.
+Table~\ref{tab:null_significance} summarizes the null-test results. COMPAS and Adult exhibit significant variance-based Moran's $I$ in all outer runs, while German Credit is significant in 9 out of 10 runs. For COMPAS and Adult, the empirical permutation p-value reaches the minimum possible value under $R=100$ permutations in every run, namely $p = 1/101 \approx 0.0099$. German Credit shows the same pattern in most runs, but one run does not reach the $0.05$ threshold, confirming that its spatial signal is weaker and less stable.
 
 \begin{table}[htbp]
 \centering
@@ -145,7 +145,7 @@ Having established that predictive variance is spatially clustered, we now exami
 
 Let $f_i$ denote the fraction of outer seeds (out of 10) in which test point $i$ is classified as HH under the global Rashomon set (top-$K=25$) and the default neighborhood definition. Figure~\ref{fig:hh_stability_freq} visualizes this per-point HH frequency in PCA space.
 
-At the point level, stability is limited. Only about $2.0\%$ of the fixed test set satisfies $f_i \geq 0.8$, and only about $4.5\%$ satisfies $f_i \geq 0.5$. More broadly, the total \emph{HH support}---the set of observations classified as HH in at least one seed---covers about $17.2\%$ of the fixed test set. Within this support, HH membership is typically infrequent: the mean frequency is $0.33$, the median is $0.20$, and about $60.1\%$ of support points lie in the lowest frequency bucket $(0, 0.2]$. Defining a recurrent \emph{HH core} as points with $f_i \geq 0.5$, the core-to-support ratio is about $26.2\%$, indicating that only a minority of ever-detected HH points recur in at least half of the runs.
+At the point level, stability is limited. Only about $3.2\%$ of the fixed test set satisfies $f_i \geq 0.8$, and only about $6.1\%$ satisfies $f_i \geq 0.5$. More broadly, the total \emph{HH support}---the set of observations classified as HH in at least one seed---covers about $21.6\%$ of the fixed test set. Within this support, HH membership is typically infrequent: the mean frequency is $0.36$, the median is $0.20$, and about $56.3\%$ of support points lie in the lowest frequency bucket $(0, 0.2]$. Defining a recurrent \emph{HH core} as points with $f_i \geq 0.5$, the core-to-support ratio is about $28.3\%$, indicating that only a minority of ever-detected HH points recur in at least half of the runs.
 
 The main conclusion is therefore that \textbf{individual observations are not stably labeled as hotspots}. Exact HH membership varies substantially across seeds. At the same time, this variability is not spatially diffuse: higher-$f_i$ values remain concentrated in one part of the PCA plane rather than being scattered uniformly. Thus, even though pointwise hotspot assignment is unstable, the broader location of multiplicity remains informative.
 
@@ -164,7 +164,7 @@ J_{ss'} = \frac{|H_s \cap H_{s'}|}{|H_s \cup H_{s'}|}.
 \]
 A value of $0$ indicates no overlap between two HH sets, whereas a value of $1$ indicates identical HH sets.
 
-Figure~\ref{fig:hh_jaccard} shows the resulting overlap matrix for variance-based HH masks on COMPAS. The mean off-diagonal Jaccard similarity is about $0.34$, with values ranging from approximately $0.05$ to $0.62$ across seed pairs. This should be interpreted as moderate overlap. It is far below perfect agreement, confirming that exact HH membership changes substantially across seeds. At the same time, it is much larger than the overlap expected from unrelated sparse HH masks: for an HH rate of about $6\%$, an independent random-overlap baseline would be roughly $0.03$. Thus, exact HH membership is not highly stable, but it is also not random.
+Figure~\ref{fig:hh_jaccard} shows the resulting overlap matrix for variance-based HH masks on COMPAS. The mean off-diagonal Jaccard similarity is about $0.36$, with values ranging from approximately $0.11$ to $0.63$ across seed pairs. This should be interpreted as moderate overlap. It is far below perfect agreement, confirming that exact HH membership changes substantially across seeds. At the same time, it is much larger than the overlap expected from unrelated sparse HH masks: for an average HH rate of about $7.8\%$ in the fixed-test stability runs, an independent random-overlap baseline would be roughly $0.04$. Thus, exact HH membership is not highly stable, but it is also not random.
 
 This set-level analysis adds a second view to the pointwise frequency results from the previous subsection. The frequency analysis asks how often each individual observation is classified as HH, whereas the Jaccard analysis asks how similar the complete HH masks are between pairs of runs. Both views lead to the same conclusion: exact HH membership is only partly recurrent and remains sensitive to seed-specific variation. However, this should not be interpreted as evidence against spatial structure. Jaccard overlap is sensitive to boundary variation, so modest shifts at the edges of a hotspot can reduce overlap even when the broader hotspot area remains similar. This motivates the component-level regional analysis in the next subsection.
 
@@ -179,7 +179,7 @@ This set-level analysis adds a second view to the pointwise frequency results fr
 
 To move beyond individual HH points, we extract connected components of HH nodes in the same $k$NN graph used for LISA, discarding components smaller than 5 points. This analysis asks whether detected HH observations form coherent graph regions or merely appear as isolated points.
 
-Table~\ref{tab:hh_component_summary} summarizes the component statistics across runs. On COMPAS, HH points typically form about $3$--$4$ connected components per run, with one dominant component whose maximum size averages about $44$ test points (median $34$). Hotspots therefore appear as a small number of contiguous regions rather than as isolated singletons.
+Table~\ref{tab:hh_component_summary} summarizes the component statistics across runs. On COMPAS, HH points typically form about $3$--$4$ connected components per run, with one dominant component whose maximum size averages about $62.5$ test points (median $62$). Hotspots therefore appear as a small number of contiguous regions rather than as isolated singletons.
 
 \begin{table}[htbp]
 \centering
@@ -625,8 +625,7 @@ main patterns emerge.
 \begin{enumerate}
 
 \item \textbf{Spatial structure:} Predictive multiplicity is spatially clustered in feature
-space. Variance-based Moran's $I$ is positive and statistically significant under the
-permutation null in 100\% of outer runs for COMPAS, German Credit, and Adult. This
+space. Variance-based Moran's $I$ is positive across all outer runs and statistically significant under the permutation null in all runs for COMPAS and Adult, and in 9 out of 10 runs for German Credit. This
 shows that disagreement is not randomly distributed over the test set, but systematically
 aligned with the geometry of the feature space.
 
@@ -640,7 +639,7 @@ structure.
 
 \item \textbf{Region-level stability despite point-level instability:} Exact HH membership
 varies across runs, but the fixed-test analysis on COMPAS shows moderate rather than
-negligible pointwise overlap, with mean pairwise Jaccard similarity around $0.34$.
+negligible pointwise overlap, with mean pairwise Jaccard similarity around $0.36$.
 Connected-component analyses further show that HH observations often form contiguous
 regions in the feature-space graph. Predictive multiplicity should therefore be interpreted
 as a regional phenomenon with partially recurring structure, while avoiding the stronger
@@ -648,7 +647,7 @@ claim that individual observations have fixed hotspot labels.
 
 \item \textbf{Complementary disagreement mechanisms:} Soft prediction variance and hard
 conflict ratio capture distinct forms of multiplicity. Their overlap is limited
-(Jaccard $\approx 0.06$ on COMPAS), and the quadrant analysis shows that observations
+(Jaccard $\approx 0.08$ on COMPAS), and the quadrant analysis shows that observations
 can exhibit high probability spread without label flips, or high threshold sensitivity
 without especially large probability spread. Both metrics are therefore needed for a
 complete description of predictive disagreement.
