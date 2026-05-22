@@ -206,6 +206,45 @@ def compute_multiplicity_metrics(
 # 3. Spatial analysis (kNN, PySAL Moran_Local, FDR, HH/LL masks)
 # ---------------------------------------------------------------------------
 
+def make_knn_weights(
+    X: Union[np.ndarray, pd.DataFrame],
+    k: int,
+    symmetrize: bool = True,
+    transform: str = "r",
+) -> Any:
+    """
+    Build kNN weights matrix with optional symmetrization.
+
+    Parameters
+    ----------
+    X : array-like, shape (n_samples, n_features) or DataFrame
+        Features for kNN construction.
+    k : int
+        Number of neighbors.
+    symmetrize : bool, default True
+        If True, symmetrize the directed kNN graph before row-standardizing.
+    transform : str, default "r"
+        Weight transformation: "r" = row-standardize.
+
+    Returns
+    -------
+    W : libpysal weights object
+        Weights matrix, optionally symmetrized and row-standardized.
+    """
+    if isinstance(X, pd.DataFrame):
+        X = X.select_dtypes(include=[np.number]).values
+    X = np.asarray(X, dtype=float)
+
+    W = KNN.from_array(X, k=k)
+
+    if symmetrize:
+        W = W.symmetrize(inplace=False)
+        assert W.asymmetry(intrinsic=False) == [], "Symmetrized W should have no asymmetries"
+
+    W.transform = transform
+    return W
+
+
 def _fdr_benjamini_hochberg(p_values: np.ndarray, alpha: float = 0.05) -> np.ndarray:
     """Benjamini–Hochberg FDR correction. True = reject (significant)."""
     n = len(p_values)
@@ -227,7 +266,7 @@ def spatial_analysis(
     seed: Optional[int] = 42,
 ) -> Dict[str, Any]:
     """
-    Build kNN graph (k=30, Euclidean), row-standardize weights, compute global
+    Build symmetrized kNN graph (Euclidean), row-standardize weights, compute global
     Moran's I and LISA via PySAL; 999 permutations; FDR (Benjamini–Hochberg).
     Returns Moran's I, HH mask, LL mask, and LISA details.
 
@@ -245,9 +284,8 @@ def spatial_analysis(
     if len(v) != X_test.shape[0]:
         raise ValueError("v length must match X_test number of rows")
 
-    # kNN weights, Euclidean; row-standardize
-    W = KNN.from_array(X_test, k=k)
-    W.transform = "r"
+    # Build symmetrized kNN weights, then row-standardize
+    W = make_knn_weights(X_test, k=k, symmetrize=True, transform="r")
 
     # Global Moran's I with permutation p-value
     # Moran (global) doesn't accept seed; seed numpy RNG manually for reproducibility.
@@ -425,8 +463,8 @@ def null_experiment(
 
     X_test = np.asarray(X_test, dtype=float)
 
-    W = KNN.from_array(X_test, k=k)
-    W.transform = "r"
+    # Build symmetrized kNN weights, then row-standardize
+    W = make_knn_weights(X_test, k=k, symmetrize=True, transform="r")
 
     rng = np.random.RandomState(seed)
     null_moran_i = np.zeros(R)
