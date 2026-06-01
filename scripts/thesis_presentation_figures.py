@@ -21,8 +21,13 @@ _INCLUDEGRAPHICS_RE = re.compile(r"\\includegraphics(?:\[[^\]]*\])*\{([^}]+)\}")
 
 _ALWAYS_EXPORT_FIGURES = {
     "decomp_hp_secondary_bar_rashomon_grid.pdf",
-    "sensitivity_K_curves_compas.pdf",
-    "sensitivity_kNN_curves_compas.pdf",}
+
+    "sensitivity_K_variance_compas.pdf",
+    "sensitivity_K_conflict_compas.pdf",
+
+    "sensitivity_kNN_variance_compas.pdf",
+    "sensitivity_kNN_conflict_compas.pdf",
+}
 
 
 def _iter_tex_sources(overleaf_bundle: Path) -> Iterator[Path]:
@@ -57,8 +62,10 @@ def export_script_pdf_basenames() -> frozenset[str]:
         "sensitivity_kNN.pdf",
     }
     for ds in _EXPORT_SENSITIVITY_DATASETS:
-        s.add(f"sensitivity_K_curves_{ds}.pdf")
-        s.add(f"sensitivity_kNN_curves_{ds}.pdf")
+        s.add(f"sensitivity_K_variance_{ds}.pdf")
+        s.add(f"sensitivity_K_conflict_{ds}.pdf")
+        s.add(f"sensitivity_kNN_variance_{ds}.pdf")
+        s.add(f"sensitivity_kNN_conflict_{ds}.pdf")
     return frozenset(s)
 
 
