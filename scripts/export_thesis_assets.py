@@ -150,26 +150,64 @@ def write_global_summary_tex():
     print("Wrote", TAB_DIR / "global_summary.tex")
 
 def write_family_summary_tex():
-    """Per-family (top-25 per family): prefer aggregated CSV over seeds; else legacy single-run CSV."""
+    """COMPAS global reference + per-family Rashomon sets (top-25 per family)."""
     agg_path = RESULTS_DIR / "compas" / "per_family_spatial_aggregated.csv"
+    global_path = RESULTS_DIR / "compas" / "summary_per_run.csv"
 
     # Used only if the per-family CSV does not yet contain hh_rate columns.
     compas_n_test = 1443
 
     out = []
     out.append(
-        r"% Per-family Rashomon (top-K=25 per family), COMPAS. Mean $\pm$ std over outer seeds from experiment runner."
+        r"% COMPAS: global top-K reference plus per-family Rashomon sets. Mean $\pm$ std over outer seeds."
     )
     out.append(r"\begin{tabular}{lcccc}")
     out.append(r"\hline")
     out.append(
-        r"Family & Mean variance & Moran's $I$ & HH count & HH rate \\"
+        r"Selection & Mean variance & Moran's $I$ & HH count & HH rate \\"
     )
     out.append(
         r" & (mean $\pm$ std) & (mean $\pm$ std) & (mean $\pm$ std) & (mean $\pm$ std) \\"
     )
     out.append(r"\hline")
 
+    # Global top-K reference row from the ordinary COMPAS summary.
+    if global_path.is_file():
+        gdf = pd.read_csv(global_path)
+        n = len(gdf)
+
+        mv = (
+            f"{gdf['mean_variance'].mean():.6f} $\\pm$ "
+            f"{gdf['mean_variance'].std(ddof=1) if n > 1 else 0.0:.6f}"
+        )
+        mi = (
+            f"{gdf['moran_i'].mean():.3f} $\\pm$ "
+            f"{gdf['moran_i'].std(ddof=1) if n > 1 else 0.0:.3f}"
+        )
+        hh = (
+            f"{gdf['n_hh'].mean():.1f} $\\pm$ "
+            f"{gdf['n_hh'].std(ddof=1) if n > 1 else 0.0:.1f}"
+        )
+
+        if "hh_rate" in gdf.columns:
+            hh_rate_mean = gdf["hh_rate"].mean()
+            hh_rate_std = gdf["hh_rate"].std(ddof=1) if n > 1 else 0.0
+        else:
+            hh_rate_mean = gdf["n_hh"].mean() / compas_n_test
+            hh_rate_std = gdf["n_hh"].std(ddof=1) / compas_n_test if n > 1 else 0.0
+
+        hh_rate = (
+            f"{100 * hh_rate_mean:.1f}\\% $\\pm$ "
+            f"{100 * hh_rate_std:.1f}\\%"
+        )
+
+        label = r"\shortstack[c]{Global\\(all families)}"
+        out.append(f"{label} & {mv} & {mi} & {hh} & {hh_rate} \\\\")
+        out.append(r"\hline")
+    else:
+        print("Missing compas/summary_per_run.csv. Writing per-family rows without global reference.")
+
+    # Per-family rows.
     if agg_path.is_file():
         df = pd.read_csv(agg_path)
 
@@ -204,7 +242,7 @@ def write_family_summary_tex():
 
         df = pd.read_csv(path)
         out[0] = (
-            r"% Per-family Rashomon (top-K=25 per family). "
+            r"% COMPAS: global top-K reference plus per-family Rashomon sets. "
             r"Legacy single-run CSV; re-run notebook 01 to get mean$\pm$std."
         )
 

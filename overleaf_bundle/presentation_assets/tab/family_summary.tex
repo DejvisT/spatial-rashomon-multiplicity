@@ -1,8 +1,10 @@
-% Per-family Rashomon (top-K=25 per family), COMPAS. Mean $\pm$ std over outer seeds from experiment runner.
+% COMPAS: global top-K reference plus per-family Rashomon sets. Mean $\pm$ std over outer seeds.
 \begin{tabular}{lcccc}
 \hline
-Family & Mean variance & Moran's $I$ & HH count & HH rate \\
+Selection & Mean variance & Moran's $I$ & HH count & HH rate \\
  & (mean $\pm$ std) & (mean $\pm$ std) & (mean $\pm$ std) & (mean $\pm$ std) \\
+\hline
+\shortstack[c]{Global\\(all families)} & 0.001308 $\pm$ 0.000306 & 0.210 $\pm$ 0.081 & 128.4 $\pm$ 73.6 & 8.9\% $\pm$ 5.1\% \\
 \hline
 GBM & 0.001245 $\pm$ 0.000290 & 0.256 $\pm$ 0.068 & 131.2 $\pm$ 54.1 & 9.1\% $\pm$ 3.7\% \\
 LogReg & 0.000060 $\pm$ 0.000128 & 0.166 $\pm$ 0.193 & 82.4 $\pm$ 103.8 & 5.7\% $\pm$ 7.2\% \\
