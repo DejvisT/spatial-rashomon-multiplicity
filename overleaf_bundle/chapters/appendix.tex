@@ -1,17 +1,100 @@
-\subsection{Variance vs.\ Moran's $I$ Correlation}
-\label{app:variance-moran}
+\section{Hyperparameter Search Spaces}
+\label{app:hp-search-space}
 
-Figure~\ref{fig:variance_vs_moran} shows the relationship between mean variance and Moran's $I$ across runs for COMPAS.
+Table~\ref{tab:hp-search-space} lists the hyperparameter search spaces used for training
+the candidate models. For each run, 50 configurations per model family are sampled
+from these spaces.
 
-\begin{figure}[htbp]
+\begin{table}[htbp]
 \centering
-\includegraphics[width=0.55\textwidth]{variance_vs_moran_compas.pdf}
-\caption{Mean variance vs.\ Moran's $I$ across runs for COMPAS. Higher overall multiplicity tends to accompany stronger spatial structure.}
-\label{fig:variance_vs_moran}
-\end{figure}
+\small
+\setlength{\tabcolsep}{4pt}
+\caption{Hyperparameter search spaces used for candidate model training. Parameters
+listed as fixed are not varied, but are included for reproducibility.}
+\label{tab:hp-search-space}
+\begin{tabular}{p{0.18\textwidth}p{0.26\textwidth}p{0.48\textwidth}}
+\toprule
+\textbf{Family} & \textbf{Hyperparameter} & \textbf{Values} \\
+\midrule
+LogReg & \texttt{C} & 20 log-spaced values from $10^{-5}$ to $10^{5}$ \\
+       & \texttt{l1\_ratio} & $\{0, 0.25, 0.5, 0.75, 1.0\}$ \\
+       & \texttt{penalty} & \texttt{elasticnet} (fixed) \\
+       & \texttt{solver} & \texttt{saga} (fixed) \\
+       & \texttt{max\_iter} & 2000 (fixed) \\
+\midrule
+kNN & \texttt{n\_neighbors} & $\{3,5,7,10,15,20,25,30,50,70,90,100,150\}$ \\
+    & \texttt{weights} & \texttt{uniform}, \texttt{distance} \\
+    & \texttt{p} & $\{1,2\}$ \\
+\midrule
+RF & \texttt{n\_estimators} & $\{100,200,500\}$ \\
+   & \texttt{max\_depth} & $\{\texttt{None},5,10,20,40\}$ \\
+   & \texttt{min\_samples\_split} & $\{2,5,10\}$ \\
+   & \texttt{min\_samples\_leaf} & $\{1,2,4\}$ \\
+   & \texttt{max\_features} & \texttt{sqrt}, \texttt{log2}, \texttt{None} \\
+   & \texttt{bootstrap} & \texttt{True} (fixed) \\
+\midrule
+GBM & \texttt{n\_estimators} & $\{100,200,500\}$ \\
+    & \texttt{learning\_rate} & $\{0.01,0.05,0.1,0.2\}$ \\
+    & \texttt{max\_depth} & $\{2,3,4,5\}$ \\
+    & \texttt{subsample} & $\{0.6,0.8,1.0\}$ \\
+\midrule
+MLP & \texttt{hidden\_layer\_sizes} & $(50)$, $(100)$, $(200)$, $(100,50)$, $(200,100)$ \\
+    & \texttt{alpha} & $\{10^{-5},10^{-4},10^{-3},10^{-2}\}$ \\
+    & \texttt{learning\_rate\_init} & $\{10^{-4},10^{-3},10^{-2}\}$ \\
+    & \texttt{activation} & \texttt{relu}, \texttt{tanh} \\
+    & \texttt{solver} & \texttt{adam} (fixed) \\
+    & \texttt{early\_stopping} & \texttt{True} (fixed) \\
+    & \texttt{max\_iter} & 1000 (fixed) \\
+\bottomrule
+\end{tabular}
+\end{table}
 
+\section{Performance-Control Meta-Model Diagnostic}
+\label{app:meta-model-diagnostic}
 
-\subsection{Additional Rule-Extraction Results}
+As an auxiliary diagnostic, we examine whether the hyperparameter effects reported in
+Section~\ref{sec:results-hp} mainly reflect differences in validation performance. For
+each dataset--family combination, we fit a model-level meta-model predicting the
+disagreement contribution $V_m$ from grouped hyperparameters and validation Brier
+score. This analysis is descriptive rather than causal. It is not used as the primary
+attribution result, because validation Brier score is a performance metric rather than a
+hyperparameter. Its purpose is to assess whether model-level disagreement is dominated
+by performance differences.
+
+Table~\ref{tab:app-hp-meta-pool-summary} compares the Rashomon set with the full
+candidate pool. In the full pool, validation Brier score is the strongest predictor in 11 of
+15 dataset--family combinations, with an average importance of $0.596$. This indicates
+that, when all trained candidates are included, validation performance differences explain
+a large share of model-level disagreement. Within the Rashomon set, this effect is
+weaker: validation Brier score is rank 1 in 7 of 15 combinations, and its mean importance
+decreases to $0.290$. At the same time, the strongest non-performance hyperparameter has
+a higher mean importance in the Rashomon set ($0.498$) than in the full pool ($0.285$).
+
+These results suggest that the Rashomon restriction reduces, but does not eliminate, the
+role of performance differences. Disagreement inside the near-optimal set is therefore not
+simply a byproduct of poorly performing models. However, validation Brier score remains
+important in several dataset--family combinations, especially for GBM, MLP, and parts of
+kNN. The meta-model analysis is therefore interpreted as a performance-control
+diagnostic rather than as primary evidence for hyperparameter importance.
+
+\begin{table}[htbp]
+\centering
+\caption{Meta-model diagnostic summary comparing the Rashomon set with the full
+candidate pool. Values are aggregated over 15 dataset--family combinations. ``Brier
+rank-1'' reports in how many combinations validation Brier score is the most important
+predictor of $V_m$.}
+\label{tab:app-hp-meta-pool-summary}
+\begin{tabular}{lrrrr}
+\toprule
+Pool & Groups & Brier rank-1 & Mean Brier importance & Mean top HP importance \\
+\midrule
+Rashomon & 15 & 7 & 0.290 & 0.498 \\
+Full pool & 15 & 11 & 0.596 & 0.285 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Additional Rule-Extraction Results}
 
 \begin{table}[htbp]
 \centering
@@ -31,7 +114,243 @@ Figure~\ref{fig:variance_vs_moran} shows the relationship between mean variance 
 
 \FloatBarrier
 
-\subsection{Additional Fairness Exposure Diagnostics}
+
+\section{Synthetic FDR Sensitivity}
+\label{app:synthetic-fdr}
+
+To assess whether the synthetic validation results depend on the multiple-testing
+threshold used for LISA, we vary the false-discovery-rate level over
+$\alpha \in \{0.01, 0.05, 0.10, 0.20\}$.
+
+\paragraph{Single-island design.}
+In the single-island setting, the results are stable across the tested thresholds. As
+$\alpha$ increases, the number of HH points rises moderately from $88$ to $109$, while
+the Jaccard overlap with the ground-truth island increases from $0.72$ to $0.79$. This
+reflects the expected precision--recall trade-off: precision decreases only slightly, from
+about $0.99$ at $\alpha=0.01$ to about $0.93$ at $\alpha=0.20$, whereas recall increases
+from $0.73$ to $0.84$. Across all tested $\alpha$ values, the detected HH region remains a
+single connected component, matching the geometry of the true island.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.6\textwidth]{single_island_fdr_sensitivity.pdf}
+    \caption{FDR sensitivity analysis for the single-island design. HH count and Jaccard
+    overlap are shown as a function of the LISA false-discovery-rate threshold $\alpha$.}
+    \label{fig:app-synthetic-fdr-single}
+\end{figure}
+
+\paragraph{Three-islands design.}
+In the three-islands setting, the conclusions are also stable across thresholds. At the
+strictest threshold $\alpha=0.01$, the method detects $265$ HH points with precision
+$0.9623$, recall $0.8673$, and Jaccard overlap $0.8388$. Increasing the threshold to
+$\alpha=0.05$ raises the HH count slightly to $268$ and improves recall to $0.8776$, with
+Jaccard overlap increasing to $0.8487$ while precision remains essentially unchanged. The
+results are identical at $\alpha=0.10$ and change only marginally at $\alpha=0.20$, where
+the HH count increases to $269$, precision decreases slightly to $0.9591$, recall remains
+$0.8776$, and Jaccard overlap decreases slightly to $0.8459$. Across all tested thresholds,
+the number of connected components remains four, reflecting the three island hotspots
+plus one additional outlier-driven hotspot component.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.6\textwidth]{three_islands_fdr_sensitivity.pdf}
+    \caption{FDR sensitivity analysis for the three-islands design. HH count and Jaccard
+    overlap are shown as a function of the LISA false-discovery-rate threshold $\alpha$.}
+    \label{fig:app-synthetic-fdr-three}
+\end{figure}
 
 
-\begin{figure}[htbp] \centering \includegraphics[width=0.7\textwidth]{fairness_hh_rate_by_race_compas.pdf} \caption{HH rate by race on COMPAS (mean $\pm$ std across 10 seeds). African-Americans have a higher HH rate than Caucasians and Hispanics.} \label{fig:fairness_hh_race} \end{figure}
+\section{Decision-Level Multiplicity: Conflict Ratio}
+\label{app:conflict-ratio}
+
+The main analysis in this thesis uses predictive variance as the primary multiplicity
+metric, because it preserves probability-space disagreement between near-optimal
+models. As a supplementary diagnostic, we also compute a decision-level conflict ratio.
+This metric captures whether models in the Rashomon approximation fall on different
+sides of the classification threshold.
+
+Let $\tau = 0.5$ be the decision threshold. For each observation $i$, define
+\[
+q_i = \frac{1}{K}\sum_{m=1}^{K} \mathbf{1}[\hat{p}_{mi} \geq \tau]
+\]
+as the fraction of models in the top-$K$ Rashomon approximation that predict the
+positive class. The conflict ratio is then
+\[
+c_i = \min(q_i, 1-q_i), \qquad c_i \in [0,0.5].
+\]
+A value of $c_i = 0$ indicates unanimous agreement in the thresholded class label,
+whereas $c_i = 0.5$ indicates a maximally split model set. In contrast to predictive
+variance, which captures disagreement in predicted probabilities, the conflict ratio only
+captures disagreement that affects the final class decision.
+
+\subsection{Dataset-Level Conflict Metrics}
+\label{app:conflict-dataset-level}
+
+Table~\ref{tab:app-conflict-metrics} summarizes conflict-related metrics across datasets.
+The results broadly mirror the variance-based analysis, but also show that disagreement
+magnitude and spatial concentration are not identical. German Credit has the largest
+overall conflict, but its conflict-based Moran's $I$ is comparatively small. COMPAS has
+lower overall conflict prevalence, but stronger spatial concentration. Adult has the lowest
+overall conflict magnitude, while still showing positive conflict-based spatial clustering.
+
+\begin{table}[htbp]
+\centering
+\caption{Conflict metrics by dataset (mean $\pm$ std over 10 runs, global top-$K$ ($K=25$),
+dataset-specific $k$).}
+\label{tab:app-conflict-metrics}
+\small
+\input{presentation_assets/tab/conflict_summary}
+\end{table}
+
+\subsection{Overlap with Variance-Based Hotspots}
+\label{app:conflict-overlap}
+
+The overlap between variance-based and conflict-based HH hotspots is limited across all
+datasets. On COMPAS, the Jaccard similarity is $0.078 \pm 0.057$, indicating that the
+two metrics identify largely different observations as hotspots. Adult shows somewhat
+higher but still limited overlap ($0.184 \pm 0.052$). On German Credit, the mean overlap
+is $0.118 \pm 0.312$, but this estimate is unstable because both hotspot sets are often
+very small.
+
+This confirms that predictive variance and conflict ratio capture related but distinct
+forms of multiplicity. Predictive variance measures probability-level instability, while
+the conflict ratio isolates threshold-sensitive decision disagreement.
+
+\subsection{Quadrant Analysis}
+\label{app:conflict-quadrants}
+
+To compare both metrics more directly, observations are partitioned into four quadrants
+using the 90th percentile of predictive variance and conflict ratio within each run. This
+yields four regimes: jointly high variance and conflict, high variance only, high conflict
+only, and jointly low disagreement.
+
+\begin{table}[htbp]
+\centering
+\caption{Quadrant breakdown for COMPAS (mean $\pm$ std over 10 runs, global top-$K$ ($K=25$)). Thresholds are the 90th percentile of variance and conflict per run.}
+\label{tab:app-conflict-quadrants}
+\resizebox{\textwidth}{!}{%
+\input{presentation_assets/tab/quadrant_compas}
+}
+\end{table}
+
+Most observations fall into the stable regime D. Among the remaining observations,
+quadrants B and C are both more common than quadrant A. This shows that high
+disagreement often appears in only one of the two metrics: either as broad probability
+variation without label changes, or as threshold-sensitive label instability without
+especially large probability spread.
+
+\subsection{Conflict-Based Null Testing}
+\label{app:conflict-null}
+
+We also repeat the prediction-permutation null experiment using the conflict ratio $c_i$
+instead of predictive variance. The results are shown in Table~\ref{tab:app-conflict-null}.
+Conflict-based Moran's $I$ is significant in all runs for COMPAS and Adult, and in most
+runs for German Credit.
+
+\begin{table}[htbp]
+\centering
+\caption{Conflict-based prediction-permutation null summary by dataset. A run is
+counted as significant when the empirical permutation $p$-value for conflict Moran's $I$
+is below $0.05$. The null uses $R=100$ prediction-matrix permutations per run. Values
+are computed over 10 runs.}
+\label{tab:app-conflict-null}
+\input{presentation_assets/tab/conflict_null_significance.tex}
+\end{table}
+
+Thus, a spatial signal is also visible for thresholded decision disagreement. However,
+because the main thesis focuses on probability-space disagreement, the conflict-ratio
+analysis is treated as supplementary rather than as part of the main empirical argument.
+
+
+\section{Decision-Boundary Proximity}
+\label{app:boundary-proximity}
+
+As an auxiliary diagnostic, we test whether variance-based hotspots mainly occur near the
+ensemble decision boundary. For each test observation, we compute the margin
+\[
+m_i = |\bar{p}_i - 0.5|,
+\]
+where $\bar{p}_i$ is the mean predicted probability across the selected Rashomon models.
+Lower values of $m_i$ indicate observations closer to the decision boundary. We summarize
+this relationship using Pearson and Spearman correlations between pointwise predictive
+variance and margin. In addition, we compare the margin distributions of HH and non-HH
+observations using a one-sided Mann--Whitney U test.
+
+Table~\ref{tab:app-margin-summary} shows a clear cross-dataset contrast. On Adult and
+German Credit, predictive variance and margin are negatively correlated, meaning that
+high-variance observations tend to lie closer to the decision boundary. This pattern is
+especially pronounced in rank terms: the mean Spearman correlation is $-0.89$ on Adult
+and $-0.70$ on German Credit. The HH comparison points in the same direction: HH
+observations have smaller average margins than non-HH observations on both datasets.
+
+COMPAS behaves differently. The mean Pearson correlation is $-0.04 \pm 0.09$ and the
+mean Spearman correlation is $-0.07 \pm 0.18$, both close to zero. HH observations also
+do not have smaller margins than non-HH observations; their mean margin is slightly
+larger ($0.19$ vs.\ $0.18$). Thus, COMPAS hotspots are not well explained by ordinary
+decision-boundary proximity.
+
+\begin{table}[htbp]
+\centering
+\caption{Variance--margin relationship by dataset (mean $\pm$ std across runs). Margin
+is defined as $m_i = |\bar{p}_i - 0.5|$, so lower values indicate observations closer to the
+decision boundary. HH and non-HH columns report the average margin inside and outside
+variance-based HH hotspots.}
+\label{tab:app-margin-summary}
+\input{presentation_assets/tab/margin_summary}
+\end{table}
+
+The Mann--Whitney U tests support the same interpretation. On Adult, the alternative
+hypothesis that HH observations have lower margins than non-HH observations is
+significant in all runs (mean $p \approx 3.5 \times 10^{-22}$). On German Credit, the
+effect is weaker but still present, with significance in $57\%$ of runs. On COMPAS, the
+test is significant in only $30\%$ of runs and the mean $p$-value is $0.59$, providing no
+evidence that HH observations systematically lie closer to the decision boundary.
+
+Overall, the diagnostic suggests that predictive multiplicity has different mechanisms
+across datasets. On Adult and German Credit, high-variance regions are more closely
+linked to boundary ambiguity. On COMPAS, predictive variance is largely decoupled from
+decision-boundary proximity, suggesting that its hotspot structure is driven more by
+structural disagreement among near-optimal models than by closeness to the classification
+threshold.
+
+\section{Fairness and Subgroup Exposure on COMPAS}
+\label{app:fairness-exposure}
+
+As an exploratory auxiliary diagnostic, we examine whether variance-based HH regions on
+COMPAS are unevenly distributed across sensitive groups defined by race and sex. For
+each group, we compute the exposure rate as the fraction of that group's test observations
+classified as HH. Exposure rates are computed separately for each seed and then aggregated
+across seeds.
+
+Table~\ref{tab:app-fairness} shows subgroup-level differences in HH exposure.
+African-American test points exhibit a higher mean HH rate than Caucasian and Hispanic
+test points. However, some groups have small sample sizes and correspondingly high
+variability, so these raw differences should be interpreted cautiously.
+
+\begin{table}[htbp]
+\centering
+\caption{COMPAS: HH rates by subgroup (mean $\pm$ std across 10 seeds). Larger groups
+are more reliable.}
+\label{tab:app-fairness}
+\small
+\input{presentation_assets/tab/fairness_subgroup_rates_compas.tex}
+\end{table}
+
+To test whether subgroup exposure differences are larger than expected by chance, we use
+a stratified permutation test. Group labels are shuffled within each run, run-level exposure
+rates are recomputed, and the aggregated inter-group disparity, defined as the max--min
+HH rate across eligible groups, is compared with its permutation null distribution. To
+reduce instability from very small groups, we apply per-run subgroup minimum-size
+filtering and require minimum cross-run support before interpreting a subgroup.
+
+For race, the observed disparity is about $0.094$, compared with a permutation-null mean
+of $0.012$ and a 95\% null interval of approximately $[0.003, 0.026]$. The resulting
+$p$-value is $p \approx 0.0005$, indicating that race-based HH exposure differences are
+larger than expected under this null. For sex, the observed disparity is essentially zero
+($0.00015$), with $p \approx 0.98$, providing no evidence of sex-based HH exposure
+disparity.
+
+This suggests that multiplicity exposure on COMPAS may be unevenly distributed across
+racial groups. However, the result should be interpreted as an exploratory subgroup
+auditing signal rather than as a causal fairness conclusion. The analysis is observational,
+and some race categories contain relatively few observations.

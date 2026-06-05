@@ -6,28 +6,38 @@
 Predictive multiplicity lies at the intersection of three lines of work: the study of
 Rashomon sets, the design of metrics that quantify disagreement among near-optimal
 models, and the broader question of what such disagreement implies for model selection,
-fairness, and reliability. The central observation is that modern machine-learning
-pipelines often do not yield a uniquely compelling model. Instead, they produce a set of
-models with nearly identical predictive performance but potentially different outputs for
-the same individual. This chapter reviews the literature most directly connected to that
-observation and uses it to motivate the perspective taken in this thesis: predictive
-multiplicity should be studied not only as a global property of a dataset or model class,
-but also as a localized phenomenon in feature space.
+fairness, and reliability. The central observation is that a single deployed model is often
+only one choice among several similarly well-performing alternatives. Even when a
+machine-learning workflow ultimately returns one final model, other choices of model
+family, hyperparameters, or random seed may lead to models with nearly identical
+predictive performance but different outputs for the same individual. This chapter
+reviews the literature most directly connected to that observation and uses it to motivate
+the perspective taken in this thesis: predictive multiplicity should be studied not only as
+a global property of a dataset or model class, but also as a localized phenomenon in
+feature space.
 
 % -------------------------------------------------------------------
 \subsection{Rashomon Sets and Predictive Multiplicity}
 % -------------------------------------------------------------------
 
-The modern formulation of multiplicity is rooted in the \emph{Rashomon effect}, introduced
-by \cite{breiman_statistical_2001}, according to which many distinct models can explain
-the same data equally well. Let $\mathcal{F}$ be a hypothesis class, $L(f)$ a loss
-function, and $L^* = \min_{f \in \mathcal{F}} L(f)$. The corresponding
-\emph{Rashomon set} is
+The modern formulation of multiplicity is rooted in the \emph{Rashomon effect},
+introduced by \cite{breiman_statistical_2001}. The Rashomon effect describes the situation in which many distinct models achieve
+similarly good predictive performance, while relying on different functional forms,
+variables, or relationships in the data. In other words, there may be no single
+uniquely best explanation of the data-generating relationship. This perspective is also
+used by \cite{fisher2019all}, who argue that conclusions drawn from one fitted model
+can be incomplete when other well-performing models rely on different variables or
+relationships.
+
+Formally, let $\mathcal{F}$ be a hypothesis class, let $L(f)$ be the loss of a model
+$f \in \mathcal{F}$, and let $L^* = \min_{f \in \mathcal{F}} L(f)$ be the best loss in this
+class. The corresponding \emph{Rashomon set} is
 \[
   \mathcal{R}_\varepsilon
   = \bigl\{f \in \mathcal{F} : L(f) \leq L^{*} + \varepsilon\bigr\}.
 \]
-This shifts attention from a single best model to a set of near-optimal alternatives.
+It contains all models whose loss is within a tolerance $\varepsilon$ of the best model.
+This shifts attention from a single selected model to a set of near-optimal alternatives.
 
 Recent Rashomon-set research has emphasized that the size and structure of
 $\mathcal{R}_\varepsilon$ can have substantial practical consequences.
@@ -80,9 +90,9 @@ main response variable is not hard disagreement alone, but the full spread of pr
 probabilities across the Rashomon set.
 
 Closely related, \cite{hsu_rashomon_nodate} propose \emph{Rashomon Capacity}, an
-information-theoretic measure of how broadly the Rashomon set spans the output space.
-Rashomon Capacity provides a global characterization of score diversity and is therefore
-useful for understanding whether multiplicity is substantial at the dataset level.
+information-theoretic measure of predictive multiplicity in probabilistic classification.
+The measure is defined at the level of an individual observation and captures how much
+the possible predicted scores for that observation vary across models in the Rashomon set.
 \cite{hsu_rashomongb_2024} extend this line in the context of gradient boosting,
 introducing \emph{RashomonGB} as a practical method for inspecting multiplicity in boosted
 models and discussing score-based notions such as the \emph{Viable Prediction Range} for
@@ -100,17 +110,63 @@ and per instance, in both label space and probability space. What remains much l
 developed is how to move from pointwise disagreement scores to an analysis of whether
 disagreement forms coherent \emph{regions} in feature space.
 
+
+\subsection{Localizing Instability in Feature Space}
+\label{sec:spatial-review}
+% -------------------------------------------------------------------
+
+The metrics discussed above quantify predictive multiplicity either at the dataset level
+or for individual observations. A remaining question is whether observations with high
+prediction disagreement are isolated cases, or whether they form coherent regions in
+feature space. This thesis approaches that question using tools from spatial statistics.
+
+\cite{moran1950notes} introduced Moran's $I$ as a measure of global spatial
+autocorrelation. In this thesis, it is used to test whether observations with similar
+levels of prediction instability tend to be close to each other in feature space.
+\cite{anselin1995local} developed \emph{Local Indicators of Spatial Association} (LISA),
+which identify where such local clustering occurs. In particular, LISA can identify
+\emph{High--High} regions, where observations with high values are surrounded by
+neighbors that also have high values, and \emph{Low--Low} regions, where low values
+cluster together.
+
+In their original setting, these tools operate on geographic data with an explicit spatial
+adjacency structure. In this thesis, the same logic is transferred to
+\emph{feature space}: observations become nodes in a $k$-nearest-neighbor graph, and
+observation-wise multiplicity scores become the variable whose spatial organization is
+tested. Conceptually, this turns predictive multiplicity from a collection of isolated
+pointwise values into a structured signal that can be analyzed for clustering, significance,
+and local hotspot formation.
+
+This step is motivated by observations already present in the literature on predictive
+multiplicity. \cite{watson-daniels_predictive_2023} show that prediction disagreement
+across near-optimal probabilistic classifiers is associated with dataset characteristics such
+as outliers and separability. This suggests that predictive multiplicity may not be
+distributed uniformly across the input space. Likewise, per-instance feasible-range
+methods such as those discussed by \cite{hsu_rashomongb_2024} show that the range of
+possible predictions can vary substantially from one observation to another. These works
+therefore motivate an observation-level view of predictive multiplicity. However, they do
+not directly analyze whether observations with high disagreement form statistically
+significant, spatially contiguous regions in feature space.
+
+That question matters for interpretation. Once disagreement is shown to cluster, the
+relevant object is no longer only an unstable individual prediction, but an unstable
+\emph{subpopulation}. This shifts the focus from isolated observations to coherent
+regions of the feature space, enabling a more structured analysis of where and how
+predictive multiplicity arises.
+
+
 % -------------------------------------------------------------------
 \subsection{Drivers and Consequences of Predictive Multiplicity}
 \label{sec:drivers-review}
 % -------------------------------------------------------------------
 
-A second question is what drives predictive multiplicity once it is observed.
-Part of the answer lies in model selection itself: when many models are similarly accurate,
-the final deployed system can differ depending on which additional criteria are prioritized.
-This is one of the main themes in \cite{black_model_2022} and
-\cite{rudin_amazing_2024}, both of which stress that multiplicity makes model choice a
-substantive design decision rather than a purely technical afterthought.
+After asking how predictive multiplicity can be measured and localized, a further question
+is why it arises and why it matters. One source is model selection itself. If several models
+perform similarly well, then choosing one final model is not only a technical step, but can
+affect individual predictions. \cite{black_model_2022} and \cite{rudin_amazing_2024}
+emphasize this point: when many good models are available, model choice should be seen
+as a substantive design decision, because different acceptable models may differ in other
+properties such as interpretability, fairness, or robustness.
 
 More recently, attention has turned to concrete modeling choices that generate
 multiplicity within a model family. Most directly relevant for this thesis is
@@ -138,63 +194,22 @@ However, they mostly operate at the level of whole datasets, whole model classes
 individual cases taken one at a time. They do not yet ask whether family effects and
 hyperparameter effects become especially strong in \emph{specific parts} of feature space.
 
-% -------------------------------------------------------------------
-\subsection{Localizing Instability in Feature Space}
-\label{sec:spatial-review}
-% -------------------------------------------------------------------
-
-The missing methodological ingredient for this thesis is a way to turn pointwise
-disagreement into region-level structure. For this, the thesis draws on classical spatial
-statistics. \cite{moran1950notes} introduced Moran's $I$ as a measure of global spatial
-autocorrelation, and \cite{anselin1995local} developed \emph{Local Indicators of Spatial Association}
-(LISA), which decompose global spatial dependence into observation-level patterns.
-In particular, LISA identifies clusters such as \emph{High--High} regions, where
-observations with high values are surrounded by neighbors that also have high values,
-and \emph{Low--Low} regions, where low values cluster together.
-
-In their original setting, these tools operate on geographic data with an explicit spatial
-adjacency structure. In this thesis, the same logic is transferred to
-\emph{feature space}: observations become nodes in a $k$-nearest-neighbor graph, and
-observation-wise multiplicity scores become the variable whose spatial organization is
-tested. Conceptually, this turns predictive multiplicity from a collection of isolated
-pointwise values into a structured signal that can be analyzed for clustering, significance,
-and local hotspot formation.
-
-This step is motivated by hints already present in the multiplicity literature.
-\cite{watson-daniels_predictive_2023} show that multiplicity is associated with dataset
-characteristics such as outliers and separability, suggesting that disagreement is not
-distributed uniformly across the input space. Likewise, per-instance feasible-range methods
-such as those discussed by \cite{hsu_rashomongb_2024} make clear that disagreement can
-vary strongly from one observation to another. But these approaches stop short of asking
-whether high-disagreement observations form statistically significant, spatially contiguous
-regions.
-
-That question matters for interpretation. Once disagreement is shown to cluster, the
-relevant object is no longer only an unstable individual prediction, but an unstable
-\emph{subpopulation}. This shifts the focus from isolated observations to coherent
-regions of the feature space, enabling a more structured analysis of where and how
-predictive multiplicity arises.
 
 % -------------------------------------------------------------------
 \subsection{Positioning of This Thesis}
 % -------------------------------------------------------------------
 
-The literature now provides a clear foundation for studying predictive multiplicity.
-Rashomon-set research explains why many near-optimal models may coexist
-\citep{semenova_existence_2022, rudin_amazing_2024}; predictive-multiplicity research
-defines how disagreement can be measured in label space and probability space
-\citep{marx_predictive_2020, watson-daniels_predictive_2023, hsu_rashomon_nodate,
-hsu_rashomongb_2024}; and recent work on hyperparameters, fairness, and governance shows that such
-disagreement matters in practice and raises important concerns about fairness and
-decision-making
-\citep{cavus_role_2025, sokol_cross-model_2024, frohnapfel_using_2026}.
+The existing literature provides concepts and metrics for studying predictive
+multiplicity, but it mostly treats disagreement either as a dataset-level quantity or as a
+property of individual observations. Less attention has been given to whether these
+observation-level differences form coherent regions in feature space.
 
-What remains largely missing is a framework that links these per-observation multiplicity
-signals to the geometry of the feature space. This thesis addresses that gap by combining
-observation-wise variance and conflict measures with feature-space graphs and spatial
-autocorrelation statistics, thereby identifying localized hotspots of predictive
-multiplicity. It then goes one step further by decomposing local disagreement into
-between-family and within-family components and by characterizing hotspot regions with
-interpretable rules. In this sense, the thesis treats predictive multiplicity not only as a
-global nuisance metric, but as a structured, local, and explainable property of a learning
-problem.
+This thesis addresses this gap by treating prediction instability as a spatial signal. It uses
+observation-wise predictive variance to identify where near-optimal models disagree, and
+then analyzes whether high-disagreement observations cluster locally. The goal is therefore not only to measure how much predictive
+multiplicity exists, but also to locate where it occurs, assess how stable these regions
+are, and examine which modeling choices are associated with them.
+
+In this way, the thesis connects predictive multiplicity with a regional view of model
+reliability: some parts of the feature space may be more sensitive to model choice than
+others, even when all considered models perform similarly well overall.

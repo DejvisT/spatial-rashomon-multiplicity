@@ -7,65 +7,101 @@ experiments.
 
 \subsection{Datasets}
 
-Experiments are conducted on three benchmark datasets commonly used in fairness,
-interpretability, and predictive uncertainty research:
+Experiments are conducted on three real-world benchmark datasets from different
+application domains. All three tasks are binary classification problems and contain a mix
+of numerical and categorical input features.
 
 \begin{itemize}
-    \item \textbf{COMPAS}: The ProPublica recidivism dataset. Features include age and prior offence count (numeric), as well as sex, race, and charge degree (categorical). The binary target indicates whether the individual reoffended within two years.
-    \item \textbf{German Credit}: The \texttt{credit-g} dataset from OpenML (version 1). It contains financial and demographic attributes; the target is good versus bad credit risk (binary). The dataset includes both numeric and categorical features.
-    \item \textbf{Adult}: The Adult income dataset from OpenML. It contains demographic and employment-related attributes; the binary target indicates whether annual income exceeds \$50{,}000. The dataset includes both numeric and categorical features.
+    \item \textbf{COMPAS}: The ProPublica COMPAS recidivism dataset
+    \citep{angwin_machine_2016, larson_how_2016}. It contains defendant-level
+    information from Broward County, Florida, such as age, prior offence count, sex,
+    race, and charge degree. The target indicates whether the individual reoffended
+    within two years.
+
+    \item \textbf{German Credit}: The \texttt{credit-g} dataset from OpenML
+    \citep{hofmann_statlog_1994}. It contains financial and demographic information about
+    credit applicants. The target indicates good versus bad credit risk.
+
+    \item \textbf{Adult}: The Adult income dataset from OpenML \citep{becker_adult_1996}.
+    It contains demographic and employment-related information. The target indicates
+    whether annual income exceeds \$50{,}000.
 \end{itemize}
 
-All tasks are binary classification. The datasets differ in size, feature composition, and
-application domain, thereby providing a range of settings in which predictive multiplicity
-and its spatial structure can be evaluated.
+The datasets differ in size, domain, and feature composition, which makes them useful for
+checking whether the proposed analysis behaves similarly across different tabular
+classification settings.
 
 \subsection{Data Splitting}
 \label{sec:exp-splits}
 
-Each dataset is partitioned into training (60\%), validation (20\%), and test (20\%) sets
-using stratified sampling. Two splitting modes are used depending on the analysis goal:
+Each dataset is split into training (60\%), validation (20\%), and test (20\%) sets using
+stratified sampling. The three splits have different roles. The training set is used to fit
+all candidate models. The validation set is used to rank these candidates by Brier score
+and to construct the finite top-$K$ model set $\mathcal{R}_K$. The test set is held out
+until the final analysis step and is used only to compute prediction instability and the
+spatial statistics.
+
+The full experiment is repeated with 10 different random seeds. This is done to check
+whether the results depend strongly on one particular train--validation--test split. Two
+splitting modes are used, because the main analyses and the stability analyses require
+slightly different comparisons.
 
 \begin{description}
-  \item[Primary (independent) splits.] Each outer seed produces a fully independent stratified split; all three sets differ between seeds. This mode is used for the main multiplicity and spatial analyses (Sections~\ref{sec:results-metrics}--\ref{sec:results-hp}), where variability across runs should reflect the full pipeline.
-  \item[Fixed-test-set splits.] The test set is drawn once and held fixed across all outer seeds; only the train/validation boundary is re-split per seed. This mode is used for cross-seed HH stability and Jaccard overlap analyses (Section~\ref{sec:results-spatial}), where point-level comparison across runs is meaningful only if the same test observations appear in every run.
+  \item[Independent splits.] For the main analyses, each random seed creates a new
+  stratified train--validation--test split. Thus, the training, validation, and test sets all
+  differ across runs. This mode reflects the variability of the full experimental pipeline:
+  model fitting, validation-based model selection, test-set prediction, and spatial
+  analysis.
+
+  \item[Fixed-test-set splits.] For the cross-seed stability analysis, the test set is drawn
+  once and kept fixed across all runs. Only the training and validation parts are re-split.
+  This makes it possible to compare hotspot membership for the same test observations
+  across runs. Without a fixed test set, pointwise comparisons such as HH selection
+  frequency or Jaccard overlap would not be meaningful, because the test observations
+  would change from run to run.
 \end{description}
 
-In both modes, the test set is held out from model training and Rashomon-set selection.
-It is used only to generate predictions from the selected models, compute observation-wise
-multiplicity metrics, and perform spatial and null analyses.
+In both splitting modes, the test set is never used for training or for selecting the
+top-$K$ model set. It is used only after model selection, when the selected models are
+applied to the test observations and the multiplicity and spatial analyses are computed.
 
 \subsection{Model Families and Training}
 
-Models are trained across five model families in order to induce diverse forms of predictive
-multiplicity:
+All models are implemented in Python using \texttt{scikit-learn}
+\citep{pedregosa2011scikit}. The experiments use five model families in order to
+cover different types of classifiers: a linear model, an instance-based method, two
+tree-based ensemble methods, and a neural-network model.
 
 \begin{itemize}
-    \item \textbf{Logistic Regression (LogReg):} elastic net penalty
-    (\texttt{penalty='elasticnet'}, \texttt{solver='saga'}), with \texttt{C},
-    \texttt{l1\_ratio}, and \texttt{max\_iter} varied.
-    \item \textbf{$k$-Nearest Neighbors (kNN):} \texttt{n\_neighbors},
-    \texttt{weights} (uniform/distance), and \texttt{p} (1 or 2 for Minkowski distance) varied.
-    \item \textbf{Random Forest (RF):} \texttt{n\_estimators},
-    \texttt{max\_depth}, \texttt{min\_samples\_split},
-    \texttt{min\_samples\_leaf}, and \texttt{max\_features}, with
-    \texttt{bootstrap=True}.
-    \item \textbf{Gradient Boosting (GBM):} \texttt{n\_estimators},
-    \texttt{learning\_rate}, \texttt{max\_depth}, and \texttt{subsample}.
-    \item \textbf{Multilayer Perceptron (MLP):} \texttt{hidden\_layer\_sizes},
-    \texttt{alpha}, \texttt{learning\_rate\_init}, and \texttt{activation}
-    (ReLU/tanh), with \texttt{solver='adam'} and \texttt{early\_stopping=True}.
+    \item \textbf{Logistic Regression (LogReg):} a linear probabilistic classifier with
+    elastic-net regularization.
+
+    \item \textbf{$k$-Nearest Neighbors (kNN):} an instance-based classifier whose
+    predictions depend on the labels of nearby training observations.
+
+    \item \textbf{Random Forest (RF):} an ensemble of decision trees trained with
+    bootstrap aggregation.
+
+    \item \textbf{Gradient Boosting (GBM):} an additive ensemble of shallow decision
+    trees trained sequentially.
+
+    \item \textbf{Multilayer Perceptron (MLP):} a feed-forward neural network trained
+    with the Adam optimizer and early stopping.
 \end{itemize}
 
-These families span linear, instance-based, tree-based, and neural-network models. For
-each family, 50 hyperparameter configurations are sampled uniformly at random from
-predefined search spaces. For families with few discrete options, sampled configurations
-are deduplicated and resampled until 50 unique configurations are obtained.
+For each model family and run, 50 hyperparameter configurations are sampled from
+predefined finite search spaces. The full search spaces are reported in
+Appendix~\ref{app:hp-search-space}. Configurations are sampled using deterministic seeds
+derived from the run, so that the experiment is reproducible. If duplicate
+configurations occur for families with smaller discrete search spaces, configurations are
+resampled until 50 unique candidates are obtained.
 
-Each configuration is trained with a deterministic seed derived from the run identifier.
-Training uses the training set only; the validation set is used exclusively to evaluate
-candidate models. Model performance is measured by the validation Brier score. No
-cross-validation is used: each outer run relies on a single train/validation/test split.
+Each candidate model is trained on the training set only. The validation set is used to
+rank the candidates by Brier score and to construct the finite top-$K$ model set described
+in Section~\ref{sec:meth-rashomon}. The test set is not used for model selection; it is
+used only for computing prediction instability and the subsequent spatial analyses. No
+cross-validation is used inside an run; instead, the whole pipeline is repeated across
+10 outer train--validation--test splits.
 
 \subsection{Preprocessing}
 \label{sec:exp-preproc}
@@ -105,15 +141,15 @@ and~\ref{sec:results-hp}).
 
 For each run, all models in the selected Rashomon approximation are applied to the held-out
 test set to obtain predicted probabilities. This yields a prediction matrix
-$P \in \mathbb{R}^{M \times N}$, where $M$ is the number of selected models and $N$ is
+$P \in \mathbb{R}^{K \times N}$, where $K$ is the number of selected models and $N$ is
 the number of test observations.
 
-Observation-wise predictive variance $v_i$ and conflict ratio $c_i$ are computed as defined
-in Chapter~3. In addition, we report several aggregate multiplicity summaries: mean
-variance, ambiguity (mean over observations of
-$\max_m \hat{p}_{mi} - \min_m \hat{p}_{mi}$), disagreement rate (fraction of test points
-for which model predictions differ by more than $\delta = 0.05$), and discrepancy
-(maximum over model pairs of the mean absolute prediction difference).
+Observation-wise predictive variance $v_i$ is computed as defined in Chapter~3. In
+addition, we report several aggregate multiplicity summaries: mean variance, ambiguity
+(mean over observations of $\max_m \hat{p}_{mi} - \min_m \hat{p}_{mi}$), disagreement
+rate (fraction of test points for which model predictions differ by more than
+$\delta = 0.05$), and discrepancy (maximum over model pairs of the mean absolute
+prediction difference).
 
 \subsection{Spatial Analysis Parameters}
 \label{sec:exp-knn-graph}
@@ -136,21 +172,18 @@ where stated, a minimum component size is used to suppress very small fragments.
 \subsection{Null Experiment Configuration}
 \label{sec:exp-null}
 
-Null distributions follow the within-model permutation design introduced in
-Section~\ref{sec:meth-null}. For each model $m$, the vector
-$(\hat{p}_{m1}, \dots, \hat{p}_{mN})$ is randomly shuffled across observations. For each of
-$R = 100$ permutations, observation-wise variance (and conflict ratio) and global Moran's
-$I$ are recomputed. The empirical $p$-value is
-\[
-p = \frac{1 + \#\{\text{null} \geq \text{observed}\}}{R + 1}.
-\]
-A run is considered to exhibit significant spatial structure if $p < 0.05$. With
-$R = 100$, the smallest attainable $p$-value is $1/101 \approx 0.0099$; accordingly,
-reported values of ``$p < 0.01$'' should be interpreted at this resolution floor.
+The permutation null follows the procedure defined in Section~\ref{sec:meth-null}. In
+the experiments, we use $R = 100$ null permutations per run. For each permutation, predictive variance is recomputed from the permuted prediction
+matrix, and global Moran's $I$ is recalculated.
 
-\subsection{Outer Runs and Reproducibility}
+A run is treated as significant when the empirical permutation $p$-value is below 0.05.
+Because $R=100$, the smallest attainable empirical $p$-value is $1/(R+1)=1/101
+\approx 0.0099$. Reported values of ``$p<0.01$'' should therefore be interpreted at this
+resolution limit.
 
-For each dataset, 10 outer runs are performed with random seeds 0--9. Each outer run
+\subsection{Runs and Reproducibility}
+
+For each dataset, 10 runs are performed with random seeds 0--9. Each run
 corresponds to a complete train/validation/test split and a full training, selection, and
 analysis pipeline. Results are aggregated across runs, typically by reporting means and
 standard deviations of quantities such as mean variance, Moran's $I$, HH counts, and the
@@ -200,35 +233,118 @@ significant.
 The following analyses are used to identify which modeling choices drive predictive multiplicity and to characterize hotspot regions in terms of original features. The attribution analyses are descriptive rather than causal: they quantify how disagreement varies with model family and hyperparameter choices within the sampled candidate pool.
 
 \paragraph{Family importance.}
-We first decompose predictive variance into between-family and within-family components. For each dataset and outer seed, we construct per-family Rashomon sets by selecting the top 25 models within each model family. Let \(\mathcal{F}\) denote the set of model families, and let \(\bar{p}_{fi}\) be the mean prediction of family \(f\) for observation \(i\). The overall ensemble mean is denoted by \(\bar{p}_i\). The between-family component measures how much the family-level mean predictions differ from the overall mean, while the within-family component measures residual variation among models inside each family. Family importance is defined as
+
+We first decompose predictive variance into a between-family component and a
+within-family component. For each dataset and random seed, we construct one
+family-specific near-optimal model set per model family by selecting the top 25 models
+within that family. Let \(\mathcal{G}\) denote the set of model families, and let
+\(\mathcal{R}^{(g)}_K\) denote the top-\(K\) model set for family \(g \in \mathcal{G}\).
+For observation \(i\), let \(\hat{p}_{gmi}\) be the predicted probability from model
+\(m \in \mathcal{R}^{(g)}_K\). The mean prediction of family \(g\) is
+
 \[
-\mathrm{FI}
+\bar{p}_{gi}
 =
-\frac{\mathrm{Var}_{\mathrm{between\ family}}}
-{\mathrm{Var}_{\mathrm{total}}}.
+\frac{1}{K}\sum_{m \in \mathcal{R}^{(g)}_K} \hat{p}_{gmi},
 \]
-A value close to one indicates that predictive multiplicity is mainly explained by broad model-family choice, whereas lower values indicate that more variation remains within families. This decomposition is computed on all test observations and repeated on the subsets of HH and non-HH observations to assess whether family choice is especially important inside multiplicity hotspots.
+
+and the overall mean prediction across all family-specific model sets is
+
+\[
+\bar{p}_{i}
+=
+\frac{1}{|\mathcal{G}|}\sum_{g \in \mathcal{G}} \bar{p}_{gi}.
+\]
+
+For a set of observations \(S\), for example all test observations, HH observations, or
+non-HH observations, the between-family component is computed as
+
+\[
+\mathrm{Var}_{\mathrm{between}}(S)
+=
+\frac{1}{|S|}\sum_{i \in S}
+\frac{1}{|\mathcal{G}|}
+\sum_{g \in \mathcal{G}}
+\left(\bar{p}_{gi} - \bar{p}_{i}\right)^2 .
+\]
+
+This term is large when different model families have different average predictions for
+the same observations. The total predictive variance across all selected models is
+
+\[
+\mathrm{Var}_{\mathrm{total}}(S)
+=
+\frac{1}{|S|}\sum_{i \in S}
+\frac{1}{|\mathcal{G}|K}
+\sum_{g \in \mathcal{G}}
+\sum_{m \in \mathcal{R}^{(g)}_K}
+\left(\hat{p}_{gmi} - \bar{p}_{i}\right)^2 .
+\]
+
+Family importance is then defined as
+
+\[
+\mathrm{FI}(S)
+=
+\frac{\mathrm{Var}_{\mathrm{between}}(S)}
+{\mathrm{Var}_{\mathrm{total}}(S)}.
+\]
+
+A value close to one means that most of the prediction variance is explained by
+differences between model families. A lower value means that a larger share of the
+variation remains within families, for example due to different hyperparameter settings
+inside the same model family. Because each family contributes the same number of models
+in this analysis, the decomposition gives equal weight to each model family. We compute
+\(\mathrm{FI}(S)\) for all test observations and separately for HH and non-HH observations
+to check whether family choice is more important inside high-multiplicity regions.
 
 \paragraph{Within-family hyperparameter importance.}
-After separating the between-family component, we analyze which hyperparameters explain the remaining disagreement within each family. Let \(P^{(j)} \in \mathbb{R}^{K_j \times N_{\mathrm{test}}}\) denote the test predictions of the within-family Rashomon set for family \(j\), and let \(\bar{p}^{(j)}_i\) denote the family-ensemble mean prediction for observation \(i\). The model-level disagreement contribution of model \(m\) is
+
+After separating the between-family component, we analyze which hyperparameters explain
+the remaining disagreement within each model family. Let \(g \in \mathcal{G}\) denote a
+model family, and let \(\mathcal{R}^{(g)}_K\) be the top-\(K\) model set for that family.
+For observation \(i\), let \(\bar{p}^{(g)}_i\) denote the mean prediction across models in
+family \(g\):
 \[
-V_m =
+\bar{p}^{(g)}_i
+=
+\frac{1}{K}
+\sum_{m \in \mathcal{R}^{(g)}_K}
+\hat{p}^{(g)}_{mi}.
+\]
+
+For each model \(m \in \mathcal{R}^{(g)}_K\), we compute its model-level disagreement
+contribution as
+\[
+V^{(g)}_m =
 \frac{1}{N_{\mathrm{test}}}
 \sum_{i=1}^{N_{\mathrm{test}}}
 \left(
-\hat{p}^{(j)}_{mi} - \bar{p}^{(j)}_i
+\hat{p}^{(g)}_{mi} - \bar{p}^{(g)}_i
 \right)^2 .
 \]
-Thus, \(V_m\) measures how strongly model \(m\)'s predictions deviate from the average prediction of its own family.
+Thus, \(V^{(g)}_m\) measures how strongly model \(m\)'s predictions deviate from the
+average prediction of its own family.
 
-For each hyperparameter \(h\), models are grouped according to the observed value or range of that hyperparameter. Categorical hyperparameters and numeric hyperparameters with at most four distinct values are grouped by exact value. Numeric hyperparameters with more than four distinct values are discretized into three quantile bins. If the resulting groups have insufficient support, or fewer than two valid groups remain, the hyperparameter is excluded for that seed. A one-way variance decomposition of \(V_m\) across the groups yields a between-group component \(\mathrm{Var}_{\mathrm{between}}(h)\) and total component \(\mathrm{Var}_{\mathrm{total}}\). Hyperparameter importance is defined as
+For each hyperparameter \(h\) within family \(g\), models are grouped according to the
+observed value or range of that hyperparameter. Categorical hyperparameters and numeric
+hyperparameters with at most four distinct values are grouped by exact value. Numeric
+hyperparameters with more than four distinct values are discretized into three quantile
+bins. If the resulting groups have insufficient support, or fewer than two valid groups
+remain, the hyperparameter is excluded for that seed.
+
+A one-way variance decomposition of \(V^{(g)}_m\) across the groups of hyperparameter
+\(h\) yields a between-group component
+\(\mathrm{Var}_{\mathrm{between}}^{(g)}(h)\) and a total component
+\(\mathrm{Var}_{\mathrm{total}}^{(g)}\). Hyperparameter importance is defined as
 \[
-\rho(h)
+\rho^{(g)}(h)
 =
-\frac{\mathrm{Var}_{\mathrm{between}}(h)}
-{\mathrm{Var}_{\mathrm{total}}}.
+\frac{\mathrm{Var}_{\mathrm{between}}^{(g)}(h)}
+{\mathrm{Var}_{\mathrm{total}}^{(g)}}.
 \]
-The procedure is repeated across outer seeds, and results are aggregated by mean importance, standard deviation, and the number of valid seeds.
+The procedure is repeated for each family and random seed. Results are then aggregated by
+mean importance, standard deviation, and the number of valid seeds.
 
 \paragraph{Hotspot-specific hyperparameter shifts.}
 To assess whether hyperparameter effects differ inside multiplicity hotspots, the same \(V_m\)-based importance calculation is repeated on HH observations. For each hyperparameter, we compare its hotspot-specific importance to its global importance:
@@ -239,8 +355,6 @@ To assess whether hyperparameter effects differ inside multiplicity hotspots, th
 \]
 Positive values indicate that the hyperparameter explains a larger share of within-family disagreement inside HH regions, while negative values indicate lower importance inside hotspots. Because HH subsets can be small, especially on German Credit, these estimates are interpreted descriptively and are reported with seed coverage where relevant.
 
-\paragraph{Performance-control meta-model diagnostic.}
-Finally, we perform a diagnostic analysis to assess whether hyperparameter effects mainly proxy for validation performance. For each dataset--family combination, we fit a model-level meta-model predicting \(V_m\) from grouped hyperparameters and validation Brier score. This analysis is not used as the primary attribution result, because validation Brier score is a performance metric rather than a hyperparameter and the meta-model is descriptive rather than causal. Its purpose is to compare the role of validation performance with the role of non-performance hyperparameters, both in the Rashomon set and in the full candidate pool.
 
 \paragraph{Interpretable rule extraction.}
 To characterize high-multiplicity regions in terms of original features, interpretable rules
@@ -265,30 +379,7 @@ Rules are evaluated using support (coverage), purity, recall, and lift. For glob
 purity is defined as $P(\text{HH} \mid \text{rule region})$, and lift is measured relative to
 the HH base rate. For component-level rules, purity is defined as
 $P(\text{component} \mid \text{rule region})$, and lift is measured relative to the base
-rate of the corresponding component. Stability is assessed across outer seeds by
+rate of the corresponding component. Stability is assessed across random seeds by
 aggregating rule statistics and analyzing feature frequency. The main rule analysis is
 reported for COMPAS, where the hotspot structure is clearest and the retained
 components are sufficiently large for meaningful rule extraction.
-
-\subsection{Auxiliary Diagnostic Analyses}
-\label{sec:exp-auxiliary}
-
-The following analyses provide additional context for interpreting hotspot regions, but are
-not part of the core methodology.
-
-\paragraph{Decision-boundary proximity.}
-To test whether high-multiplicity regions are primarily associated with the decision
-boundary, we compute the margin
-$m_i = |\bar{p}_i - 0.5|$ for each test observation, where $\bar{p}_i$ is the ensemble mean
-predicted probability. We then compute Pearson and Spearman correlations between
-pointwise variance and margin, and compare mean margins for HH versus non-HH points
-using the Mann--Whitney U test.
-
-\paragraph{Fairness exposure.}
-To assess whether HH regions disproportionately affect demographic subgroups, we compute
-group-wise exposure rates, defined as the fraction of each group's test points classified as
-HH. Bootstrap confidence intervals are computed across runs. Per-run subgroup minimum
-size filtering and minimum cross-run support are applied. Statistical significance is
-evaluated with a stratified permutation test: group labels are shuffled within each run,
-run-level exposure rates are recomputed, and the aggregated inter-group disparity
-(max--min HH rate across eligible groups) is compared to its null distribution.

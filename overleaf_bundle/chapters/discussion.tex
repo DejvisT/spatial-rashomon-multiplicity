@@ -14,20 +14,51 @@ It is also important to distinguish the present framework from more standard unc
 
 \subsection{Research Questions Revisited}
 
-\paragraph{RQ1--RQ2: Prediction-level multiplicity and spatial structure.}
-The results show that predictive multiplicity is present at the observation level and is often spatially structured in feature space. Across all three benchmark datasets, variance-based Moran's $I$ is positive and significant under the permutation null, indicating that disagreement is not randomly distributed across test observations. The strength and form of this structure differ by dataset: German Credit shows the largest aggregate disagreement magnitude, whereas COMPAS shows the clearest localized hotspot structure. This confirms the central premise of the thesis: predictive multiplicity is not only a global property of a model pool, but can concentrate in specific regions of the feature space.
+\paragraph{RQ1: Where do similarly well-performing models disagree?}
+The results show that predictive multiplicity is present at the observation level across all
+three benchmark datasets. The magnitude of disagreement differs by dataset: German
+Credit exhibits the largest aggregate multiplicity, while COMPAS and Adult show lower
+mean predictive variance. This confirms that near-optimal models can disagree
+substantially on individual observations even when they have similar validation
+performance.
 
-\paragraph{RQ3: Stability of spatial patterns.}
-The stability analysis shows that exact HH membership is only partly stable across seeds. Individual observations are not reliably classified as hotspots in every run, and pointwise overlap remains moderate. However, HH observations often form contiguous graph regions, and higher-frequency HH points remain spatially localized. The appropriate interpretation is therefore regional rather than pointwise: hotspot areas recur to some extent, but their exact boundaries depend on the split and Rashomon-set realization.
+\paragraph{RQ2: Does disagreement form local regions in feature space?}
+Predictive variance is not randomly distributed over the test set. Across all three
+datasets, variance-based Moran's $I$ is positive and significant under the
+prediction-permutation null in nearly all runs. The spatial structure is strongest on
+COMPAS, where high-variance observations form clearer localized HH regions. Adult
+shows broader and more diffuse hotspot structure, while German Credit has high overall
+disagreement but weaker spatial concentration. Thus, disagreement magnitude and spatial
+concentration are related but distinct properties.
 
-\paragraph{RQ4: Drivers of multiplicity.}
-Model family explains a substantial share of predictive variance, especially on Adult and COMPAS, and this contribution often increases inside HH regions. Within model families, disagreement is further shaped by a smaller number of influential hyperparameters, such as regularization strength for logistic regression, neighborhood size for kNN, and complexity or optimization parameters for tree-based and neural-network models. Predictive multiplicity is therefore not just random training variation; it is structured by concrete modeling choices.
+\paragraph{RQ3: How stable are these regions under changes in the analysis?}
+The stability and robustness analyses show that hotspot structure is partly stable, but not
+pointwise fixed. Exact HH membership varies across seeds, and individual observations
+are not reliably classified as hotspots in every run. However, HH observations often form
+contiguous graph regions, and higher-frequency HH points remain spatially localized.
+The main spatial conclusions also persist under changes to the Rashomon set size $K$,
+the neighborhood size $k$, probability calibration, and graph construction. The
+appropriate interpretation is therefore regional rather than pointwise: hotspot areas recur
+to some extent, but their exact boundaries depend on the split, model set, and graph
+definition.
 
-\paragraph{RQ5: Robustness and sensitivity.}
-The main spatial findings persist under changes to the Rashomon set size $K$, the neighborhood size $k$, probability calibration, and graph construction. These checks show that exact effect sizes and hotspot boundaries can change, but the qualitative conclusion remains stable: predictive multiplicity exhibits non-random spatial structure under a range of reasonable analytical choices.
+\paragraph{RQ4: Which modeling choices are associated with the instability?}
+Model family explains a substantial share of predictive variance, especially on Adult and
+COMPAS, and this contribution often increases inside HH regions. Within model families,
+disagreement is further shaped by a smaller number of influential hyperparameters, such
+as regularization strength for logistic regression, neighborhood size for kNN, and
+complexity or optimization parameters for tree-based and neural-network models.
+Predictive multiplicity is therefore not just random training variation; it is structured by
+concrete modeling choices.
 
-\paragraph{RQ6--RQ7: Synthetic validation and interpretability.}
-The synthetic experiments confirm that the pipeline can recover known ambiguous regions when ground truth is available. The rule-extraction analysis further shows that real-data hotspots, especially on COMPAS, can be partially described by compact feature-space rules. Together, these results support the practical usefulness of the framework: it not only detects instability, but also helps localize and describe the affected subpopulations.
+\paragraph{RQ5: Can the detected regions be validated and interpreted?}
+The synthetic experiments confirm that the pipeline can recover known ambiguous
+regions when ground truth is available. In both synthetic designs, LISA HH detection
+identifies the intended high-instability regions with high precision and substantial recall.
+The rule-extraction analysis further shows that real-data hotspots, especially on COMPAS,
+can be partially described by compact feature-space rules. Together, these results show
+that the framework not only detects instability, but also helps localize and describe the
+affected regions.
 
 
 \subsection{Practical Implications}
@@ -43,11 +74,13 @@ The practical contribution is therefore not merely another descriptive metric, b
 
 A useful way to interpret the proposed workflow is as a \emph{reliability screening mechanism}. Predictions in stable regions may proceed through the standard pipeline. Predictions in localized hotspots should be interpreted more cautiously because the selected model represents only one of several equally accurate alternatives that may not agree on the same observation. The precise intervention will depend on the application domain, but the general principle is clear: multiplicity hotspots identify cases where model choice itself becomes decision-relevant.
 
-The subgroup exposure analysis also suggests that multiplicity can be unevenly distributed across demographic groups. In the COMPAS analysis, race-based HH exposure disparities are statistically significant under the stratified permutation test, whereas sex-based disparities are not. This result should not be interpreted causally, because subgroup exposure is observational and some subgroup sizes are small. Nevertheless, it motivates routine multiplicity audits as a complement to standard fairness monitoring: a model may satisfy conventional performance-based fairness checks while still exposing some groups more strongly to model-dependent instability.
-
 \subsection{Methodological Reflection}
 
-A central conceptual takeaway is that predictive multiplicity and decision-boundary uncertainty are related, but not identical. On Adult and German Credit, high-variance observations tend to lie closer to the decision boundary, which suggests that multiplicity partly reflects ordinary classification ambiguity. On COMPAS, by contrast, the relationship between variance and boundary proximity is weak. There, multiplicity appears to arise less from intrinsic closeness to the boundary and more from structural differences between equally accurate model families and hyperparameter settings.
+An auxiliary diagnostic in Appendix~\ref{app:boundary-proximity} compares predictive
+variance with distance to the ensemble decision boundary. The results suggest that
+boundary proximity explains part of the multiplicity pattern on Adult and German Credit,
+but not on COMPAS. This supports the broader point that spatial multiplicity need not be
+identical to ordinary classification ambiguity.
 
 This distinction matters because it clarifies what kind of phenomenon the proposed pipeline is detecting. It is useful to separate three perspectives:
 \begin{itemize}
@@ -61,7 +94,7 @@ A second reflection concerns when the method is most informative. If Moran's $I$
 
 \subsection{Limitations and Threats to Validity}
 
-Despite the strong empirical evidence, several limitations remain.
+Despite the empirical support for the proposed framework, several limitations remain.
 
 \begin{itemize}
     \item \textbf{Finite approximation of the Rashomon set.} The top-$K$ candidate approach approximates a potentially much larger and more continuous set of acceptable models. The observed multiplicity structure therefore depends on the candidate families and hyperparameter spaces explored in the experiments.
@@ -72,14 +105,5 @@ Despite the strong empirical evidence, several limitations remain.
     
     \item \textbf{Boundary instability of local hotspot labels.} Exact HH membership is unstable across seeds, even when broader hotspot regions recur. This means the method is better suited to identifying unstable \emph{areas} than to declaring a single observation intrinsically and permanently hotspot-like.
     
-    \item \textbf{Small subgroup uncertainty.} Some demographic categories contain few observations, which leads to large variability in subgroup-specific exposure rates and limits inferential strength.
-    
-    \item \textbf{Descriptive fairness analysis.} The subgroup exposure results are observational and do not identify causal mechanisms behind disparity. They should therefore be interpreted as auditing signals, not causal claims.
-    
     \item \textbf{External validity.} The experiments cover three benchmark datasets and synthetic validation tasks. The practical usefulness of multiplicity hotspot analysis should be further tested on larger, domain-specific, and operational datasets before drawing broad deployment conclusions.
 \end{itemize}
-
-\subsection{Position Relative to Prior Work}
-
-Relative to prior work, the main contribution of this thesis is to add a spatially explicit diagnostic layer to predictive multiplicity analysis. Existing approaches mainly quantify disagreement globally or per observation; the present framework asks whether disagreement forms coherent, recurring, and interpretable regions in feature space. This shifts the practical question from only how much models disagree to where model choice matters most.
-
