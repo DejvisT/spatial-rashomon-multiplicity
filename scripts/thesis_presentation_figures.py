@@ -21,6 +21,10 @@ _INCLUDEGRAPHICS_RE = re.compile(r"\\includegraphics(?:\[[^\]]*\])*\{([^}]+)\}")
 
 _ALWAYS_EXPORT_FIGURES = {
     "decomp_hp_secondary_bar_rashomon_grid.pdf",
+    "sensitivity_K.pdf",
+    "sensitivity_kNN.pdf",
+    "rules_support_purity_compas.pdf",
+    "hh_stability_freq_compas.pdf"
 }
 
 
@@ -52,11 +56,7 @@ def export_script_pdf_basenames() -> frozenset[str]:
     s = {
         "spatial_patterns_per_run.pdf",
         "hh_by_family.pdf",
-        "hh_moran_per_run_compas.pdf",
-        "sensitivity_K.pdf",
-        "sensitivity_kNN.pdf",
-        "rules_support_purity_compas.pdf",
-        "hh_stability_freq_compas.pdf",
+        "hh_moran_per_run_compas.pdf"
     }
     for ds in _EXPORT_SENSITIVITY_DATASETS:
         s.add(f"sensitivity_K_variance_{ds}.pdf")
