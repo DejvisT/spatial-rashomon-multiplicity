@@ -646,7 +646,7 @@ def write_interpretable_rules_top_compas_tex():
     for _, r in df.iterrows():
         rows.append(
             f"{int(r['outer_seed'])} & "
-            f"{_tex_escape_rule_text(str(r['rule_text']))} & "
+            f"{_tex_escape_rule_text(simplify_rule_text(str(r['rule_text'])))} & "
             f"{int(r['support'])} & "
             f"{r['purity']:.3f} & "
             f"{r['recall']:.3f} & "
@@ -780,6 +780,63 @@ def write_interpretable_rule_features_compas_tex():
     print(f"Wrote {out_path}")
 
 
+import re
+from collections import defaultdict
+
+def simplify_rule_text(rule: str) -> str:
+    """Simplify redundant threshold conjuncts in displayed rule strings.
+
+    Example:
+    'priors_count > 14.5 AND priors_count > 17.5 AND age > 33'
+    becomes:
+    'priors_count > 17.5 AND age > 33'
+
+    This changes only the displayed rule text, not the metrics.
+    """
+    if not isinstance(rule, str) or "AND" not in rule:
+        return rule
+
+    parts = [p.strip() for p in rule.split(" AND ")]
+    pattern = re.compile(r"^(.+?)\s*(<=|<|>=|>)\s*(-?\d+(?:\.\d+)?)$")
+
+    lower_bounds = defaultdict(list)
+    upper_bounds = defaultdict(list)
+    other_parts = []
+
+    for part in parts:
+        match = pattern.match(part)
+        if match is None:
+            other_parts.append(part)
+            continue
+
+        feature, op, value = match.groups()
+        feature = feature.strip()
+        value = float(value)
+
+        if op in {">", ">="}:
+            lower_bounds[feature].append((op, value))
+        elif op in {"<", "<="}:
+            upper_bounds[feature].append((op, value))
+        else:
+            other_parts.append(part)
+
+    simplified = []
+
+    # Keep strongest lower bound: largest threshold.
+    for feature, conditions in lower_bounds.items():
+        op, value = max(conditions, key=lambda x: x[1])
+        simplified.append(f"{feature} {op} {value:g}")
+
+    # Keep strongest upper bound: smallest threshold.
+    for feature, conditions in upper_bounds.items():
+        op, value = min(conditions, key=lambda x: x[1])
+        simplified.append(f"{feature} {op} {value:g}")
+
+    simplified.extend(other_parts)
+
+    return " AND ".join(simplified)
+
+
 def write_component_rules_compas_tex():
     """Best component-level COMPAS HH rules."""
     path = resolve_csv("component_rules_summary_compas.csv", "nb09")
@@ -805,7 +862,7 @@ def write_component_rules_compas_tex():
         rows.append(
             f"{int(r['outer_seed'])} & "
             f"{int(r['component_id'])} & "
-            f"{_tex_escape_rule_text(str(r['rule_text']))} & "
+            f"{_tex_escape_rule_text(simplify_rule_text(str(r['rule_text'])))} & "
             f"{int(r['support'])} & "
             f"{r['component_purity']:.3f} & "
             f"{r['component_recall']:.3f} & "
