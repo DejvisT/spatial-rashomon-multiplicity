@@ -101,16 +101,37 @@ Supervised by \mysupervisor
 \newpage
 
 \begin{abstract}
+Modern machine learning pipelines often produce many models with near-identical
+predictive performance, yet these models can disagree substantially on individual
+predictions---a phenomenon known as predictive multiplicity. Existing approaches
+quantify this disagreement at the aggregate level but do not reveal where in the
+feature space it concentrates or which modeling choices are associated with it.
 
-Modern machine learning pipelines often produce many models with near-identical predictive performance, yet these models can disagree substantially on individual predictions—a phenomenon known as \emph{predictive multiplicity}. Existing approaches quantify this disagreement at the aggregate level but do not reveal \emph{where} in the feature space it concentrates or \emph{which} modeling choices drive it.
+This thesis introduces a spatial analysis framework for predictive multiplicity. We
+compute observation-wise predictive variance across finite top-$K$ Rashomon
+approximations selected by validation Brier score and analyze its structure using
+spatial statistics, including global Moran's $I$ and Local Indicators of Spatial
+Association (LISA). This enables the detection, localization, and statistical assessment
+of multiplicity hotspots---regions in feature space where predictions are particularly
+model-dependent. We further decompose predictive variance into between-family and
+within-family hyperparameter components and analyze how these descriptive sources of
+variation differ across the feature space.
 
-This thesis introduces a spatial analysis framework for predictive multiplicity. We compute observation-wise predictive variance across a Rashomon set of near-optimal models and analyze its structure using spatial statistics, including global Moran’s $I$ and Local Indicators of Spatial Association (LISA). This enables the detection, localization, and statistical validation of \emph{multiplicity hotspots}—regions in feature space where predictions are particularly model-dependent. We further decompose predictive variance into between-family and within-family (hyperparameter) components and analyze how these drivers vary across the feature space.
+Experiments on three benchmark datasets with five model families show that, under the
+tested benchmark settings and the prediction-permutation null, predictive multiplicity is
+often spatially structured. Model family accounts for a substantial share of observed
+disagreement, with stronger hotspot-specific contributions on COMPAS and Adult. These
+patterns remain visible under changes in Rashomon set size, neighborhood definition,
+probability calibration, and graph construction. Synthetic experiments with known
+ambiguous regions validate the pipeline's ability to recover ground-truth instability.
+High-multiplicity regions can additionally be characterized by compact, interpretable
+rules in the original feature space.
 
-Experiments on three benchmark datasets with five model families confirm that predictive multiplicity is consistently spatially structured and non-random. Model family accounts for a substantial share of disagreement, with particularly strong
-hotspot-specific contributions on COMPAS and Adult datasets. These patterns are robust to changes in Rashomon set size, neighborhood definition, probability calibration, and graph construction. Synthetic experiments with known ambiguous regions validate the pipeline's ability to recover ground-truth instability. High-multiplicity regions can additionally be characterized by compact, interpretable rules in the original feature space.
-
-The results suggest that predictive multiplicity is not merely a global property of model classes, but a localized phenomenon affecting specific subpopulations. The proposed framework provides a practical diagnostic for identifying predictions that are especially sensitive to model choice, with implications for the reliability and governance of automated decision systems.
-
+The results suggest that predictive multiplicity is not merely a global property of model
+classes, but can also appear as a localized phenomenon affecting specific regions of the
+feature space. The proposed framework provides a diagnostic for identifying predictions
+that are especially sensitive to the choice among near-optimal models, with implications
+for the reliability and governance of automated decision systems.
 \end{abstract}
 
 \newpage

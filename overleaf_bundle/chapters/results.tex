@@ -1,5 +1,5 @@
 This chapter presents the main empirical results. We begin with a cross-dataset overview
-of predictive multiplicity and its spatial structure (Section~\ref{sec:results-main}), then
+of predictive multiplicity and its spatial structure (Section~\ref{sec:results-metrics}), then
 test the significance of the observed clustering against a permutation null and examine
 the stability of hotspot regions. We next assess robustness to analytical choices, including
 the Rashomon set size $K$, neighborhood size $k$, calibration, and graph construction.
@@ -54,12 +54,14 @@ In the following sections, COMPAS is therefore used as the main running example 
 \label{sec:results-null}
 
 We next test whether the observed spatial clustering is stronger than expected under the
-prediction-permutation null defined in Section~\ref{sec:exp-null}. In this null model,
-each model's test-set predictions are independently permuted across observations. This
-preserves the marginal prediction distribution of each model, but detaches predictions
-from their original feature-space locations. The test therefore asks whether the observed
-Moran's $I$ is larger than expected when model predictions are no longer aligned with
-the feature-space graph.
+prediction-matrix permutation null defined in Section~\ref{sec:exp-null}. This is separate
+from the standard PySAL value-permutation tests used to compute Moran's $I$ and LISA
+significance. In the prediction-matrix null, each model's test-set predictions are
+independently permuted across observations before predictive variance is recomputed.
+This preserves the marginal prediction distribution of each model, but detaches
+predictions from their original feature-space locations. The test therefore asks whether
+the observed Moran's $I$ is larger than expected when prediction instability is no longer
+aligned with the feature-space graph.
 
 The null test should be interpreted narrowly. It does not by itself validate the chosen
 feature representation, distance metric, or neighborhood graph. Those questions are
@@ -76,7 +78,7 @@ spatial signal is weaker and less stable.
 
 \begin{table}[htbp]
 \centering
-\caption{Prediction-permutation null summary by dataset. A run is counted as significant
+\caption{Prediction-matrix permutation null summary by dataset. A run is counted as significant
 when the empirical permutation $p$-value for Moran's $I$ is below $0.05$. The null uses
 $R=100$ prediction-matrix permutations per run, so the smallest attainable empirical
 $p$-value is $1/101 \approx 0.0099$. Values are computed over 10 runs.}
@@ -235,9 +237,12 @@ boundaries are sensitive to calibration, not as evidence that the exact same HH 
 recovered after calibration.
 
 Overall, the calibration analysis supports a moderate robustness conclusion. Post-hoc
-probability calibration changes the scale of disagreement and the precise hotspot masks,
-but it does not remove the positive spatial autocorrelation of predictive multiplicity.
-The main spatial findings therefore do not appear to be solely an artifact of uncalibrated
+calibration changes the scale of disagreement and the precise hotspot masks, but it does
+not remove the positive spatial autocorrelation of predictive multiplicity. This complements
+work that studies calibration as a way to reduce aggregate predictive multiplicity
+\citep{cavus_mitigating_2026}: in the present analysis, calibration may change the
+magnitude and boundaries of hotspots, but the qualitative spatial signal remains visible.
+Thus, the main spatial findings do not appear to be solely an artifact of uncalibrated
 probability scores, although exact hotspot membership remains calibration-sensitive.
 
 \begin{figure}[htbp]
@@ -287,17 +292,22 @@ construction.
 
 
 %% ---------------------------------------------------------------------------
-\subsection{Model-Family and Hyperparameter Drivers}
+\subsection{Model-Family and Hyperparameter Associations}
 \label{sec:results-hp}
 
-We now analyze which modeling choices are associated with predictive multiplicity.
-The analysis proceeds in four steps. First, we compare global and per-family Rashomon
-sets to assess whether pooling across model families hides family-specific spatial
-structure. Second, we decompose predictive variance into between-family and
-within-family components. Third, we identify which hyperparameters explain
-within-family disagreement. Finally, we examine whether these hyperparameter effects
-change inside HH hotspot regions. All attribution results are descriptive rather than
-causal. An auxiliary performance-control diagnostic is reported in
+We now analyze which modeling choices are associated with predictive multiplicity within
+the sampled candidate pool. The analysis proceeds in four steps. First, we compare
+global and per-family Rashomon sets to assess whether pooling across model families
+hides family-specific spatial structure. Second, we decompose predictive variance into
+between-family and within-family components. Third, we identify which grouped
+hyperparameter values account for variation in the model-level disagreement contribution
+$V_m$ within each family. Finally, we examine whether these descriptive associations
+change inside HH hotspot regions.
+
+All attribution results in this section are descriptive rather than causal. They summarize
+how disagreement varies across the trained and retained candidate models, but they do not
+estimate the causal effect of changing one hyperparameter while holding all other factors
+fixed. An auxiliary performance-control diagnostic is reported in
 Appendix~\ref{app:meta-model-diagnostic}.
 
 \subsubsection{Global vs.\ Per-Family Rashomon Sets}
@@ -307,7 +317,7 @@ We compare two ways of constructing the Rashomon set: a \emph{global} set, defin
 the top-$K=25$ models selected across all model families, and \emph{per-family} sets,
 defined as the top-$K=25$ models selected separately within each family. The global
 construction reflects disagreement among all near-optimal models taken together, whereas
-the per-family construction isolates the spatial structure that arises within a given model
+the per-family construction isolates the spatial structure that appears within a given model
 class. The key question is whether pooling across families obscures family-specific
 multiplicity patterns.
 
@@ -366,25 +376,25 @@ remains comparatively low on both measures. Thus, as on COMPAS, the pooled globa
 construction compresses family-level structure that is clearly visible when families are
 examined separately.
 
-Taken together, these comparisons support two conclusions. First, the families that drive
-structured disagreement are dataset-dependent rather than fixed across problems. Second,
-global pooling can mask substantial family-specific multiplicity patterns, particularly on
-COMPAS and Adult. This motivates the variance-decomposition analysis in the next
-subsection, where disagreement is attributed more directly to model family and
-within-family variation.
+Taken together, these comparisons support two conclusions. First, the model families
+associated with stronger structured disagreement are dataset-dependent rather than fixed
+across problems. Second, global pooling can mask substantial family-specific multiplicity
+patterns, particularly on COMPAS and Adult. This motivates the variance-decomposition
+analysis in the next subsection, where disagreement is summarized more directly in terms
+of between-family and within-family variation.
 
 \subsubsection{Family Importance}
 
-Model family explains a substantial share of predictive multiplicity across all datasets.
-Figure~\ref{fig:family_importance_agg} shows the between-family and within-family
-components of predictive variance within the Rashomon set, separately for all
-observations, HH hotspots, and non-HH observations. The between-family component is
-large in all three datasets, indicating that disagreement among near-optimal models is
-strongly structured by broad model-class choices rather than only by hyperparameter
-variation within a fixed family.
+Model family accounts for a substantial share of observed predictive multiplicity across
+all datasets. Figure~\ref{fig:family_importance_agg} shows the between-family and
+within-family components of predictive variance within the Rashomon set, separately for
+all observations, HH hotspots, and non-HH observations. The between-family component
+is large in all three datasets, indicating that disagreement among near-optimal models is
+strongly associated with broad model-class differences rather than only with variation
+within a fixed family.
 
-The strongest family effect appears on Adult, where the between-family share is about
-$0.71$ over all test observations and increases to about $0.79$ inside HH regions.
+The strongest family association appears on Adult, where the between-family share is
+about $0.71$ over all test observations and increases to about $0.79$ inside HH regions.
 COMPAS shows a lower but still substantial family contribution, increasing from about
 $0.41$ over all observations to about $0.52$ inside HH regions. German Credit has a
 similarly high all-observation family share of about $0.53$, but the HH and non-HH
@@ -398,13 +408,13 @@ and German Credit shows the same pattern ($0.53$ vs.\ $0.30$). On COMPAS, by
 contrast, the Rashomon and full-pool values are very similar ($0.41$ vs.\ $0.42$). Thus,
 the role of model family depends on the dataset: in Adult and German Credit,
 near-optimal selection sharpens between-family differences, whereas on COMPAS
-family-level disagreement is already present in the broader candidate pool.
+family-level disagreement is already visible in the broader candidate pool.
 
 Taken together, these results support the interpretation that predictive multiplicity is
-partly driven by model-family choice. This effect is especially pronounced in Adult and
-remains substantial on COMPAS and German Credit. Moreover, for Adult and COMPAS,
-the family contribution increases inside HH regions, suggesting that hotspot predictions
-are particularly sensitive to the choice among model classes.
+partly structured by model-family choice. This association is especially pronounced in
+Adult and remains substantial on COMPAS and German Credit. Moreover, for Adult and
+COMPAS, the family contribution increases inside HH regions, suggesting that hotspot
+predictions are particularly sensitive to the choice among model classes.
 
 \begin{figure}[htbp]
 \centering
@@ -415,38 +425,42 @@ corresponding to within-family variation. Error bars show standard deviations ov
 \label{fig:family_importance_agg}
 \end{figure}
 
-\subsubsection{Within-Family Hyperparameter Drivers}
+\subsubsection{Within-Family Hyperparameter Associations}
 
-After separating between-family from within-family variation, we next ask which
-hyperparameters explain the remaining disagreement inside each model family. For each
-family-specific Rashomon set, we compute the model-level disagreement contribution
-$V_m$ and decompose variation in $V_m$ by hyperparameter groups. Categorical and
-low-cardinality numeric hyperparameters are grouped by exact value, while
-high-cardinality numeric hyperparameters are grouped into tertiles. Hyperparameters
-with insufficient group support are excluded for the corresponding seed.
+After separating between-family from within-family variation, we next ask which grouped
+hyperparameter values account for variation in the remaining disagreement inside each
+model family. For each family-specific Rashomon set, we compute the model-level
+disagreement contribution $V_m$ and decompose variation in $V_m$ by hyperparameter
+groups. Categorical and low-cardinality numeric hyperparameters are grouped by exact
+value, while high-cardinality numeric hyperparameters are grouped into tertiles.
+Hyperparameters with insufficient group support are excluded for the corresponding seed.
 
 Figure~\ref{fig:hp_decomp_rashomon} shows the resulting within-family hyperparameter
 importance values. The main pattern is that within-family disagreement is not diffuse
-across all hyperparameters. Instead, each family has a small number of dominant drivers.
-For logistic regression, regularization strength $C$ explains nearly all within-family
-variation across all three datasets, while the elastic-net mixing parameter $l_1$ ratio
-contributes much less. For kNN, the number of neighbors is the dominant driver in every
-dataset, indicating that the locality scale of the classifier is central to its multiplicity
-behavior.
+across all hyperparameters. Instead, variation in $V_m$ is often concentrated in a small
+number of grouped hyperparameter values. For logistic regression, variation across
+grouped values of regularization strength $C$ accounts for most of the observed variation
+in $V_m$ within retained logistic-regression models, while the elastic-net mixing
+parameter $l_1$ ratio contributes much less. For kNN, variation across the number of
+neighbors is the dominant association in every dataset, indicating that the locality scale of
+the classifier is closely related to its multiplicity behavior.
 
 Tree-based and neural-network families show more distributed but still interpretable
-patterns. For GBM, learning rate and tree-depth related parameters are consistently
-among the strongest drivers, although their ordering differs across datasets. Random
-forests are more dataset-dependent: maximum depth is strongest on COMPAS, while
-depth, feature subsampling, and leaf-size related parameters all contribute on German
-Credit and Adult. For MLPs, learning-rate initialization and hidden-layer size are the most
-prominent drivers, with regularization and activation contributing more moderately.
+patterns. For GBM, learning rate and tree-depth related parameters are consistently among
+the largest associated sources of within-family variation, although their ordering differs
+across datasets. Random forests are more dataset-dependent: maximum depth is largest
+on COMPAS, while depth, feature subsampling, and leaf-size related parameters all
+contribute on German Credit and Adult. For MLPs, learning-rate initialization and
+hidden-layer size show the strongest associations, with regularization and activation
+contributing more moderately.
 
 Overall, these results show that within-family multiplicity is structured by identifiable
 modeling choices rather than by random variation across the hyperparameter search
-space. Simpler families are often governed by one dominant complexity parameter,
-whereas more flexible families distribute disagreement across several architectural,
-regularization, or optimization-related parameters.
+space. Simpler families are often dominated by one complexity-related parameter,
+whereas more flexible families distribute variation across several architectural,
+regularization, or optimization-related parameters. These patterns should be interpreted as
+descriptive associations within the sampled Rashomon approximations, not as causal
+hyperparameter effects.
 
 \begin{figure}[htbp]
 \centering
@@ -458,29 +472,29 @@ parameters and by tertiles for high-cardinality numeric parameters.}
 \label{fig:hp_decomp_rashomon}
 \end{figure}
 
-\subsubsection{Hotspot-Specific Drivers}
+\subsubsection{Hotspot-Specific Hyperparameter Associations}
 
-The preceding analysis identifies which hyperparameters explain within-family
-disagreement on average. We next examine whether these effects change inside
-multiplicity hotspots. For each hyperparameter, we compare its $V_m$-based importance
-on HH observations with its importance on all test observations:
+The preceding analysis identifies which grouped hyperparameter values are associated with
+within-family disagreement on average. We next examine whether these associations change
+inside multiplicity hotspots. For each hyperparameter, we compare its $V_m$-based
+importance on HH observations with its importance on all test observations:
 \[
 \Delta \rho(h) = \rho_{\mathrm{HH}}(h) - \rho_{\mathrm{all}}(h).
 \]
-Positive values indicate that the hyperparameter explains a larger share of within-family
-disagreement inside HH regions, whereas negative values indicate lower importance inside
-hotspots.
+Positive values indicate that variation across grouped values of hyperparameter $h$
+accounts for a larger share of within-family disagreement inside HH regions, whereas
+negative values indicate a lower association inside hotspots.
 
 Table~\ref{tab:hp_hotspot_delta_compas} reports the largest positive and negative shifts
 for COMPAS, which is the clearest real-data case of localized hotspot structure. The
-results suggest that hyperparameter effects are not spatially uniform. For GBM,
-subsampling becomes more important inside HH regions, while the number of estimators
-decreases slightly in importance. For MLP, learning-rate initialization shows the largest
-positive shift, suggesting that optimization-related choices contribute more strongly
-inside the most unstable regions. In contrast, random forest depth and kNN weighting
-become less important inside HH regions. Logistic regression shows no positive shift,
-indicating that its already dominant regularization effect does not become stronger inside
-COMPAS hotspots.
+results suggest that hyperparameter associations are not spatially uniform. For GBM,
+subsampling has a larger association with $V_m$ inside HH regions, while the number of
+estimators has a slightly smaller association. For MLP, learning-rate initialization shows
+the largest positive shift, suggesting that optimization-related settings are more strongly
+associated with disagreement inside the most unstable regions. In contrast, random forest
+depth and kNN weighting show weaker associations inside HH regions. Logistic regression
+shows no positive shift, indicating that its already dominant regularization association
+does not become stronger inside COMPAS hotspots.
 
 These shifts should be interpreted descriptively rather than causally. They indicate that
 the relative sources of within-family disagreement can differ between hotspot and
@@ -500,10 +514,10 @@ based on six valid seeds because of group-support filtering.}
 \end{table}
 
 As an auxiliary performance-control diagnostic, we also test whether the observed
-hyperparameter effects mainly proxy for validation Brier score. The analysis suggests
-that validation performance explains more model-level disagreement in the full candidate
-pool than inside the Rashomon set, while non-performance hyperparameters remain
-important within the Rashomon set. Details are reported in
+hyperparameter associations mainly proxy for validation Brier score. The analysis suggests
+that validation performance accounts for more model-level disagreement in the full
+candidate pool than inside the Rashomon set, while non-performance hyperparameters
+remain important within the Rashomon set. Details are reported in
 Appendix~\ref{app:meta-model-diagnostic}.
 
 %% ---------------------------------------------------------------------------
@@ -691,9 +705,12 @@ main patterns emerge.
 \begin{enumerate}
 
 \item \textbf{Spatial structure:} Predictive multiplicity is spatially clustered in feature
-space. Variance-based Moran's $I$ is positive across all runs and statistically significant under the permutation null in all runs for COMPAS and Adult, and in 9 out of 10 runs for German Credit. This
-shows that disagreement is not randomly distributed over the test set, but systematically
-aligned with the geometry of the feature space.
+space under the tested benchmark settings. Variance-based Moran's $I$ is positive across
+all runs and statistically significant under the prediction-permutation null in all runs for
+COMPAS and Adult, and in 9 out of 10 runs for German Credit. Under this null, each
+model's marginal prediction distribution is preserved while predictions are randomly
+reassigned to test observations. The observed clustering therefore exceeds what would be
+expected if predictive variance were detached from feature-space location.
 
 \item \textbf{Magnitude and concentration differ across datasets:} Disagreement magnitude
 and spatial concentration are not the same. German Credit exhibits the largest aggregate
@@ -710,19 +727,22 @@ as a regional phenomenon with partially recurring structure, while avoiding the 
 claim that individual observations have fixed hotspot labels.
 
 
-\item \textbf{Model family is a major driver:} Model family explains a substantial share of
-predictive variance, and this share increases inside hotspot regions on COMPAS and
-Adult. In the Rashomon set, family importance rises from about $0.41$ to $0.52$ on
-COMPAS and from about $0.71$ to $0.79$ on Adult when moving from all observations
-to HH regions. German Credit also shows high family importance, but its HH-specific
-estimate is less stable because very few HH points are detected.
+\item \textbf{Model family is strongly associated with predictive variance:} Model family
+accounts for a substantial share of observed predictive variance, and this share increases
+inside hotspot regions on COMPAS and Adult. In the Rashomon set, family importance
+rises from about $0.41$ to $0.52$ on COMPAS and from about $0.71$ to $0.79$ on Adult
+when moving from all observations to HH regions. German Credit also shows high family
+importance, but its HH-specific estimate is less stable because very few HH points are
+detected.
 
 \item \textbf{Within-family hyperparameters add structured variation:} Within model
-families, disagreement is not diffuse across all hyperparameters. A small number of
-hyperparameters repeatedly explain much of the remaining variation, such as
+families, disagreement is not diffuse across all hyperparameters. Variation in $V_m$ is
+often concentrated in a small number of grouped hyperparameter values, such as
 regularization strength $C$ for logistic regression, the number of neighbors for kNN,
 learning-rate and tree-depth parameters for GBM, and learning-rate initialization or
-architecture choices for MLPs.
+architecture choices for MLPs. These patterns should be interpreted as descriptive
+associations within the sampled Rashomon approximations rather than as causal
+hyperparameter effects.
 
 \item \textbf{Robustness to analytical choices:} The main spatial conclusions are robust to
 reasonable changes in the analysis design. Increasing Rashomon set size $K$ mainly

@@ -43,13 +43,15 @@ to some extent, but their exact boundaries depend on the split, model set, and g
 definition.
 
 \paragraph{RQ4: Which modeling choices are associated with the instability?}
-Model family explains a substantial share of predictive variance, especially on Adult and
-COMPAS, and this contribution often increases inside HH regions. Within model families,
-disagreement is further shaped by a smaller number of influential hyperparameters, such
-as regularization strength for logistic regression, neighborhood size for kNN, and
-complexity or optimization parameters for tree-based and neural-network models.
-Predictive multiplicity is therefore not just random training variation; it is structured by
-concrete modeling choices.
+Model family accounts for a substantial share of observed predictive variance, especially
+on Adult and COMPAS, and this contribution often increases inside HH regions. Within
+model families, disagreement is further associated with a smaller number of grouped
+hyperparameter values, such as regularization strength for logistic regression,
+neighborhood size for kNN, and complexity or optimization parameters for tree-based and
+neural-network models. Predictive multiplicity is therefore not just random training
+variation; within the sampled candidate pool, it is systematically associated with concrete
+modeling choices. These results are descriptive and should not be interpreted as causal
+effects of individual hyperparameters.
 
 \paragraph{RQ5: Can the detected regions be validated and interpreted?}
 The synthetic experiments confirm that the pipeline can recover known ambiguous

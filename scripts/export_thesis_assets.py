@@ -22,6 +22,8 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from thesis_layout import (  # noqa: E402
     LEGACY_TABLES,
     THESIS_TABLES_ROOT,
+    dataset_plot_color,
+    display_dataset_name,
     resolve_csv,
 )
 
@@ -66,7 +68,7 @@ def build_dataset_summary():
         mc_std = df["mean_conflict"].std(ddof=1) if n > 1 and "mean_conflict" in df.columns else 0.0
         sig = (df["p_empirical"] < 0.05).mean()
         rows.append({
-            "dataset": name.replace("_", " ").title(),
+            "dataset": display_dataset_name(name),
             "n_runs": n,
             "mean_variance_mean": mv_mean,
             "mean_variance_std": mv_std,
@@ -270,16 +272,17 @@ def write_hh_moran_per_run_compas():
         print("Missing compas/summary_per_run.csv. Skipping hh_moran_per_run_compas.pdf")
         return
     df = pd.read_csv(path).sort_values("outer_seed")
+    ds_label = display_dataset_name("compas")
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
     x = np.arange(len(df))
     ax1.bar(x, df["n_hh"].values, color="steelblue", edgecolor="white")
     ax1.set_xlabel("Run (outer seed)")
     ax1.set_ylabel("HH count")
-    ax1.set_title("HH count per run (COMPAS)")
+    ax1.set_title(f"HH count per run ({ds_label})")
     ax2.bar(x, df["moran_i"].values, color="seagreen", edgecolor="white")
     ax2.set_xlabel("Run (outer seed)")
     ax2.set_ylabel("Moran's I")
-    ax2.set_title("Moran's I per run (COMPAS)")
+    ax2.set_title(f"Moran's I per run ({ds_label})")
     plt.tight_layout()
     fig.savefig(FIG_DIR / "hh_moran_per_run_compas.pdf", bbox_inches="tight")
     plt.close()
@@ -294,24 +297,28 @@ def write_spatial_patterns_figure():
         if not path.exists():
             continue
         df = pd.read_csv(path)
-        df["dataset"] = name.replace("_", " ").title()
+        df["dataset_key"] = name
+        df["dataset"] = display_dataset_name(name)
         rows.append(df)
     if not rows:
         print("No summary_per_run. Skipping spatial_patterns_per_run.pdf")
         return
     big = pd.concat(rows, ignore_index=True)
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
-    colors = {"Compas": "C0", "German": "C1", "Adult": "C2"}
     x_offset = 0
     xticks, xlabels = [], []
-    for ds in big["dataset"].unique():
-        d = big[big["dataset"] == ds].sort_values("outer_seed")
+    for ds_key in SUPPORTED_DATASETS:
+        d = big[big["dataset_key"] == ds_key].sort_values("outer_seed")
+        if d.empty:
+            continue
+        ds_label = display_dataset_name(ds_key)
         n = len(d)
         x = np.arange(x_offset, x_offset + n)
-        ax1.bar(x, d["n_hh"].values, color=colors.get(ds, "gray"), edgecolor="white", label=ds)
-        ax2.bar(x, d["moran_i"].values, color=colors.get(ds, "gray"), edgecolor="white")
+        color = dataset_plot_color(ds_key)
+        ax1.bar(x, d["n_hh"].values, color=color, edgecolor="white", label=ds_label)
+        ax2.bar(x, d["moran_i"].values, color=color, edgecolor="white")
         xticks.append(x_offset + (n - 1) / 2)
-        xlabels.append(ds)
+        xlabels.append(ds_label)
         x_offset += n + 1
     ax1.set_xticks(xticks)
     ax1.set_xticklabels(xlabels)
@@ -351,7 +358,10 @@ def write_hh_by_family_figure():
         plt.xticks(rotation=45, ha="right")
     ax.set_ylabel("HH count")
     ax.set_xlabel("Model family")
-    ax.set_title("HH count by family (Compas, per-family top-25, mean ± std over runs)")
+    ds_label = display_dataset_name("compas")
+    ax.set_title(
+        f"HH count by family ({ds_label}, per-family top-25, mean ± std over runs)"
+    )
     plt.tight_layout()
     fig.savefig(FIG_DIR / "hh_by_family.pdf", bbox_inches="tight")
     plt.close()
@@ -366,12 +376,6 @@ def write_null_significance_tex():
 
     df = pd.read_csv(path)
 
-    dataset_labels = {
-        "compas": "COMPAS",
-        "german": "German Credit",
-        "adult": "Adult",
-    }
-
     out = []
     out.append(r"\begin{tabular}{lccc}")
     out.append(r"\hline")
@@ -379,8 +383,7 @@ def write_null_significance_tex():
     out.append(r"\hline")
 
     for _, r in df.iterrows():
-        ds_key = str(r["dataset"]).lower()
-        ds = dataset_labels.get(ds_key, str(r["dataset"]).replace("_", " ").title())
+        ds = display_dataset_name(r["dataset"])
 
         frac_sig = r.get("frac_sig_moran", r.get("frac_significant", 0))
         sig_fmt = f"{100 * frac_sig:.0f}\\%"
@@ -410,12 +413,6 @@ def write_conflict_null_significance_tex():
 
     df = pd.read_csv(path)
 
-    dataset_labels = {
-        "compas": "COMPAS",
-        "german": "German Credit",
-        "adult": "Adult",
-    }
-
     out = []
     out.append(r"\begin{tabular}{lccc}")
     out.append(r"\hline")
@@ -423,8 +420,7 @@ def write_conflict_null_significance_tex():
     out.append(r"\hline")
 
     for _, r in df.iterrows():
-        ds_key = str(r["dataset"]).lower()
-        ds = dataset_labels.get(ds_key, str(r["dataset"]).replace("_", " ").title())
+        ds = display_dataset_name(r["dataset"])
 
         sig_fmt = f"{100 * r['frac_sig']:.0f}\\%"
         moran_fmt = f"{r['obs_mean']:.3f} $\\pm$ {r['obs_std']:.3f}"
@@ -664,15 +660,6 @@ def write_interpretable_rules_top_compas_tex():
     print(f"Wrote {out_path}")
 
 
-def _pretty_dataset(name: str) -> str:
-    name = str(name).strip().lower()
-    return {
-        "compas": "COMPAS",
-        "german": "German",
-        "adult": "Adult",
-    }.get(name, name.title())
-
-
 def write_alternative_knn_comparison_tex():
     """
     Alternative graph construction summary from Notebook 10.
@@ -735,7 +722,7 @@ def write_alternative_knn_comparison_tex():
         ds_key = r["dataset_key"]
         method_key = r["method_key"]
 
-        ds = _pretty_dataset(ds_key)
+        ds = display_dataset_name(ds_key)
         method = method_labels.get(method_key, _tex_escape(method_key))
 
         moran = f"${float(r['moran_mean']):.3f} \\pm {float(r['moran_std']):.3f}$"
@@ -950,7 +937,7 @@ def write_conflict_summary_tex():
     out.append(r"\midrule")
 
     for _, r in out_df.iterrows():
-        dataset = _pretty_dataset(r["dataset"])
+        dataset = display_dataset_name(r["dataset"])
 
         mean_ci = (
             f"${r['mean_conflict_mean']:.3f} "
@@ -1002,9 +989,7 @@ def write_aggregate_multiplicity_summary_tex():
     out.append(r"\hline")
 
     for _, r in df.iterrows():
-        dataset = str(r["dataset"]).replace("_", " ").title()
-        if dataset.lower() == "German":
-            dataset = "German Credit"
+        dataset = display_dataset_name(r["dataset"])
 
         ambiguity = f"{r['ambiguity_mean']:.3f} $\\pm$ {r['ambiguity_std']:.3f}"
         disagreement = f"{r['disagreement_rate_mean']:.3f} $\\pm$ {r['disagreement_rate_std']:.3f}"
@@ -1179,12 +1164,6 @@ def write_margin_summary_tex():
         )
         return
 
-    dataset_labels = {
-        "adult": "Adult",
-        "compas": "COMPAS",
-        "german": "German Credit",
-    }
-
     dataset_order = ["adult", "compas", "german"]
     df["dataset_key"] = df["dataset"].astype(str).str.lower()
     df["dataset_order"] = df["dataset_key"].apply(
@@ -1202,8 +1181,7 @@ def write_margin_summary_tex():
     out.append(r"\hline")
 
     for _, r in df.iterrows():
-        key = str(r["dataset"]).lower()
-        ds = dataset_labels.get(key, str(r["dataset"]).replace("_", " ").title())
+        ds = display_dataset_name(r["dataset"])
 
         pearson = f"{r['pearson_r_mean']:.2f} $\\pm$ {r['pearson_r_std']:.2f}"
         spearman = f"{r['spearman_r_mean']:.2f} $\\pm$ {r['spearman_r_std']:.2f}"
@@ -1222,6 +1200,183 @@ def write_margin_summary_tex():
     (TAB_DIR / "margin_summary.tex").write_text("\n".join(out), encoding="utf-8")
     print("Wrote", TAB_DIR / "margin_summary.tex")
 
+
+def write_topk_brier_gap_tex(K: int = 25):
+    """Validation-Brier gaps within the global top-K Rashomon approximation."""
+    rows = []
+
+    for dataset in SUPPORTED_DATASETS:
+        ds_dir = RESULTS_DIR / dataset
+
+        run_rows = []
+        for run_dir in sorted(ds_dir.glob("seed=*")):
+            meta_path = run_dir / "meta.csv"
+            if not meta_path.is_file():
+                continue
+
+            meta = pd.read_csv(meta_path)
+            if "val_brier" not in meta.columns or len(meta) < K:
+                continue
+
+            top = meta.sort_values("val_brier").head(K).copy()
+            gaps = top["val_brier"] - top["val_brier"].min()
+
+            run_rows.append({
+                "dataset": dataset,
+                "seed": run_dir.name.replace("seed=", ""),
+                "max_gap": gaps.max(),
+                "median_gap": gaps.median(),
+                "p95_gap": gaps.quantile(0.95),
+            })
+
+        if not run_rows:
+            print(f"No seed-level meta.csv files found for {dataset}; skipping Brier-gap rows.")
+            continue
+
+        df = pd.DataFrame(run_rows)
+        rows.append({
+            "dataset": display_dataset_name(dataset),
+            "mean_max_gap": df["max_gap"].mean(),
+            "std_max_gap": df["max_gap"].std(ddof=1) if len(df) > 1 else 0.0,
+            "mean_median_gap": df["median_gap"].mean(),
+            "std_median_gap": df["median_gap"].std(ddof=1) if len(df) > 1 else 0.0,
+            "mean_p95_gap": df["p95_gap"].mean(),
+            "std_p95_gap": df["p95_gap"].std(ddof=1) if len(df) > 1 else 0.0,
+        })
+
+    if not rows:
+        print("No top-K Brier-gap table written; missing results/*/seed=*/meta.csv files.")
+        return
+
+    df_out = pd.DataFrame(rows)
+
+    out = []
+    out.append(r"\begin{tabular}{lccc}")
+    out.append(r"\hline")
+    out.append(
+        r"Dataset & Maximum gap & Median gap & 95th-percentile gap \\"
+    )
+    out.append(r"\hline")
+
+    for _, r in df_out.iterrows():
+        max_gap = f"{r['mean_max_gap']:.4f} $\\pm$ {r['std_max_gap']:.4f}"
+        median_gap = f"{r['mean_median_gap']:.4f} $\\pm$ {r['std_median_gap']:.4f}"
+        p95_gap = f"{r['mean_p95_gap']:.4f} $\\pm$ {r['std_p95_gap']:.4f}"
+
+        out.append(
+            f"{r['dataset']} & {max_gap} & {median_gap} & {p95_gap} \\\\"
+        )
+
+    out.append(r"\hline")
+    out.append(r"\end{tabular}")
+
+    (TAB_DIR / "topk_brier_gap_summary.tex").write_text(
+        "\n".join(out), encoding="utf-8"
+    )
+    print("Wrote", TAB_DIR / "topk_brier_gap_summary.tex")
+
+
+def write_dataset_characteristics_tex():
+    """Write dataset characteristics table for the appendix.
+
+    The table reports total N, train/validation/test sizes, positive rate, and
+    transformed feature dimensionality after the thesis preprocessing pipeline.
+    """
+    from data import load_dataset, make_preprocessor, make_split
+
+    def _first_split_path(dataset: str) -> Path | None:
+        ds_dir = RESULTS_DIR / dataset
+        if not ds_dir.exists():
+            return None
+
+        def _seed_key(path: Path) -> int:
+            try:
+                return int(path.name.split("=")[1])
+            except Exception:
+                return 10**9
+
+        for run_dir in sorted(ds_dir.glob("seed=*"), key=_seed_key):
+            split_path = run_dir / "split.npz"
+            if split_path.is_file():
+                return split_path
+        return None
+
+    rows = []
+
+    for dataset in SUPPORTED_DATASETS:
+        try:
+            X, y, feature_info = load_dataset(dataset)
+        except Exception as exc:
+            print(f"Could not load dataset {dataset}; skipping dataset characteristics. Error: {exc}")
+            continue
+
+        y_arr = np.asarray(y).astype(int)
+        n_total = len(y_arr)
+        positive_rate = float(np.mean(y_arr))
+
+        split_path = _first_split_path(dataset)
+        if split_path is not None:
+            split_npz = np.load(split_path)
+            train_idx = np.asarray(split_npz["train"], dtype=int)
+            val_idx = np.asarray(split_npz["val"], dtype=int)
+            test_idx = np.asarray(split_npz["test"], dtype=int)
+        else:
+            split = make_split(
+                n_samples=n_total,
+                test_size=0.2,
+                val_size=0.2,
+                seed=0,
+                stratify=y_arr,
+            )
+            train_idx = np.asarray(split["train"], dtype=int)
+            val_idx = np.asarray(split["val"], dtype=int)
+            test_idx = np.asarray(split["test"], dtype=int)
+
+        preprocessor = make_preprocessor(feature_info, scale_numeric=True)
+        preprocessor.fit(X.iloc[train_idx], y_arr[train_idx])
+        transformed_dim = int(preprocessor.transform(X.iloc[test_idx[:1]]).shape[1])
+
+        rows.append({
+            "dataset": display_dataset_name(dataset),
+            "n_total": n_total,
+            "n_train": len(train_idx),
+            "n_val": len(val_idx),
+            "n_test": len(test_idx),
+            "positive_rate": positive_rate,
+            "transformed_dim": transformed_dim,
+        })
+
+    if not rows:
+        print("No dataset characteristics written.")
+        return
+
+    out = []
+    out.append(r"\begin{tabular}{lrrrrrr}")
+    out.append(r"\hline")
+    out.append(
+        r"Dataset & Total $N$ & Train & Validation & Test & Positive rate & Transformed dim. \\"
+    )
+    out.append(r"\hline")
+
+    for r in rows:
+        out.append(
+            f"{r['dataset']} & "
+            f"{r['n_total']} & "
+            f"{r['n_train']} & "
+            f"{r['n_val']} & "
+            f"{r['n_test']} & "
+            f"{100 * r['positive_rate']:.1f}\\% & "
+            f"{r['transformed_dim']} \\\\"
+        )
+
+    out.append(r"\hline")
+    out.append(r"\end{tabular}")
+
+    out_path = TAB_DIR / "dataset_characteristics.tex"
+    out_path.write_text("\n".join(out), encoding="utf-8")
+    print("Wrote", out_path)
+
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Export thesis assets")
@@ -1239,6 +1394,8 @@ def main():
 
     write_dataset_summary_tex()
     write_global_summary_tex()
+    write_dataset_characteristics_tex()
+    write_topk_brier_gap_tex()
     write_family_summary_tex()
     write_null_significance_tex()
     write_conflict_null_significance_tex()

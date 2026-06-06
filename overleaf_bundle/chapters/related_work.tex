@@ -176,6 +176,15 @@ Their results suggest that multiplicity is not driven only by broad differences 
 families such as linear models versus tree ensembles, but also by movement through
 hyperparameter space within a fixed family.
 
+A related line of work studies whether post-hoc calibration can reduce predictive
+multiplicity. \citet{cavus_mitigating_2026} investigates calibration methods such as
+Platt scaling, isotonic regression, and temperature scaling in classification settings and
+finds that calibration can reduce aggregate multiplicity measures across near-optimal
+models. This perspective treats calibration as a possible mitigation strategy. In contrast,
+the calibration analysis in this thesis is used as a robustness diagnostic: it asks whether
+the spatial clustering of predictive variance persists after the probability scale of each
+model has been adjusted.
+
 Recent work also highlights that prediction variance across models can lead to
 arbitrary decisions for individual observations \citep{cooper2024arbitrariness}.
 

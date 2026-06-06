@@ -21,12 +21,6 @@ _INCLUDEGRAPHICS_RE = re.compile(r"\\includegraphics(?:\[[^\]]*\])*\{([^}]+)\}")
 
 _ALWAYS_EXPORT_FIGURES = {
     "decomp_hp_secondary_bar_rashomon_grid.pdf",
-
-    "sensitivity_K_variance_compas.pdf",
-    "sensitivity_K_conflict_compas.pdf",
-
-    "sensitivity_kNN_variance_compas.pdf",
-    "sensitivity_kNN_conflict_compas.pdf",
 }
 
 
@@ -58,14 +52,21 @@ def export_script_pdf_basenames() -> frozenset[str]:
     s = {
         "spatial_patterns_per_run.pdf",
         "hh_by_family.pdf",
+        "hh_moran_per_run_compas.pdf",
         "sensitivity_K.pdf",
         "sensitivity_kNN.pdf",
+        "rules_support_purity_compas.pdf",
+        "hh_stability_freq_compas.pdf",
     }
     for ds in _EXPORT_SENSITIVITY_DATASETS:
         s.add(f"sensitivity_K_variance_{ds}.pdf")
         s.add(f"sensitivity_K_conflict_{ds}.pdf")
         s.add(f"sensitivity_kNN_variance_{ds}.pdf")
         s.add(f"sensitivity_kNN_conflict_{ds}.pdf")
+        s.add(f"family_vs_global_spatial_{ds}.pdf")
+        s.add(f"calibration_delta_metrics_{ds}.pdf")
+        s.add(f"hh_stability_freq_{ds}.pdf")
+        s.add(f"rules_support_purity_{ds}.pdf")
     return frozenset(s)
 
 

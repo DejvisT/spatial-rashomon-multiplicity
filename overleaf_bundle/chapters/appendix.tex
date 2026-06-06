@@ -49,6 +49,24 @@ MLP & \texttt{hidden\_layer\_sizes} & $(50)$, $(100)$, $(200)$, $(100,50)$, $(20
 \end{tabular}
 \end{table}
 
+\section{Dataset Characteristics}
+\label{app:dataset-characteristics}
+
+Table~\ref{tab:app-dataset-characteristics} summarizes the split sizes, target prevalence,
+and transformed feature dimensionality used in the experiments. These quantities provide
+context for interpreting cross-dataset comparisons, especially absolute HH counts and
+hotspot-specific analyses.
+
+\begin{table}[htbp]
+\centering
+\caption{Dataset characteristics after train--validation--test splitting and preprocessing.
+The positive rate is computed on the full dataset. The transformed dimension refers to the
+feature representation after imputation, standardization, and one-hot encoding.}
+\label{tab:app-dataset-characteristics}
+\vspace{0.4em}
+\input{presentation_assets/tab/dataset_characteristics.tex}
+\end{table}
+
 \section{Performance-Control Meta-Model Diagnostic}
 \label{app:meta-model-diagnostic}
 

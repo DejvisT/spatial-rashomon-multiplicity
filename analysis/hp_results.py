@@ -415,6 +415,8 @@ def plot_family_importance_bars(
     """One row of panels: one subplot per dataset; stacked bars show between- vs within-family share."""
     import matplotlib.pyplot as plt
 
+    from thesis_layout import display_dataset_name
+
     if fam_agg.empty:
         return
 
@@ -477,7 +479,7 @@ def plot_family_importance_bars(
         ax.set_xticklabels(subs, rotation=20, ha="right")
         ax.set_ylim(0, 1.0)
         ax.set_ylabel("Share of total predictive variance")
-        ax.set_title(str(ds))
+        ax.set_title(display_dataset_name(ds))
         ax.grid(axis="y", alpha=0.25)
         
     for ax in axes[0]:
@@ -508,6 +510,8 @@ def plot_decomp_hp_grid_rashomon(
     """
     import matplotlib.pyplot as plt
 
+    from thesis_layout import display_dataset_name
+
     col = "hp" if "hp" in df_agg.columns else "hyperparameter"
     d_all = df_agg.copy()
     if "pool_type" in d_all.columns:
@@ -534,7 +538,7 @@ def plot_decomp_hp_grid_rashomon(
             ax.invert_yaxis()
             ax.tick_params(axis="x", labelsize=7)
             if i == 0:
-                ax.set_title(str(ds), fontsize=9)
+                ax.set_title(display_dataset_name(ds), fontsize=9)
             if j == 0:
                 ax.set_ylabel(str(fam), fontsize=9)
     fig.suptitle(
@@ -562,6 +566,8 @@ def plot_hotspot_hp_delta_grid(
     """Single figure: HH − all decomposition deltas, rows = families, cols = datasets."""
     import matplotlib.pyplot as plt
 
+    from thesis_layout import display_dataset_name
+
     if delta_agg.empty:
         return
     d_all = delta_agg.copy()
@@ -588,7 +594,7 @@ def plot_hotspot_hp_delta_grid(
             ax.axvline(0, color="gray", lw=0.6)
             ax.tick_params(axis="x", labelsize=7)
             if i == 0:
-                ax.set_title(str(ds), fontsize=9)
+                ax.set_title(display_dataset_name(ds), fontsize=9)
             if j == 0:
                 ax.set_ylabel(str(fam), fontsize=9)
     fig.suptitle("Hotspot vs all: Δ HP importance (HH − all), Rashomon", fontsize=11)
@@ -624,6 +630,8 @@ def plot_family_importance_compare_bars(
     import matplotlib.pyplot as plt
     import numpy as np
 
+    from thesis_layout import display_dataset_name
+
     if fam_agg.empty or "pool_type" not in fam_agg.columns:
         return
 
@@ -657,7 +665,7 @@ def plot_family_importance_compare_bars(
         ax.set_xticks(x)
         ax.set_xticklabels(subsets, rotation=20, ha="right")
         ax.set_ylabel("Family importance")
-        ax.set_title(str(ds))
+        ax.set_title(display_dataset_name(ds))
         ax.legend()
 
     fig.tight_layout()

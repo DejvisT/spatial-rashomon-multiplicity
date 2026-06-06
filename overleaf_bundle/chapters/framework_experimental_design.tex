@@ -72,9 +72,11 @@ numerical and categorical input features.
     information. The target indicates whether annual income exceeds \$50{,}000.
 \end{itemize}
 
-These datasets differ in size, domain, and feature composition. They therefore provide a
-basic check of whether the proposed spatial multiplicity analysis behaves similarly across
-different tabular classification settings.
+The datasets differ in size, domain, and feature composition. Additional dataset
+characteristics, including split sizes, target prevalence, and transformed feature
+dimensionality, are reported in Appendix~\ref{app:dataset-characteristics}.
+These differences provide a basic check of whether the proposed spatial multiplicity
+analysis behaves similarly across different tabular classification settings.
 
 \paragraph{Data splitting.}
 \label{sec:exp-splits}
@@ -151,6 +153,33 @@ runs harder to interpret. Fixing $K$ ensures that each run is based on the same 
 near-optimal models while retaining the central idea of predictive multiplicity: studying
 disagreement among models with very similar validation performance.
 
+To audit how close the retained models are in validation performance, we report the
+validation Brier-score gap within the selected global top-$K$ set. For each run, this gap
+is computed relative to the best retained model,
+\[
+\Delta L_m = L(f_m) - \min_{f \in \mathcal{R}_K} L(f),
+\qquad f_m \in \mathcal{R}_K .
+\]
+Table~\ref{tab:topk-brier-gap} summarizes the maximum, median, and 95th-percentile
+gap across the selected top-$K=25$ models. This diagnostic makes the term
+``near-optimal'' explicit for the finite rank-based approximation used in the experiments.
+
+\begin{table}[htbp]
+\centering
+\caption{Validation Brier-score gaps within the global top-$K=25$ Rashomon
+approximation. For each run, gaps are computed relative to the best retained model.
+Values are mean $\pm$ standard deviation across runs.}
+\label{tab:topk-brier-gap}
+\vspace{0.4em}
+\input{presentation_assets/tab/topk_brier_gap_summary.tex}
+\end{table}
+
+The gaps are small in absolute Brier-score units across all three datasets. German Credit
+has the widest selected top-$K$ range, but even there the average maximum gap remains
+below $0.01$. This supports interpreting the selected models as a near-optimal finite
+candidate set, while making clear that near-optimality is defined operationally by the
+rank-based top-$K$ construction.
+
 For analyses that compare model families or study variation within one family, we also
 use family-specific top-$K$ sets. If $\mathcal{F}_g \subset \mathcal{F}$ denotes the
 candidate models belonging to family $g$, then $\mathcal{R}^{(g)}_K$ denotes the top-$K$
@@ -170,11 +199,28 @@ where $K$ is the number of selected models and $N$ is the number of test observa
 The entry $\hat{p}_{mi}$ denotes the predicted probability assigned to test observation
 $i$ by model $m \in \mathcal{R}_K$.
 
-The primary observation-wise multiplicity metric is predictive variance,
+The primary observation-wise multiplicity metric is predictive variance. Let
+$M = |\mathcal{R}_K|$ and let
 \[
-v_i = \mathrm{Var}_{m \in \mathcal{R}_K}(\hat{p}_{mi}),
+\bar{p}_i =
+\frac{1}{M}
+\sum_{m=1}^{M}
+\hat{p}_{mi}
+\]
+denote the mean predicted probability for observation $i$ across the retained models.
+The observation-wise predictive variance is computed as the population variance over the
+finite selected model set:
+\[
+v_i =
+\frac{1}{M}
+\sum_{m=1}^{M}
+\left(\hat{p}_{mi} - \bar{p}_i\right)^2,
 \quad i=1,\dots,N.
 \]
+Thus, the denominator is $M$ rather than $M-1$. This convention matches the empirical
+pipeline, where the selected top-$K$ model set is treated as the finite Rashomon
+approximation under study rather than as a random sample from a larger population.
+
 High values of $v_i$ indicate that near-optimal models assign substantially different
 probabilities to observation $i$, while low values indicate agreement. This follows the
 score-based view of predictive multiplicity, where disagreement is measured at the level
@@ -236,6 +282,14 @@ observation-level quantity $\mathbf{v}=(v_1,\dots,v_N)^\top$, the spatial lag
 is the average value of $\mathbf{v}$ among the neighbors of observation $i$. If $v_i$ is
 predictive variance, then $[W\mathbf{v}]_i$ is the average predictive variance in the local
 neighborhood of observation $i$.
+
+The baseline graph therefore encodes one specific operational notion of local similarity:
+Euclidean distance in the preprocessed feature representation. This choice is natural
+because it uses the same transformed feature space as the predictive models, but it is not
+unique. In particular, distances in one-hot encoded tabular data can depend on the chosen
+preprocessing and scaling. For this reason, the robustness analysis also compares the
+baseline graph with PCA-reduced and cosine-distance alternatives
+(Section~\ref{sec:results-alt-graph}).
 
 \label{sec:exp-knn-graph}
 In the experiments, the reported $k$ values refer to the initial directed nearest-neighbor
@@ -329,25 +383,31 @@ by paths in the graph. Each component is interpreted as a contiguous high-multip
 region in feature space. Very small components may be discarded to avoid treating
 isolated fragments as substantive hotspot regions.
 
-Global Moran's $I$ significance is assessed with 999 permutations. Local Moran (LISA)
-also uses 999 permutations per observation, and the Benjamini--Hochberg correction is
-applied at $\alpha=0.05$ when labeling HH and LL clusters.
+For the standard spatial-statistics computations, PySAL's value-permutation tests are used:
+global Moran's $I$ is assessed with 999 permutations, and Local Moran (LISA) also uses
+999 permutations per observation. These permutations assess spatial autocorrelation of the
+already-computed predictive-variance field on the fixed feature-space graph. For LISA, the
+resulting local $p$-values are corrected with the Benjamini--Hochberg procedure at
+$\alpha=0.05$ before assigning HH and LL labels. This PySAL value-permutation procedure
+is distinct from the prediction-matrix permutation null introduced in the next section.
 
 \subsection{Permutation Null Model}
 \label{sec:meth-null}
 \label{sec:exp-null}
 
-The prediction-permutation null tests whether the observed spatial organization of
-predictive variance is stronger than expected when predictions are no longer aligned with
-feature-space location. The null hypothesis is that the model-wise marginal prediction
-distributions are preserved, but their alignment with the feature-space graph is random.
+In addition to the standard PySAL value-permutation tests used for Moran's $I$ and LISA,
+we use a separate prediction-matrix permutation null. This second null is designed to test
+whether the spatial clustering of predictive variance depends on the alignment between
+model predictions and feature-space locations.
 
-The null operates on the prediction matrix $P \in \mathbb{R}^{K \times N}$. For each
-model $m$ independently, the vector $(\hat{p}_{m1},\dots,\hat{p}_{mN})$ is randomly
-permuted across observations. This within-model permutation preserves each model's
-marginal distribution of predictions while destroying systematic alignment between
-predictions and feature-space location. Any spatial clustering of the resulting predictive
-variance values is therefore attributable to chance under this null model.
+The null operates on the prediction matrix $P \in \mathbb{R}^{K \times N}$. For each model
+$m$ independently, the vector $(\hat{p}_{m1},\dots,\hat{p}_{mN})$ is randomly permuted
+across observations. This within-model permutation preserves each model's marginal
+distribution of predictions, but destroys systematic alignment between predictions and
+the feature-space graph. Predictive variance is then recomputed from the permuted
+prediction matrix, and global Moran's $I$ is recalculated. Any spatial clustering in the recomputed variance field is therefore interpreted relative to
+a null in which predictions retain their model-specific marginal distributions but are no
+longer attached to their original feature-space locations.
 
 For each of $R$ permutations, observation-wise predictive variance and global Moran's
 $I$ are recomputed. The empirical one-sided $p$-value is
@@ -379,15 +439,20 @@ counts depend on the graph definition.
 
 \paragraph{Calibration robustness.}
 \label{sec:exp-calibration}
-To test whether spatial multiplicity is driven by probability miscalibration, Platt scaling
-and isotonic regression are applied to the predictions of each model in the global
-Rashomon set. For each model, a logistic regression is fitted on validation-set predicted
-probabilities and validation labels, and the resulting mapping is applied to that model's
-test-set predictions. The predictive-variance and spatial pipeline is then rerun on both
-uncalibrated and calibrated test predictions. We record changes in mean variance,
-Moran's $I$, HH/LL masks, connected components, and the Jaccard similarity between
-hotspot masks before and after calibration. Synthetic datasets are excluded from this
-analysis because they follow a separate data-generating design.
+To test whether the spatial hotspot structure is mainly driven by probability
+miscalibration, we apply Platt scaling and isotonic regression to the predictions of each
+model in the global Rashomon set. For each model, a logistic regression is fitted on
+validation-set predicted probabilities and validation labels, and the resulting mapping is
+applied to that model's test-set predictions. The predictive-variance and spatial pipeline
+is then rerun on both uncalibrated and calibrated test predictions.
+
+We record changes in mean variance, Moran's $I$, HH/LL masks, connected components,
+and the Jaccard similarity between hotspot masks before and after calibration. Calibration
+is used here as a post-selection robustness check rather than as an independent
+performance evaluation. Because the validation set is used both for selecting the top-$K$
+model set and for fitting the calibration mappings, calibrated metrics are interpreted
+descriptively. Synthetic datasets are excluded from this analysis because they follow a
+separate data-generating design.
 
 \paragraph{Alternative graph constructions.}
 To verify that the spatial results are not artifacts of Euclidean distance on the full

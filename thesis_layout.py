@@ -27,6 +27,39 @@ THESIS_FIGURES_ROOT = THESIS_ROOT / "figures"
 LEGACY_TABLES = _ROOT / "tables"
 LEGACY_FIGURES = _ROOT / "figures"
 
+DATASET_DISPLAY_NAMES = {
+    "compas": "COMPAS",
+    "german": "German Credit",
+    "adult": "Adult",
+}
+
+DATASET_PLOT_COLORS = {
+    "compas": "C0",
+    "german": "C1",
+    "adult": "C2",
+}
+
+
+def _dataset_key(dataset: str) -> str:
+    key = str(dataset).strip().lower().replace(" ", "_")
+    if key in DATASET_DISPLAY_NAMES:
+        return key
+    if key.startswith("german"):
+        return "german"
+    if key.startswith("compas"):
+        return "compas"
+    return key
+
+
+def display_dataset_name(dataset: str) -> str:
+    """Map internal dataset keys to thesis-facing labels (tables/figures only)."""
+    key = _dataset_key(dataset)
+    return DATASET_DISPLAY_NAMES.get(key, str(dataset))
+
+
+def dataset_plot_color(dataset: str) -> str:
+    return DATASET_PLOT_COLORS.get(_dataset_key(dataset), "gray")
+
 
 def thesis_table_dir(notebook_id: str) -> Path:
     """Directory for CSV exports from one notebook (e.g. ``\"nb03\"``)."""
