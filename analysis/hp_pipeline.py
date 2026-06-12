@@ -16,11 +16,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 
-from analysis.experiment_runner import _get_run_dirs
+from analysis.io_utils import get_run_dirs
 from analysis.hp_analysis import POOL_TYPE_FULL_POOL, POOL_TYPE_RASHOMON, aggregate_hp_importance
 
 from analysis.hp_results import (
@@ -52,7 +52,7 @@ def run_all_pools_for_dataset(ds: str, config: HPAnalysisConfig) -> Dict[str, pd
     parts: List[Dict[str, pd.DataFrame]] = []
     for pt in config.pool_types:
         ds_dir = config.results_dir / ds
-        if not ds_dir.is_dir() or not _get_run_dirs(ds_dir):
+        if not ds_dir.is_dir() or not get_run_dirs(ds_dir):
             continue
         out = run_dataset_all_seeds(
             ds_dir,

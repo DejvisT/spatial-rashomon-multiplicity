@@ -15,6 +15,7 @@ class SyntheticGroundTruth:
     xor_mask: np.ndarray         # True if x1*x2>0 inside the island (quadrants)
     p_true: np.ndarray           # True P(y=1|x) used to sample labels
     island_radius: float         # For plotting / reporting
+    outlier_type: Optional[np.ndarray] = None  # For three-islands-plus-outliers dataset: -1=not outlier, 0=low-var outlier, 1=high-var outlier
 
 
 def make_synthetic_multiplicity_dataset(
@@ -158,63 +159,39 @@ def _weak_xor_probability(X: np.ndarray, delta: float, center: Tuple[float, floa
     return 0.5 + delta * (2.0 * xor - 1.0)
 
 
-def _rejection_sample_outliers(
-    rng: np.random.Generator,
-    n: int,
-    box: Tuple[float, float, float, float],
-    *,
-    min_dist_to_any: float,
-    existing_points: np.ndarray,
-    max_tries: int = 200000,
-) -> np.ndarray:
-    """Sample outliers uniformly in a box but far from existing points and from each other."""
-    xmin, xmax, ymin, ymax = box
-    out = []
-    tries = 0
-    while len(out) < n and tries < max_tries:
-        tries += 1
-        cand = np.array([rng.uniform(xmin, xmax), rng.uniform(ymin, ymax)], dtype=float)
-        if existing_points.size > 0:
-            d_exist = np.sqrt(((existing_points - cand) ** 2).sum(axis=1)).min()
-            if d_exist < min_dist_to_any:
-                continue
-        if out:
-            d_out = np.sqrt(((np.vstack(out) - cand) ** 2).sum(axis=1)).min()
-            if d_out < min_dist_to_any:
-                continue
-        out.append(cand)
-    if len(out) < n:
-        raise RuntimeError(
-            f"Could not place all outliers: placed {len(out)}/{n}. "
-            "Try increasing box size or reducing min_dist_to_any."
-        )
-    return np.vstack(out)
-
-
 def make_synth_three_islands_plus_outliers(
     *,
     n_samples: int = 5000,
     p_islands: float = 0.30,
     p_outliers: float = 0.02,
+    p_outliers_high_var: float = 0.50,
     stable_sep: float = 5.0,
     stable_std: float = 0.9,
     island_centers: Optional[List[Tuple[float, float]]] = None,
     island_radius: float = 2.0,
     island_delta: float = 0.30,
-    outlier_box: Tuple[float, float, float, float] = (-20, 20, -15, 15),
-    outlier_min_dist: float = 2.5,
-    outlier_p: float = 0.5,
+    outlier_radius: float = 1.0,
+    outlier_centers_high_var: Optional[List[Tuple[float, float]]] = None,
+    outlier_centers_low_var: Optional[List[Tuple[float, float]]] = None,
     random_state: int = 0,
     shuffle: bool = True,
-) -> Tuple[pd.DataFrame, pd.Series, Dict[str, list], SyntheticGT]:
+) -> Tuple[pd.DataFrame, pd.Series, Dict[str, list], "SyntheticGT"]:
     """
-    Synthetic dataset with: stable blobs, three ambiguous islands, isolated outliers.
+    Synthetic dataset with stable blobs, three ambiguous islands, and two types of outliers:
 
-    Islands use a weak XOR signal (p=0.5 +/- delta) that creates genuine
-    model disagreement: tree-based models learn the XOR boundary while
-    linear models predict ~0.5 everywhere in the island.
+    - low-variance outliers: isolated points with stable label probability
+    - high-variance outliers: small ambiguous mini-clusters with weak XOR structure
 
-    Ground truth: island_mask (3 islands), outlier_mask, stable_mask, p_true.
+    Islands and high-variance outliers use a weak XOR signal (p=0.5 +/- delta),
+    which creates genuine model disagreement: tree-based models can learn the XOR
+    boundary while linear models predict ~0.5 locally.
+
+    Ground truth:
+        island_mask
+        outlier_mask
+        stable_mask
+        p_true
+        outlier_type  (-1 = not outlier, 0 = low-var outlier, 1 = high-var outlier)
     """
     if island_centers is None:
         island_centers = [(-6.0, 6.0), (6.0, 6.0), (0.0, -6.0)]
@@ -222,14 +199,31 @@ def make_synth_three_islands_plus_outliers(
         raise ValueError("Provide exactly 3 island centers (or leave default).")
     if not (0.0 < island_delta < 0.5):
         raise ValueError("island_delta must be in (0, 0.5).")
+    if not (0.0 <= p_outliers_high_var <= 1.0):
+        raise ValueError("p_outliers_high_var must be in [0, 1].")
+
+    if outlier_centers_high_var is None:
+        # Chosen far from the stable blobs/islands and with opposite-sign geometry
+        # so they are visually distinct and easy to interpret.
+        outlier_centers_high_var = [(-18.0, 10.0), (18.0, -10.0)]
+
+    if outlier_centers_low_var is None:
+        # Chosen far away and near "stable side" regions where the label is clearer.
+        outlier_centers_low_var = [(-18.0, -10.0), (18.0, 10.0)]
 
     rng = np.random.default_rng(random_state)
     n_out = int(round(n_samples * p_outliers))
+    n_out_high = int(round(n_out * p_outliers_high_var))
+    n_out_low = n_out - n_out_high
+
     n_islands_total = int(round(n_samples * p_islands))
     n_stable = n_samples - n_out - n_islands_total
     if n_stable <= 0:
         raise ValueError("Increase n_samples or reduce p_islands/p_outliers.")
 
+    # ------------------------------------------------------------------
+    # Stable blobs
+    # ------------------------------------------------------------------
     n0 = n_stable // 2
     n1 = n_stable - n0
     X0 = rng.normal(loc=[-stable_sep, 0.0], scale=stable_std, size=(n0, 2))
@@ -240,16 +234,22 @@ def make_synth_three_islands_plus_outliers(
     y_stable = np.concatenate([y0, y1])
     p_true_stable = y_stable.astype(float)
 
+    # ------------------------------------------------------------------
+    # Three ambiguous islands (weak XOR)
+    # ------------------------------------------------------------------
     n_each = [n_islands_total // 3] * 3
     n_each[-1] += n_islands_total - sum(n_each)
+
     X_islands = []
     y_islands = []
     p_true_islands = []
     island_id_islands = []
+
     for idx, (c, n_i) in enumerate(zip(island_centers, n_each)):
         Xi = _sample_uniform_disk(rng, n_i, island_radius, c)
         pi = _weak_xor_probability(Xi, island_delta, c)
         yi = rng.binomial(1, pi).astype(int)
+
         X_islands.append(Xi)
         y_islands.append(yi)
         p_true_islands.append(pi)
@@ -260,27 +260,95 @@ def make_synth_three_islands_plus_outliers(
     p_true_islands = np.concatenate(p_true_islands) if n_islands_total > 0 else np.zeros((0,), dtype=float)
     island_id_islands = np.concatenate(island_id_islands) if n_islands_total > 0 else np.zeros((0,), dtype=int)
 
-    existing = np.vstack([X_stable, X_islands]) if (X_islands.size > 0) else X_stable
-    X_out = _rejection_sample_outliers(
-        rng, n_out, outlier_box, min_dist_to_any=outlier_min_dist, existing_points=existing
-    )
-    p_true_out = np.full(n_out, float(outlier_p))
-    y_out = rng.binomial(1, p_true_out).astype(int)
+    # ------------------------------------------------------------------
+    # Outliers: LOW-VARIANCE type
+    # ------------------------------------------------------------------
+    # These are placed in small far-away regions and receive stable probabilities.
+    # Left-side centers -> p_true = 0
+    # Right-side centers -> p_true = 1
+    # This makes it much clearer they should *not* be high-multiplicity hotspots.
+    X_out_low = []
+    p_true_out_low = []
 
+    if n_out_low > 0:
+        counts_low = [n_out_low // len(outlier_centers_low_var)] * len(outlier_centers_low_var)
+        counts_low[-1] += n_out_low - sum(counts_low)
+
+        for c, n_i in zip(outlier_centers_low_var, counts_low):
+            Xi = _sample_uniform_disk(rng, n_i, outlier_radius, c)
+            X_out_low.append(Xi)
+
+            # Stable probability depending on side
+            p_i = np.ones(n_i, dtype=float) if c[0] > 0 else np.zeros(n_i, dtype=float)
+            p_true_out_low.append(p_i)
+
+        X_out_low = np.vstack(X_out_low)
+        p_true_out_low = np.concatenate(p_true_out_low)
+        y_out_low = rng.binomial(1, p_true_out_low).astype(int)
+    else:
+        X_out_low = np.zeros((0, 2))
+        p_true_out_low = np.zeros((0,), dtype=float)
+        y_out_low = np.zeros((0,), dtype=int)
+
+    # ------------------------------------------------------------------
+    # Outliers: HIGH-VARIANCE type
+    # ------------------------------------------------------------------
+    # These are small ambiguous mini-clusters using the same weak XOR mechanism
+    # as the islands, so they are intended to be true localized high-multiplicity areas.
+    X_out_high = []
+    p_true_out_high = []
+
+    if n_out_high > 0:
+        counts_high = [n_out_high // len(outlier_centers_high_var)] * len(outlier_centers_high_var)
+        counts_high[-1] += n_out_high - sum(counts_high)
+
+        for c, n_i in zip(outlier_centers_high_var, counts_high):
+            Xi = _sample_uniform_disk(rng, n_i, outlier_radius, c)
+            pi = _weak_xor_probability(Xi, island_delta, c)
+
+            X_out_high.append(Xi)
+            p_true_out_high.append(pi)
+
+        X_out_high = np.vstack(X_out_high)
+        p_true_out_high = np.concatenate(p_true_out_high)
+        y_out_high = rng.binomial(1, p_true_out_high).astype(int)
+    else:
+        X_out_high = np.zeros((0, 2))
+        p_true_out_high = np.zeros((0,), dtype=float)
+        y_out_high = np.zeros((0,), dtype=int)
+
+    # ------------------------------------------------------------------
+    # Combine outliers
+    # ------------------------------------------------------------------
+    X_out = np.vstack([X_out_low, X_out_high])
+    p_true_out = np.concatenate([p_true_out_low, p_true_out_high])
+    y_out = np.concatenate([y_out_low, y_out_high])
+
+    outlier_type = np.concatenate([
+        np.full(n_stable + n_islands_total, -1, dtype=int),   # not outlier
+        np.zeros(len(X_out_low), dtype=int),                  # low-var outlier
+        np.ones(len(X_out_high), dtype=int),                  # high-var outlier
+    ])
+
+    # ------------------------------------------------------------------
+    # Combine all data
+    # ------------------------------------------------------------------
     X_all = np.vstack([X_stable, X_islands, X_out])
     y_all = np.concatenate([y_stable, y_islands, y_out])
     p_true_all = np.concatenate([p_true_stable, p_true_islands, p_true_out])
+
     island_id = np.concatenate([
         np.full(n_stable, -1, dtype=int),
         island_id_islands,
-        np.full(n_out, 99, dtype=int),
+        np.full(len(X_out), 99, dtype=int),
     ])
+
     island_mask = (island_id >= 0) & (island_id <= 2)
     outlier_mask = (island_id == 99)
     stable_mask = (island_id == -1)
 
     if shuffle:
-        perm = rng.permutation(n_samples)
+        perm = rng.permutation(len(X_all))
         X_all = X_all[perm]
         y_all = y_all[perm]
         p_true_all = p_true_all[perm]
@@ -288,10 +356,12 @@ def make_synth_three_islands_plus_outliers(
         island_mask = island_mask[perm]
         outlier_mask = outlier_mask[perm]
         stable_mask = stable_mask[perm]
+        outlier_type = outlier_type[perm]
 
     X = pd.DataFrame(X_all, columns=["x1", "x2"])
     y = pd.Series(y_all, name="target")
     feature_info = {"numeric": ["x1", "x2"], "categorical": []}
+
     gt = SyntheticGT(
         island_id=island_id,
         island_mask=island_mask,
@@ -300,5 +370,6 @@ def make_synth_three_islands_plus_outliers(
         p_true=p_true_all,
         island_centers=island_centers,
         island_radius=island_radius,
+        outlier_type=outlier_type,
     )
     return X, y, feature_info, gt

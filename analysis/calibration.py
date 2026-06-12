@@ -8,7 +8,7 @@ validation set only; applied to test predictions. Recomputes multiplicity and
 spatial metrics on calibrated P_test and compares to uncalibrated.
 """
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -16,6 +16,7 @@ import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from sklearn.isotonic import IsotonicRegression
 
+from analysis.io_utils import get_run_dirs, PathLike
 from analysis.run_analysis import (
     load_meta,
     load_P_test,
@@ -32,53 +33,28 @@ from analysis.run_analysis import (
 )
 from analysis.spatial import extract_hh_components
 from analysis.preprocessing import get_transformed_test_features
-
-PathLike = Union[str, Path]
-
-
-def _get_run_dirs(dataset_dir: PathLike) -> List[Path]:
-    """List run directories (seed=*) under dataset_dir, sorted by seed."""
-    dataset_dir = Path(dataset_dir)
-    if not dataset_dir.is_dir():
-        return []
-    run_dirs = []
-    for p in dataset_dir.iterdir():
-        if p.is_dir() and p.name.startswith("seed="):
-            try:
-                seed_val = int(p.name.split("=")[1])
-                run_dirs.append((seed_val, p))
-            except (IndexError, ValueError):
-                continue
-    run_dirs.sort(key=lambda x: x[0])
-    return [p for _, p in run_dirs]
+from analysis.stability import jaccard_index
 
 
-def _get_validation_labels(dataset_name: str, run_dir: PathLike) -> np.ndarray:
-    """Load dataset and return y for validation indices of this run."""
+def _get_split_labels(
+    dataset_name: str,
+    run_dir: PathLike,
+    split_name: str,
+) -> np.ndarray:
+    """Load dataset labels for one stored split of this run."""
     import sys
+
     root = Path(__file__).resolve().parent.parent
     if str(root) not in sys.path:
         sys.path.insert(0, str(root))
     if str(root / "src") not in sys.path:
         sys.path.insert(0, str(root / "src"))
-    from data import load_dataset  # noqa: E402
-    X, y, _ = load_dataset(dataset_name)
-    split = load_split(run_dir)
-    return np.asarray(y.iloc[split["val"]].values, dtype=np.float64)
 
-
-def _get_test_labels(dataset_name: str, run_dir: PathLike) -> np.ndarray:
-    """Load dataset and return y for test indices of this run."""
-    import sys
-    root = Path(__file__).resolve().parent.parent
-    if str(root) not in sys.path:
-        sys.path.insert(0, str(root))
-    if str(root / "src") not in sys.path:
-        sys.path.insert(0, str(root / "src"))
     from data import load_dataset  # noqa: E402
-    X, y, _ = load_dataset(dataset_name)
+
+    _, y, _ = load_dataset(dataset_name)
     split = load_split(run_dir)
-    return np.asarray(y.iloc[split["test"]].values, dtype=np.float64)
+    return np.asarray(y.iloc[split[split_name]].values, dtype=np.float64)
 
 
 def platt_scale(
@@ -153,7 +129,7 @@ def calibrate_predictions_for_run(
     idx = select_rashomon_global(run_dir, K=K_actual)
     P_val_sel = P_val[idx]   # (K, n_val)
     P_test_sel = P_test[idx]  # (K, n_test)
-    y_val = _get_validation_labels(dataset_name, run_dir)
+    y_val = _get_split_labels(dataset_name, run_dir, "val")
     n_val = len(y_val)
     n_test = P_test_sel.shape[1]
     if P_val_sel.shape[1] != n_val:
@@ -162,13 +138,6 @@ def calibrate_predictions_for_run(
     for m in range(P_val_sel.shape[0]):
         P_cal[m] = calibrate_fn(P_val_sel[m], y_val, P_test_sel[m])
     return P_test_sel, P_cal
-
-
-def _jaccard_bool(a: np.ndarray, b: np.ndarray) -> float:
-    """Jaccard similarity between two boolean arrays (same length)."""
-    inter = np.logical_and(a, b).sum()
-    union = np.logical_or(a, b).sum()
-    return inter / union if union > 0 else 1.0
 
 
 def _run_one_calibration_method(
@@ -228,9 +197,9 @@ def _run_one_calibration_method(
     _, comp_after = extract_hh_components(lisa_df_after, W, min_size=5)
     comp_sizes_after = sorted((len(inds) for inds in comp_after.values()), reverse=True) if comp_after else []
 
-    jaccard_hh = _jaccard_bool(HH_before, HH_after)
+    jaccard_hh = jaccard_index(HH_before, HH_after)
 
-    y_test = _get_test_labels(dataset_name, run_dir)
+    y_test = _get_split_labels(dataset_name, run_dir, "test")
     p_before = P_sel.mean(axis=0)
     p_after = P_cal.mean(axis=0)
     brier_before = float(np.mean((p_before - y_test) ** 2))
@@ -297,7 +266,7 @@ def run_calibration_experiment(
         dataset_name = dataset_dir.name
     if methods is None:
         methods = ["platt", "isotonic"]
-    run_dirs = _get_run_dirs(dataset_dir)
+    run_dirs = get_run_dirs(dataset_dir)
     if not run_dirs:
         return pd.DataFrame(), pd.DataFrame()
 

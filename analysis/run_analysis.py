@@ -11,7 +11,7 @@ provided by the caller (e.g. from data load + split + same preprocessing as trai
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -245,7 +245,7 @@ def make_knn_weights(
     return W
 
 
-def _fdr_benjamini_hochberg(p_values: np.ndarray, alpha: float = 0.05) -> np.ndarray:
+def fdr_benjamini_hochberg(p_values: np.ndarray, alpha: float = 0.05) -> np.ndarray:
     """Benjamini–Hochberg FDR correction. True = reject (significant)."""
     n = len(p_values)
     order = np.argsort(p_values)
@@ -315,7 +315,7 @@ def spatial_analysis(
     q = np.asarray(lm.q).flatten()
 
     # FDR correction on LISA p-values
-    sig = _fdr_benjamini_hochberg(p_sim, alpha=fdr_alpha)
+    sig = fdr_benjamini_hochberg(p_sim, alpha=fdr_alpha)
     HH_mask = (q == 1) & sig
     LL_mask = (q == 3) & sig
 
@@ -496,7 +496,7 @@ def null_experiment(
         )
         p_sim = np.asarray(lm.p_sim).flatten()
         q = np.asarray(lm.q).flatten()
-        sig = _fdr_benjamini_hochberg(p_sim, alpha=fdr_alpha)
+        sig = fdr_benjamini_hochberg(p_sim, alpha=fdr_alpha)
         null_n_hh[r] = int(np.sum((q == 1) & sig))
         null_n_ll[r] = int(np.sum((q == 3) & sig))
 

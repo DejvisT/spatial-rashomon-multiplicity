@@ -7,9 +7,11 @@ test set per run (fit on train) to obtain X_test for spatial/null.
 """
 from __future__ import annotations
 
+import grp
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+from narwhals import col
 import numpy as np
 import pandas as pd
 
@@ -30,27 +32,23 @@ from analysis.run_analysis import (  # noqa: E402
     run_spatial_per_family,
     quadrant_analysis,
 )
+from analysis.io_utils import get_run_dirs  # noqa: E402
 from analysis.preprocessing import get_transformed_test_features  # noqa: E402
 from analysis.knn_defaults import default_k_nn  # noqa: E402
 
 PathLike = Union[str, Path]
 
+def _finite_mean_std(values) -> Tuple[float, float]:
+    """Mean and sample std over finite numeric values."""
+    v = np.asarray(values, dtype=float)
+    v = v[np.isfinite(v)]
 
-def _get_run_dirs(dataset_dir: PathLike) -> List[Path]:
-    """List run directories (seed=*) under dataset_dir, sorted by seed."""
-    dataset_dir = Path(dataset_dir)
-    if not dataset_dir.is_dir():
-        return []
-    run_dirs = []
-    for p in dataset_dir.iterdir():
-        if p.is_dir() and p.name.startswith("seed="):
-            try:
-                seed_val = int(p.name.split("=")[1])
-                run_dirs.append((seed_val, p))
-            except (IndexError, ValueError):
-                continue
-    run_dirs.sort(key=lambda x: x[0])
-    return [p for _, p in run_dirs]
+    if v.size == 0:
+        return float("nan"), float("nan")
+
+    mean = float(np.nanmean(v))
+    std = float(np.nanstd(v, ddof=1)) if v.size > 1 else 0.0
+    return mean, std
 
 
 def _aggregate_quadrant_breakdown(
@@ -81,13 +79,7 @@ def _aggregate_quadrant_breakdown(
             continue
 
         def _ms(col: str) -> Tuple[float, float]:
-            v = pd.to_numeric(sub[col], errors="coerce").to_numpy(dtype=float)
-            v = v[np.isfinite(v)]
-            if v.size == 0:
-                return float("nan"), float("nan")
-            m = float(np.nanmean(v))
-            s = float(np.nanstd(v, ddof=1)) if v.size > 1 else 0.0
-            return m, s
+            return _finite_mean_std(pd.to_numeric(sub[col], errors="coerce"))
 
         cm, cs = _ms("count")
         fm, fs = _ms("fraction")
@@ -178,21 +170,13 @@ def _run_per_family_spatial_across_seeds(
     if verbose:
         print(f"  Wrote {pr_path}")
 
-    def _ms(arr: np.ndarray) -> Tuple[float, float]:
-        v = np.asarray(arr, dtype=float)
-        v = v[np.isfinite(v)]
-        if v.size == 0:
-            return float("nan"), float("nan")
-        m = float(np.nanmean(v))
-        s = float(np.nanstd(v, ddof=1)) if v.size > 1 else 0.0
-        return m, s
 
     agg_rows: List[Dict[str, Any]] = []
     for family in sorted(df_run["family"].unique()):
         grp = df_run[df_run["family"] == family]
-        mv_m, mv_s = _ms(grp["mean_variance"].values)
-        mi_m, mi_s = _ms(grp["moran_i"].values)
-        hh_m, hh_s = _ms(grp["n_hh"].astype(float).values)
+        mv_m, mv_s = _finite_mean_std(grp["mean_variance"].values)
+        mi_m, mi_s = _finite_mean_std(grp["moran_i"].values)
+        hh_m, hh_s = _finite_mean_std(grp["n_hh"].astype(float).values)
         frac_sig = float(np.mean(grp["moran_p_sim"].values < 0.05))
         agg_rows.append(
             {
@@ -347,7 +331,7 @@ def run_dataset_experiment(
     name = dataset_name if dataset_name is not None else dataset_dir.name
     k_resolved = k_nn if k_nn is not None else default_k_nn(name)
 
-    run_dirs = _get_run_dirs(dataset_dir)
+    run_dirs = get_run_dirs(dataset_dir)
     if not run_dirs:
         return pd.DataFrame(
             columns=[
@@ -562,7 +546,7 @@ def run_all_experiments(
     if datasets is not None:
         to_run = [results_dir / d for d in datasets]
     else:
-        to_run = [p for p in results_dir.iterdir() if p.is_dir() and _get_run_dirs(p)]
+        to_run = [p for p in results_dir.iterdir() if p.is_dir() and get_run_dirs(p)]
 
     if not to_run:
         return pd.DataFrame()
