@@ -8,7 +8,7 @@ validation set only; applied to test predictions. Recomputes multiplicity and
 spatial metrics on calibrated P_test and compares to uncalibrated.
 """
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Iterable, Mapping
 
 import numpy as np
 import pandas as pd
@@ -303,3 +303,93 @@ def run_calibration_experiment(
     summary_df.to_csv(dataset_dir / "calibration_summary.csv", index=False)
 
     return per_run_df, summary_df
+
+
+def compute_calibration_results(
+    results_dir: PathLike,
+    *,
+    datasets: Optional[Iterable[str]],
+    k_nn_by_dataset: Mapping[str, int],
+    K: int,
+    epsilon: float = 0.05,
+    cache_dir: Optional[PathLike] = None,
+    cache_version: str = "v1",
+    exclude_name_parts: Iterable[str] = ("synthetic", "breast_cancer"),
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """Compute calibration robustness results across datasets and optionally cache them."""
+    results_dir = Path(results_dir)
+    selected_datasets = set(datasets) if datasets is not None else None
+    exclude_name_parts = tuple(exclude_name_parts)
+
+    dataset_dirs = [
+        p for p in results_dir.iterdir()
+        if p.is_dir()
+        and get_run_dirs(p)
+        and (selected_datasets is None or p.name in selected_datasets)
+        and not any(part in p.name for part in exclude_name_parts)
+    ]
+
+    per_run_list = []
+    summary_list = []
+
+    for dataset_dir in dataset_dirs:
+        dataset_name = dataset_dir.name
+
+        per_run_d, summary_d = run_calibration_experiment(
+            dataset_dir,
+            dataset_name=dataset_name,
+            K=K,
+            k_nn=k_nn_by_dataset[dataset_name],
+            epsilon=epsilon,
+        )
+
+        per_run_list.append(per_run_d.assign(dataset=dataset_name))
+        summary_list.append(summary_d.assign(dataset=dataset_name))
+
+    per_run = pd.concat(per_run_list, ignore_index=True) if per_run_list else pd.DataFrame()
+    summary = pd.concat(summary_list, ignore_index=True) if summary_list else pd.DataFrame()
+
+    if cache_dir is not None:
+        cache_dir = Path(cache_dir)
+        cache_dir.mkdir(parents=True, exist_ok=True)
+
+        per_run.to_parquet(
+            cache_dir / f"nb07_calibration_per_run_{cache_version}.parquet",
+            index=False,
+        )
+        summary.to_parquet(
+            cache_dir / f"nb07_calibration_summary_{cache_version}.parquet",
+            index=False,
+        )
+
+    return per_run, summary
+
+
+def load_calibration_results(
+    results_dir: PathLike,
+    *,
+    datasets: Optional[Iterable[str]],
+    k_nn_by_dataset: Mapping[str, int],
+    K: int,
+    cache_dir: PathLike,
+    cache_version: str,
+    force_recompute: bool = False,
+    epsilon: float = 0.05,
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """Load cached calibration results or compute them."""
+    cache_dir = Path(cache_dir)
+    per_path = cache_dir / f"nb07_calibration_per_run_{cache_version}.parquet"
+    sum_path = cache_dir / f"nb07_calibration_summary_{cache_version}.parquet"
+
+    if not force_recompute and per_path.is_file() and sum_path.is_file():
+        return pd.read_parquet(per_path), pd.read_parquet(sum_path)
+
+    return compute_calibration_results(
+        results_dir,
+        datasets=datasets,
+        k_nn_by_dataset=k_nn_by_dataset,
+        K=K,
+        epsilon=epsilon,
+        cache_dir=cache_dir,
+        cache_version=cache_version,
+    )

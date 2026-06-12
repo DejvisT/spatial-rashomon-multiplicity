@@ -20,7 +20,7 @@ from analysis.run_analysis import (
 )
 from analysis.preprocessing import get_transformed_test_features
 from analysis.knn_defaults import K_NN_BY_DATASET
-from data import load_dataset, make_preprocessor
+from src.data import load_dataset, make_preprocessor
 
 
 def _seed_group_rates(hh_mask: np.ndarray, group_vals: np.ndarray, min_group_n: int) -> Dict[Any, float]:
@@ -240,3 +240,16 @@ def compute_excl_protected(
         except Exception as e:
             print(f"  seed={seed}: SKIP ({e})")
     return pd.DataFrame(excl_rows)
+
+
+def bootstrap_mean_ci(values, n_boot=2000, seed=42):
+    """Bootstrap CI for the mean from per-seed subgroup rates."""
+    arr = np.asarray(values, dtype=float)
+    arr = arr[~np.isnan(arr)]
+    if len(arr) == 0:
+        return np.nan, np.nan
+    if len(arr) == 1:
+        return float(arr[0]), float(arr[0])
+    rng = np.random.RandomState(seed)
+    boot = rng.choice(arr, size=(n_boot, len(arr)), replace=True).mean(axis=1)
+    return float(np.quantile(boot, 0.025)), float(np.quantile(boot, 0.975))
