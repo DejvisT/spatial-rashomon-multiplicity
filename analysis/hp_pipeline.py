@@ -161,10 +161,76 @@ def export_seed_aggregates_and_hotspot_delta(
         df_delta_agg.to_csv(td / "decomp_hp_hotspot_delta_agg.csv", index=False)
 
 
+HP_TABLE_NAMES = ("models", "metrics_long", "decomp_hp", "vm_hp")
+
+
+def hp_cache_path(cache_dir: Path, cache_version: str, name: str) -> Path:
+    return Path(cache_dir) / f"nb06_{name}_{cache_version}.parquet"
+
+
+def compute_hp_tables(
+    config: HPAnalysisConfig,
+    *,
+    cache_dir: Path,
+    cache_version: str,
+) -> Dict[str, pd.DataFrame]:
+    """Compute and cache HP analysis tables."""
+    cache_dir = Path(cache_dir)
+    cache_dir.mkdir(parents=True, exist_ok=True)
+
+    tables = collect_multiseed_hp_tables(config)
+
+    for name, df in tables.items():
+        key = name if name != "decomp_hp_wide" else "decomp_hp"
+        if key == "vm_hp_wide":
+            key = "vm_hp"
+
+        if key in HP_TABLE_NAMES:
+            df.to_parquet(
+                hp_cache_path(cache_dir, cache_version, key),
+                index=False,
+            )
+
+    return tables
+
+
+def load_hp_tables(
+    config: HPAnalysisConfig,
+    *,
+    cache_dir: Path,
+    cache_version: str,
+    force_recompute: bool = False,
+) -> Dict[str, pd.DataFrame]:
+    """Load cached HP tables or recompute them."""
+    cache_dir = Path(cache_dir)
+
+    paths = {
+        name: hp_cache_path(cache_dir, cache_version, name)
+        for name in HP_TABLE_NAMES
+    }
+
+    if not force_recompute and all(p.is_file() for p in paths.values()):
+        return {
+            "models": pd.read_parquet(paths["models"]),
+            "metrics_long": pd.read_parquet(paths["metrics_long"]),
+            "decomp_hp_wide": pd.read_parquet(paths["decomp_hp"]),
+            "vm_hp_wide": pd.read_parquet(paths["vm_hp"]),
+        }
+
+    return compute_hp_tables(
+        config,
+        cache_dir=cache_dir,
+        cache_version=cache_version,
+    )
+
+
 __all__ = [
     "HPAnalysisConfig",
     "aggregate_hp_seed_tables",
     "collect_multiseed_hp_tables",
     "export_seed_aggregates_and_hotspot_delta",
     "run_all_pools_for_dataset",
+    "compute_hp_tables",
+    "load_hp_tables",
+    "hp_cache_path",
 ]

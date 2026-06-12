@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from typing import Optional, Dict, Any
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 import numpy as np
+import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.neighbors import NearestNeighbors
 from sklearn.preprocessing import normalize
@@ -95,9 +97,8 @@ def compute_alt_graph(
     cache_version,
 ):
     """Compare Moran's I across alternative graph construction methods."""
-    from pathlib import Path
-    import pandas as pd
-    
+    results_dir = Path(results_dir)
+
     from analysis.run_analysis import (
         load_P_test,
         select_rashomon_global,

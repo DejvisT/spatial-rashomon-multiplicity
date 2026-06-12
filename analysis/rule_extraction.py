@@ -19,6 +19,11 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from scipy import sparse
+from analysis.preprocessing import get_transformed_test_features
+from analysis.knn_defaults import default_k_nn
+from analysis.spatial import extract_hh_components
+
 from sklearn.tree import DecisionTreeClassifier
 
 # Ensure project root on path
@@ -30,7 +35,71 @@ if str(_ROOT / "src") not in sys.path:
     sys.path.insert(0, str(_ROOT / "src"))
 
 from data import load_dataset  # noqa: E402
-from analysis.run_analysis import load_split  # noqa: E402
+from analysis.run_analysis import load_split, run_spatial  # noqa: E402
+
+# =====================================================================
+# Helper functions for rule extraction
+# =====================================================================
+
+def load_seed_data(run_dir: Path, dataset_name: str, K: int = 25, seed: int = 42, min_component_size: int = 20) -> dict:
+    """
+    Load all data for a seed:
+    - raw test features (for rule learning)
+    - spatial result (HH mask, W, etc.)
+    - HH components
+    
+    Returns dict with:
+        - X_raw, feature_names, HH_mask, W, components, component_ids
+    """
+    run_dir = Path(run_dir)
+    if not run_dir.is_dir():
+        raise FileNotFoundError(f"Missing results directory: {run_dir}")
+    
+    # Load raw features
+    X_raw, feature_names = get_raw_test_features(run_dir, dataset_name)
+    n_test = len(X_raw)
+    
+    # Load spatial result
+    split = load_split(run_dir)
+    X_transformed = get_transformed_test_features(run_dir, dataset_name)
+    k_nn = default_k_nn(dataset_name)
+    spatial = run_spatial(run_dir, X_transformed, K=K, k=k_nn, seed=seed)
+    
+    HH_mask = spatial["HH_mask"]
+    W = spatial.get("W")
+    
+    # Extract HH components
+    lisa_df = pd.DataFrame({"cluster": np.where(HH_mask, "HH", "NS")})
+    
+    if W is not None:
+        if not isinstance(W, sparse.csr_matrix):
+            if hasattr(W, "sparse"):
+                W = W.sparse
+            elif hasattr(W, "to_sparse"):
+                W = W.to_sparse()
+            else:
+                W = sparse.csr_matrix(W)
+        comp_id, components = extract_hh_components(lisa_df, W, min_size=5)
+    else:
+        comp_id, components = np.full(n_test, -1), {}
+    
+    # Filter to components with size >= min_component_size
+    components_kept = {
+        cid: idx for cid, idx in components.items()
+        if len(idx) >= min_component_size
+    }
+    
+    return {
+        "X_raw": X_raw,
+        "feature_names": feature_names,
+        "X_transformed": X_transformed,
+        "HH_mask": np.asarray(HH_mask, dtype=bool),
+        "W": W,
+        "comp_id": comp_id,
+        "components_all": components,
+        "components_kept": components_kept,
+        "n_test": n_test,
+    }
 
 
 # =====================================================================
@@ -306,6 +375,188 @@ def analyze_hh_global(
     }
     
     return rules_df, metadata
+
+
+def compute_global_rules_all(
+    results_dir,
+    dataset_name: str,
+    seeds,
+    K: int,
+    min_component_size: int,
+    *,
+    tree_max_depth: int,
+    min_samples_leaf_global: int,
+    seed_for_figures: int | None = None,
+) -> tuple[pd.DataFrame, dict, dict | None]:
+    """Compute global HH rules for all seeds of one dataset."""
+    results_dir = Path(results_dir)
+
+    global_rules_by_seed = []
+    metadata_by_seed = {}
+    completed = []
+    plot_bundle = None
+
+    for seed in seeds:
+        run_dir = results_dir / dataset_name / f"seed={seed}"
+
+        if not run_dir.is_dir():
+            print(f"[skip] {seed}: missing {run_dir}")
+            continue
+
+        try:
+            data = load_seed_data(
+                run_dir,
+                dataset_name,
+                K=K,
+                seed=seed,
+                min_component_size=min_component_size,
+            )
+        except Exception as e:
+            print(f"[error] {seed}: {e}")
+            continue
+
+        X_raw = data["X_raw"]
+        feature_names = data["feature_names"]
+        HH_mask = data["HH_mask"]
+
+        rules_df, metadata = analyze_hh_global(
+            X_raw,
+            HH_mask,
+            feature_names,
+            max_depth=tree_max_depth,
+            min_samples_leaf=min_samples_leaf_global,
+            seed=42,
+        )
+
+        rules_df["outer_seed"] = seed
+        global_rules_by_seed.append(rules_df)
+        metadata_by_seed[seed] = metadata
+        completed.append(seed)
+
+        if seed_for_figures is not None and seed == seed_for_figures:
+            plot_bundle = {
+                "seed": seed,
+                "X_raw": X_raw,
+                "feature_names": feature_names,
+                "HH_mask": HH_mask,
+                "W": data["W"],
+                "components_all": data["components_all"],
+                "components_kept": data["components_kept"],
+                "X_transformed": data["X_transformed"],
+            }
+
+        print(
+            f"[seed {seed}] n_test={len(X_raw)}, "
+            f"n_hh={HH_mask.sum()}, rules={len(rules_df)}"
+        )
+
+    if not completed:
+        raise RuntimeError(
+            f"No seeds completed. Check {results_dir / dataset_name} for seed=* directories."
+        )
+
+    rules_all = concat_with_seed(global_rules_by_seed, completed)
+    return rules_all, metadata_by_seed, plot_bundle
+
+
+def compute_component_rules_all(
+    results_dir,
+    dataset_name: str,
+    seeds,
+    K: int,
+    min_component_size: int,
+    *,
+    tree_max_depth: int,
+    min_samples_leaf_component: int,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Compute component-level HH rules for all seeds of one dataset."""
+    results_dir = Path(results_dir)
+
+    component_rules_by_seed = []
+    component_summary_by_seed = []
+
+    for seed in seeds:
+        run_dir = results_dir / dataset_name / f"seed={seed}"
+
+        if not run_dir.is_dir():
+            print(f"[skip] {seed}: missing {run_dir}")
+            continue
+
+        try:
+            data = load_seed_data(
+                run_dir,
+                dataset_name,
+                K=K,
+                seed=seed,
+                min_component_size=min_component_size,
+            )
+        except Exception as e:
+            print(f"[error] {seed}: {e}")
+            continue
+
+        X_raw = data["X_raw"]
+        feature_names = data["feature_names"]
+        HH_mask = data["HH_mask"]
+        components_kept = data["components_kept"]
+        n_test = data["n_test"]
+        n_hh = HH_mask.sum()
+        components_to_analyze = sorted(
+            components_kept.items(),
+            key=lambda x: len(x[1]),
+            reverse=True,
+        )
+
+        for comp_rank, (comp_id, comp_indices) in enumerate(components_to_analyze):
+            component_mask = np.zeros(n_test, dtype=bool)
+            component_mask[comp_indices] = True
+            comp_size = len(comp_indices)
+            rules_df, _metadata = analyze_component(
+                X_raw,
+                feature_names,
+                component_mask,
+                comp_size,
+                HH_mask,
+                max_depth=tree_max_depth,
+                min_samples_leaf=min_samples_leaf_component,
+                seed=42,
+            )
+            if rules_df is not None and len(rules_df) > 0:
+                rules_df = rules_df.copy()
+                rules_df["outer_seed"] = seed
+                rules_df["component_id"] = comp_id
+                rules_df["component_rank_by_size"] = comp_rank + 1
+                rules_df["component_size"] = comp_size
+                rules_df["component_share_of_hh"] = comp_size / n_hh if n_hh > 0 else 0.0
+                rules_df["n_hh_total"] = n_hh
+                rules_df["n_test"] = n_test
+                component_rules_by_seed.append(rules_df)
+
+            component_summary_by_seed.append({
+                "outer_seed": seed,
+                "n_test": n_test,
+                "n_hh_total": n_hh,
+                "hh_rate": n_hh / n_test if n_test > 0 else 0.0,
+                "n_components_all": len(data["components_all"]),
+                "n_components_kept": len(components_kept),
+                "min_component_size": min_component_size,
+                "component_id": comp_id,
+                "component_rank_by_size": comp_rank + 1,
+                "component_size": comp_size,
+                "component_share_of_hh": comp_size / n_hh if n_hh > 0 else 0.0,
+            })
+
+        print(
+            f"[seed {seed}] {len(components_kept)} components kept "
+            f"(of {len(data['components_all'])} total)"
+        )
+
+    rules = (
+        pd.concat(component_rules_by_seed, ignore_index=True)
+        if component_rules_by_seed
+        else pd.DataFrame()
+    )
+    summary = pd.DataFrame(component_summary_by_seed)
+    return rules, summary
 
 
 # =====================================================================

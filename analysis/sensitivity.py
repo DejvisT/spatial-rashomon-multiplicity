@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import List, Dict, Any, Sequence
-from typing import Iterable, Mapping, Union
+from typing import Any, Dict, Iterable, List, Mapping, Sequence
 
 import numpy as np
 import pandas as pd
