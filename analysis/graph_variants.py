@@ -84,3 +84,63 @@ def spatial_with_custom_W(
         "n_hh": int(hh_mask.sum()),
         "HH_mask": hh_mask,
     }
+
+
+def compute_alt_graph(
+    results_dir,
+    datasets,
+    seeds,
+    K,
+    cache_dir,
+    cache_version,
+):
+    """Compare Moran's I across alternative graph construction methods."""
+    from pathlib import Path
+    import pandas as pd
+    
+    from analysis.run_analysis import (
+        load_P_test,
+        select_rashomon_global,
+        pointwise_variance,
+        spatial_analysis,
+    )
+    from analysis.preprocessing import get_transformed_test_features
+    from analysis.knn_defaults import K_NN_BY_DATASET
+    
+    alt_rows = []
+    for dataset in datasets:
+        for seed in seeds:
+            run_dir = results_dir / dataset / f"seed={seed}"
+            try:
+                P_test = load_P_test(run_dir)
+                idx = select_rashomon_global(run_dir, K=K)
+                P_sel = P_test[idx]
+                v = pointwise_variance(P_sel)
+                X_test = get_transformed_test_features(run_dir, dataset)
+                k_ds = K_NN_BY_DATASET[dataset]
+                sp_base = spatial_analysis(v, X_test, k=k_ds, permutations=999)
+                alt_rows.append({
+                    "dataset": dataset, "seed": seed, "method": "euclidean",
+                    "moran_i": sp_base["moran_i"],
+                    "n_hh": int(sp_base["HH_mask"].sum()),
+                })
+                W_pca = build_pca_knn_weights(X_test, n_components=5, k=k_ds)
+                sp_pca = spatial_with_custom_W(v, W_pca)
+                alt_rows.append({
+                    "dataset": dataset, "seed": seed, "method": "pca_5",
+                    "moran_i": sp_pca["moran_i"],
+                    "n_hh": sp_pca["n_hh"],
+                })
+                W_cos = build_cosine_knn_weights(X_test, k=k_ds)
+                sp_cos = spatial_with_custom_W(v, W_cos)
+                alt_rows.append({
+                    "dataset": dataset, "seed": seed, "method": "cosine",
+                    "moran_i": sp_cos["moran_i"],
+                    "n_hh": sp_cos["n_hh"],
+                })
+                if seed == 0:
+                    print(f"  {dataset} seed={seed}: euc={sp_base['moran_i']:.3f}, "
+                          f"pca={sp_pca['moran_i']:.3f}, cos={sp_cos['moran_i']:.3f}")
+            except Exception as e:
+                print(f"  {dataset} seed={seed}: SKIP ({e})")
+    return pd.DataFrame(alt_rows)
