@@ -2,7 +2,10 @@ This chapter interprets the empirical results beyond metric reporting, connects 
 
 \subsection{From Global Multiplicity to Local Risk}
 
-The central empirical message of this thesis is that predictive multiplicity is \emph{localized}: it is not spread uniformly across the population, but concentrates in identifiable regions of feature space. Global disagreement metrics such as ambiguity, discrepancy, or disagreement rate remain useful because they quantify \emph{how much} disagreement exists overall. However, by construction, they do not reveal \emph{where} disagreement occurs or \emph{which} individuals are most exposed to it. By combining observation-wise predictive variance with Moran's $I$ and LISA, this thesis shows that disagreement is often organized into contiguous HH (High--High) regions---multiplicity hotspots---rather than being randomly scattered.
+The central empirical message of this thesis is that predictive multiplicity is \emph{localized}: it is not spread uniformly across the population, but concentrates in identifiable regions of feature space. Global disagreement metrics such as ambiguity, discrepancy, or disagreement rate remain useful because they quantify \emph{how much} disagreement exists overall. However, by construction, they do not reveal \emph{where} disagreement occurs or \emph{which} individuals are most exposed to it. By combining observation-wise predictive variance with Moran's $I$ and LISA, this thesis
+shows that disagreement is often organized into contiguous HH (High--High)
+regions---multiplicity hotspots---rather than appearing as a purely diffuse
+observation-level quantity.
 
 This changes the practical interpretation of predictive reliability. Under a single deployed model, two individuals may receive similarly confident predicted probabilities, yet their predictions need not be equally reliable. One individual may lie in a stable region where near-optimal models agree closely, while the other may lie in a hotspot where equally accurate models disagree substantially. In that case, the second prediction is operationally less reliable even when its reported score appears equally confident. The key point is therefore not only \emph{how uncertain} a prediction is, but also \emph{how sensitive it is to the choice among near-optimal models}.
 
@@ -23,7 +26,7 @@ substantially on individual observations even when they have similar validation
 performance.
 
 \paragraph{RQ2: Does disagreement form local regions in feature space?}
-Predictive variance is not randomly distributed over the test set. Across all three
+Predictive variance is spatially structured with respect to the feature-space graph. Across all three
 datasets, variance-based Moran's $I$ is positive and significant under the
 prediction-permutation null in nearly all runs. The spatial structure is strongest on
 COMPAS, where high-variance observations form clearer localized HH regions. Adult
@@ -65,7 +68,9 @@ affected regions.
 
 \subsection{Practical Implications}
 
-The results suggest a deployment workflow that differs from standard ``single best model'' practice:
+In applications where retaining multiple near-optimal models is feasible, the results
+suggest a prospective reliability-screening workflow that differs from standard
+``single best model'' practice:
 \begin{enumerate}
     \item train and retain a near-optimal set of models rather than only one selected winner;
     \item compute pointwise multiplicity metrics and hotspot maps on held-out data;
@@ -76,11 +81,18 @@ The practical contribution is therefore not merely another descriptive metric, b
 
 A useful way to interpret the proposed workflow is as a \emph{reliability screening mechanism}. Predictions in stable regions may proceed through the standard pipeline. Predictions in localized hotspots should be interpreted more cautiously because the selected model represents only one of several equally accurate alternatives that may not agree on the same observation. The precise intervention will depend on the application domain, but the general principle is clear: multiplicity hotspots identify cases where model choice itself becomes decision-relevant.
 
+This workflow should be understood as a prospective implication of the empirical findings,
+not as a deployment policy evaluated in this thesis. In practice, hotspot maps would need
+to be recomputed and validated when the data distribution, candidate model pool, or
+preprocessing pipeline changes. This is especially important under distribution shift,
+where regions that were stable on historical test data may no longer remain stable in
+future data.
+
 \subsection{Methodological Reflection}
 
 An auxiliary diagnostic in Appendix~\ref{app:boundary-proximity} compares predictive
 variance with distance to the ensemble decision boundary. The results suggest that
-boundary proximity explains part of the multiplicity pattern on Adult and German Credit,
+boundary proximity is associated with part of the multiplicity pattern on Adult and German Credit,
 but not on COMPAS. This supports the broader point that spatial multiplicity need not be
 identical to ordinary classification ambiguity.
 

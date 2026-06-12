@@ -3,8 +3,8 @@ of predictive multiplicity and its spatial structure (Section~\ref{sec:results-m
 test the significance of the observed clustering against a permutation null and examine
 the stability of hotspot regions. We next assess robustness to analytical choices, including
 the Rashomon set size $K$, neighborhood size $k$, calibration, and graph construction.
-After that, we analyze model-family and hyperparameter drivers of multiplicity
-(Section~\ref{sec:results-hp}). The chapter concludes with synthetic validation and
+After that, we examine how model family and grouped hyperparameter values are
+associated with multiplicity (Section~\ref{sec:results-hp}). The chapter concludes with synthetic validation and
 interpretable rule extraction. Unless stated otherwise, all analyses use the global Rashomon
 approximation (top-$K$ with $K=25$) and the default spatial parameters defined in
 Chapter~3.
@@ -162,22 +162,29 @@ Taken together, the stability analysis shows that exact HH labels vary across se
 \subsection{Robustness to Analytical Choices}
 \label{sec:results-robustness}
 
-We next assess whether the main spatial conclusions depend on several key analytical choices: the Rashomon set size $K$, the neighborhood size $k$ used in the feature-space graph, post-hoc probability calibration, and the precise graph construction itself. Across all four checks, the absolute magnitude of disagreement and the extent of detected hotspot regions can change, but the central conclusion remains stable: predictive multiplicity retains non-random spatial structure under a wide range of reasonable specifications.
+We next assess whether the main spatial conclusions depend on several key analytical choices: the Rashomon set size $K$, the neighborhood size $k$ used in the feature-space graph, post-hoc probability calibration, and the precise graph construction itself. Across all four checks, the absolute magnitude of disagreement and the extent of detected hotspot
+regions can change, but the central conclusion remains stable: predictive multiplicity continues to show positive spatial clustering under a wide range of reasonable specifications.
 
 \subsubsection{Sensitivity to Rashomon Set Size $K$}
 \label{sec:results-sensitivity-K}
 
-We first vary the Rashomon set size over $K \in \{5, 10, 15, 20, 25, 30, 35, 40, 45, 50\}$ using global top-$K$ selection. Figure~\ref{fig:sensitivity_K} shows the resulting sensitivity curves for COMPAS; the corresponding plots for German Credit and Adult follow the same qualitative pattern.
+We first vary the Rashomon set size over $K \in \{5, 10, 15, 20, 25, 30, 35, 40, 45, 50\}$ using global top-$K$ selection. Figure~\ref{fig:sensitivity_K} shows the resulting sensitivity curves for COMPAS; the
+corresponding plots for German Credit and Adult are reported in
+Appendix~\ref{app:additional-sensitivity}.
 
 As expected, the overall magnitude of disagreement increases with $K$. Mean predictive
 variance rises as additional near-optimal models are included. In contrast, the spatial
-organization of disagreement is more stable. On COMPAS, Moran's $I$ stabilizes once
-$K$ reaches roughly $20$--$25$, remaining in a narrow range thereafter, and the number
-of HH hotspots changes only modestly. German Credit and Adult show the same
-qualitative behavior: predictive variance grows as the Rashomon set widens, but the
-spatial pattern changes less than the raw scale of disagreement.
+organization of disagreement changes less strongly. On COMPAS, Moran's $I$ varies most
+at small $K$ and then remains in a comparatively narrow range once $K$ reaches roughly
+$20$--$25$; the number of HH hotspots also changes less than the mean variance. German Credit and Adult show broadly similar aggregate behavior: predictive variance
+grows as the Rashomon set widens, while the spatial pattern changes less than the raw
+scale of disagreement. For German Credit, hotspot-count comparisons remain less stable
+because the number of HH observations is very small.
 
-The main implication is that larger Rashomon sets primarily add \emph{more} disagreement, not a fundamentally different \emph{structure} of disagreement. This supports the use of $K=25$ as a default: it is large enough to capture the relevant spatial organization of predictive multiplicity without substantially inflating the model set beyond the point where the qualitative conclusions have already stabilized.
+The main implication is that larger Rashomon sets primarily add \emph{more} disagreement, not a fundamentally different \emph{structure} of disagreement. This supports the use of $K=25$ as a pragmatic default: it is large enough to capture the
+main observed spatial organization of predictive multiplicity, while avoiding a much larger
+model set for which the qualitative pattern changes only modestly in the sensitivity
+analysis.
 
 \begin{figure}[htbp]
 \centering
@@ -191,7 +198,9 @@ Panels show mean predictive variance, Moran's $I$, and variance-based HH count.}
 \label{sec:results-sensitivity-kNN}
 
 We next vary the neighborhood size $k$ used in the feature-space graph and recompute the
-variance-based spatial metrics.Figure~\ref{fig:sensitivity_kNN} shows the resulting curves for COMPAS; the same qualitative behavior is observed on German Credit and Adult.
+variance-based spatial metrics. Figure~\ref{fig:sensitivity_kNN} shows the resulting curves for COMPAS; the
+corresponding curves for German Credit and Adult are reported in
+Appendix~\ref{app:additional-sensitivity}.
 
 Mean predictive variance is invariant to $k$, since it is defined before the graph is
 constructed. By contrast, Moran's $I$ decreases as $k$ grows, reflecting the smoothing
@@ -252,7 +261,10 @@ probability scores, although exact hotspot membership remains calibration-sensit
     \includegraphics[width=1\textwidth]{calibration_delta_metrics_german.pdf}
     \hfill
     \includegraphics[width=1\textwidth]{calibration_delta_metrics_adult.pdf}
-    \caption{Calibration robustness across runs. From top to bottom: COMPAS, German Credit, and Adult. For each dataset, the panels show the change after calibration in mean variance, Moran's $I$, and HH count, together with the Jaccard overlap between HH masks before and after calibration.}
+    \caption{Calibration robustness across runs. From top to bottom: COMPAS, German
+Credit, and Adult. For each dataset, panels show the distribution of run-level changes
+after calibration in mean variance, Moran's $I$, and HH count, together with the Jaccard
+overlap between HH masks before and after calibration.}
     \label{fig:calibration_delta_metrics}
 \end{figure}
 
@@ -270,8 +282,10 @@ Finally, we test whether the spatial results depend strongly on the feature-spac
 \end{table}
 
 
-The resulting Moran's $I$ values remain positive across the tested graph constructions,
-although the extent of detected HH regions changes with the graph definition. The
+The resulting Moran's $I$ values remain positive for all tested constructions on COMPAS
+and Adult, while German Credit shows a weaker and more construction-dependent signal,
+notably under the PCA-reduced graph. The extent of detected HH regions also changes
+with the graph definition. The
 PCA-reduced graph provides a compressed representation of the preprocessed feature
 space, while the cosine-distance graph changes the notion of local similarity directly.
 Differences across these alternatives therefore indicate that exact HH counts and hotspot
@@ -285,10 +299,11 @@ HH observations, and Adult shows broader but more diffuse hotspot regions.
 
 Taken together, the robustness checks show a consistent pattern. Analytical choices can
 affect the \emph{magnitude} of disagreement, the size of detected hotspot regions, and the
-exact HH assignments, but they do not remove the positive spatial clustering signal. The
-qualitative finding that predictive multiplicity is spatially structured is therefore robust
-to reasonable variations in Rashomon set size, neighborhood size, calibration, and graph
-construction.
+exact HH assignments, but they do not remove the positive spatial clustering signal. The qualitative finding that predictive multiplicity shows positive spatial clustering
+therefore persists across the tested variations in Rashomon set size, neighborhood size,
+calibration, and graph construction. The magnitude of this signal and the resulting HH
+regions remain dataset-dependent, with German Credit showing the weakest and least
+stable hotspot structure.
 
 
 %% ---------------------------------------------------------------------------
@@ -346,7 +361,7 @@ classified as HH.}
 \includegraphics[width=0.92\textwidth]{family_vs_global_spatial_german.pdf}\\[0.55em]
 {\small\textbf{(c)} Adult}\\[-0.2em]
 \includegraphics[width=0.92\textwidth]{family_vs_global_spatial_adult.pdf}
-\caption{Per-family vs.\ global Rashomon sets (mean $\pm$ std over runs). Each row
+\caption{Per-family vs.\ global Rashomon sets (mean $\pm$ std over runs). Each panel
 shows mean HH count (left) and Moran's $I$ (right) for top-$K=25$ models within each
 family, with the global top-$K=25$ reference shown as a horizontal dashed line.}
 \label{fig:hh_by_family}
@@ -419,9 +434,10 @@ predictions are particularly sensitive to the choice among model classes.
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.85\textwidth]{family_importance_agg_rashomon.pdf}
-\caption{Family importance within the Rashomon set. Bars show the mean share of total
-predictive variance attributable to between-family differences, with the remaining share
-corresponding to within-family variation. Error bars show standard deviations over seeds.}
+\caption{Family importance within the Rashomon set. For each dataset, stacked bars
+show the mean share of total predictive variance attributable to between-family
+differences versus within-family variation for all test observations, HH observations,
+and non-HH observations. Error bars show standard deviations over seeds.}
 \label{fig:family_importance_agg}
 \end{figure}
 
@@ -670,6 +686,9 @@ The component-level analysis gives a stronger regional interpretation. Across re
 
 Table~\ref{tab:component_rules_compas} reports representative component-level rules. The strongest rules mostly involve age and prior offence count. For example, rules based on high values of \texttt{priors\_count}, sometimes combined with higher age thresholds, identify compact regions with very high lift relative to the component base rate. A purity of 1.0 means that all observations satisfying the rule belong to the corresponding component, while recall below 1.0 indicates that the rule captures only a subset of the component, typically a clean core rather than the full region.
 
+For readability, redundant conjuncts are simplified in the displayed rules; the reported
+support, purity, recall, and lift values are computed from the original tree leaves.
+
 \begin{table}[!htbp]
 \centering
 \small
@@ -680,7 +699,7 @@ Table~\ref{tab:component_rules_compas} reports representative component-level ru
 }
 \end{table}
 
-The feature-frequency results in Table~\ref{tab:component_rule_features_compas} confirm this pattern. The dominant recurring descriptors are \texttt{priors\_count} and \texttt{age}, which appear across most component rules and across several seeds. Race, sex, and charge-degree indicators occur only in a smaller number of component rules and should therefore be interpreted as component-specific rather than as global drivers of hotspot membership.
+The feature-frequency results in Table~\ref{tab:component_rule_features_compas} confirm this pattern. The dominant recurring descriptors are \texttt{priors\_count} and \texttt{age}, which appear across most component rules and across several seeds. Race, sex, and charge-degree indicators occur only in a smaller number of component rules and should therefore be interpreted as component-specific rather than as global descriptors of hotspot membership.
 
 \begin{table}[!htbp]
 \centering
@@ -744,13 +763,13 @@ architecture choices for MLPs. These patterns should be interpreted as descripti
 associations within the sampled Rashomon approximations rather than as causal
 hyperparameter effects.
 
-\item \textbf{Robustness to analytical choices:} The main spatial conclusions are robust to
-reasonable changes in the analysis design. Increasing Rashomon set size $K$ mainly
-increases the magnitude of disagreement, while the spatial pattern stabilizes after
-moderate values of $K$. Increasing the neighborhood size $k$ changes the smoothness
-and extent of detected regions, but does not remove positive spatial autocorrelation.
-Post-hoc calibration and alternative graph constructions likewise alter exact HH masks
-without eliminating the underlying clustering signal.
+\item \textbf{Robustness to analytical choices:} Under the tested specifications,
+predictive multiplicity continues to show positive spatial clustering, although the
+magnitude of Moran's $I$ and HH counts remain dataset- and specification-dependent.
+Increasing $K$ mainly increases disagreement magnitude; increasing $k$ changes hotspot
+extent; calibration and alternative graph constructions alter exact HH masks without
+eliminating the clustering signal. German Credit shows the weakest and least stable
+hotspot structure throughout these checks.
 
 \item \textbf{Validation on synthetic data:} On synthetic datasets with known ambiguous
 regions, the pipeline recovers the intended instability regions with high precision and
@@ -769,9 +788,9 @@ components.
 
 \end{enumerate}
 
-Overall, the findings support the central claim of this thesis: predictive multiplicity is a
-localized and structured property of the interaction between data geometry, model family,
-and hyperparameter choice. It concentrates in identifiable regions of feature space, remains
-visible under several robustness checks, and can be partially characterized by interpretable
-rules. Spatial multiplicity analysis therefore provides a useful diagnostic for identifying
-predictions that are especially sensitive to the choice among near-optimal models.
+Overall, the findings support the central claim of this thesis: predictive multiplicity
+is often localized and structured rather than uniformly diffuse. It concentrates in
+identifiable regions of feature space, remains visible under several robustness checks,
+and can be partially characterized by interpretable rules. Spatial multiplicity analysis
+therefore provides a useful descriptive diagnostic for identifying predictions that are
+especially sensitive to the choice among near-optimal models.

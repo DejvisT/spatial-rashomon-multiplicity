@@ -12,6 +12,7 @@
 \usepackage{booktabs}
 \usepackage{placeins}
 \usepackage{booktabs}
+\usepackage{url}
 
 \newcommand{\mytitle}{Variance-Based Analysis of Predictive Multiplicity in Rashomon Sets}
 \newcommand{\myname}{Dejvis Toptani}
@@ -81,7 +82,6 @@ Munich, June 29\textsuperscript{th}, 2026
       
 \vfill
 
-% TODO: missing figure file sigillum.png -- add it to presentation_assets/fig/
 \includegraphics[width = 0.4\textwidth]{sigillum.png}
 
 \vfill
@@ -101,6 +101,7 @@ Supervised by \mysupervisor
 \newpage
 
 \begin{abstract}
+    
 Modern machine learning pipelines often produce many models with near-identical
 predictive performance, yet these models can disagree substantially on individual
 predictions---a phenomenon known as predictive multiplicity. Existing approaches
@@ -195,7 +196,45 @@ for the reliability and governance of automated decision systems.
 \section{Electronic appendix}
 \label{el_app}
 
-Data, code and figures are provided in electronic form.
+The electronic appendix contains the code, generated intermediate results, tables, and
+figures used to reproduce the empirical analysis and thesis assets. The code repository is
+available at:
+
+\begin{center}
+\url{https://github.com/DejvisT/rashomon-multiplicity}
+\end{center}
+
+The main repository is organized around the following entry points:
+
+\begin{itemize}
+    \item \path{run_training_pipeline.py}: trains candidate models, ranks them by
+    validation Brier score, constructs the finite top-$K$ Rashomon approximations, and
+    saves prediction matrices and run-level summaries.
+
+    \item \path{run_training_pipeline_fixed_test.py}: repeats the training pipeline
+    with a fixed test set for the cross-seed hotspot stability analysis.
+
+    \item \path{analysis/}: contains the main analysis modules, including multiplicity
+    metrics, spatial analysis, calibration robustness, family and hyperparameter
+    decomposition, and rule extraction.
+
+    \item \path{notebooks/}: contains exploratory and analysis notebooks used during
+    development. Final thesis-facing tables and figures are exported through the script
+    listed below.
+
+    \item \path{scripts/export_thesis_assets.py}: exports the LaTeX tables and PDF
+    figures included in the thesis from the stored experiment outputs.
+
+    \item \path{overleaf_bundle/presentation_assets/}: contains the generated tables
+    and figures included by the LaTeX thesis.
+
+    \item \path{requirements.txt}: records the Python package dependencies used for the
+    experiments.
+\end{itemize}
+
+The experiments use Python with \texttt{scikit-learn} for model training and
+\texttt{libpysal}/\texttt{esda} from PySAL for graph-based spatial statistics. Random seeds
+are fixed throughout the pipeline to support reproducibility.
 
 \newpage
     

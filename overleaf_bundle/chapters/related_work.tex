@@ -39,6 +39,8 @@ class. The corresponding \emph{Rashomon set} is
 It contains all models whose loss is within a tolerance $\varepsilon$ of the best model.
 This shifts attention from a single selected model to a set of near-optimal alternatives.
 
+Empirically, this thesis approximates Rashomon sets by finite top-$K$ candidate pools ranked by validation Brier score; conclusions therefore concern this operational approximation rather than the full tolerance-defined Rashomon set.
+
 Recent Rashomon-set research has emphasized that the size and structure of
 $\mathcal{R}_\varepsilon$ can have substantial practical consequences.
 \cite{semenova_existence_2022} formalize the \emph{Rashomon ratio}, i.e., the volume of
@@ -68,7 +70,7 @@ model space itself.
 
 This thesis studies precisely that predictive facet of multiplicity: how much near-optimal
 models disagree on individual observations, where that disagreement is concentrated, and
-which modeling choices drive it.
+which modeling choices are associated with it.
 
 % -------------------------------------------------------------------
 \subsection{Metrics for Predictive Multiplicity}
@@ -147,6 +149,13 @@ possible predictions can vary substantially from one observation to another. The
 therefore motivate an observation-level view of predictive multiplicity. However, they do
 not directly analyze whether observations with high disagreement form statistically
 significant, spatially contiguous regions in feature space.
+
+Recent work by \citet{haghighat_resolving_2026} also considers local regions around
+test points, but with a different goal: their local patching and reconciliation methods aim
+to reduce disagreement among Rashomon-set models. In contrast, this thesis treats local
+structure as the object of diagnosis, testing whether predictive variance is spatially
+autocorrelated in feature space and whether high-multiplicity regions recur as graph-based
+hotspots.
 
 That question matters for interpretation. Once disagreement is shown to cluster, the
 relevant object is no longer only an unstable individual prediction, but an unstable

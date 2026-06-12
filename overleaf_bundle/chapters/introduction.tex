@@ -21,7 +21,7 @@ not only observation by observation, but also in terms of whether nearby observa
 share similar levels of instability. We therefore ask not only \emph{how much}
 near-optimal models disagree on average, but also whether this disagreement is
 concentrated in specific regions of the feature space, whether such regions are stable,
-and which modeling choices drive them. To answer these questions, we propose a
+and which modeling choices are associated with them. To answer these questions, we propose a
 framework that combines observation-wise predictive variance with tools from spatial
 statistics to detect, localize, and interpret regions of concentrated instability.
 
@@ -45,9 +45,8 @@ The same audit can also be extended beyond a single individual. If many nearby c
 feature space show similarly high prediction instability, then the problem is not an
 isolated exception but a localized region of model-dependent decisions. Such a region may
 correspond to a subpopulation for which predictions are systematically less robust. This
-raises the practical need to identify where these regions occur and to understand whether
-they are mainly driven by broad model-family choices or by hyperparameter variation
-within families.
+raises the practical need to identify where these regions occur and to understand whether they are mainly associated with broad model-family choices or with
+hyperparameter variation within families.
 
 This thesis is motivated by this audit perspective: predictive multiplicity should not only
 be measured globally, but localized, tested for spatial structure, and related back to the
@@ -70,6 +69,7 @@ different score. This thesis therefore studies predictive multiplicity at the le
 individual observations. It focuses on where unstable predictions occur in feature space,
 whether they appear as isolated cases or as local regions, and which modeling choices are
 associated with them.
+
 
 The thesis addresses the following questions:
 

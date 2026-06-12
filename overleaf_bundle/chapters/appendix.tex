@@ -70,7 +70,7 @@ feature representation after imputation, standardization, and one-hot encoding.}
 \section{Performance-Control Meta-Model Diagnostic}
 \label{app:meta-model-diagnostic}
 
-As an auxiliary diagnostic, we examine whether the hyperparameter effects reported in
+As an auxiliary diagnostic, we examine whether the hyperparameter associations reported in
 Section~\ref{sec:results-hp} mainly reflect differences in validation performance. For
 each dataset--family combination, we fit a model-level meta-model predicting the
 disagreement contribution $V_m$ from grouped hyperparameters and validation Brier
@@ -82,8 +82,7 @@ by performance differences.
 Table~\ref{tab:app-hp-meta-pool-summary} compares the Rashomon set with the full
 candidate pool. In the full pool, validation Brier score is the strongest predictor in 11 of
 15 dataset--family combinations, with an average importance of $0.596$. This indicates
-that, when all trained candidates are included, validation performance differences explain
-a large share of model-level disagreement. Within the Rashomon set, this effect is
+that, when all trained candidates are included, validation performance differences account for a large share of model-level disagreement. Within the Rashomon set, this effect is
 weaker: validation Brier score is rank 1 in 7 of 15 combinations, and its mean importance
 decreases to $0.290$. At the same time, the strongest non-performance hyperparameter has
 a higher mean importance in the Rashomon set ($0.498$) than in the full pool ($0.285$).
@@ -175,6 +174,39 @@ plus one additional outlier-driven hotspot component.
     \caption{FDR sensitivity analysis for the three-islands design. HH count and Jaccard
     overlap are shown as a function of the LISA false-discovery-rate threshold $\alpha$.}
     \label{fig:app-synthetic-fdr-three}
+\end{figure}
+
+
+\section{Additional Sensitivity Curves}
+\label{app:additional-sensitivity}
+
+The main text reports the sensitivity curves for COMPAS, which is used as the running
+example for the detailed robustness analysis. For completeness, Figures~\ref{fig:app-k-sensitivity-other}
+and~\ref{fig:app-knn-sensitivity-other} show the corresponding variance-based sensitivity
+curves for German Credit and Adult.
+
+\begin{figure}[htbp]
+    \centering
+    {\small\textbf{(a)} German Credit}\\[-0.2em]
+    \includegraphics[width=0.82\textwidth]{sensitivity_K_variance_german.pdf}\\[0.6em]
+    {\small\textbf{(b)} Adult}\\[-0.2em]
+    \includegraphics[width=0.82\textwidth]{sensitivity_K_variance_adult.pdf}
+    \caption{Sensitivity to Rashomon set size $K$ for German Credit and Adult
+    (mean $\pm$ standard deviation over runs). Panels show mean predictive variance,
+    Moran's $I$, and variance-based HH count.}
+    \label{fig:app-k-sensitivity-other}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    {\small\textbf{(a)} German Credit}\\[-0.2em]
+    \includegraphics[width=0.55\textwidth]{sensitivity_kNN_variance_german.pdf}\\[0.6em]
+    {\small\textbf{(b)} Adult}\\[-0.2em]
+    \includegraphics[width=0.55\textwidth]{sensitivity_kNN_variance_adult.pdf}
+    \caption{Sensitivity to kNN neighborhood size $k$ for German Credit and Adult
+    (mean $\pm$ standard deviation over runs). Panels show Moran's $I$ and
+    variance-based HH count.}
+    \label{fig:app-knn-sensitivity-other}
 \end{figure}
 
 

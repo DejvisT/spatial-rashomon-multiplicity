@@ -13,9 +13,10 @@ spatial concentration, and Adult shows broader but more diffuse instability regi
 The synthetic experiments further show that the proposed pipeline can recover known
 ambiguous regions under controlled conditions.
 
-The analysis also shows that predictive multiplicity is connected to concrete modeling
-choices. Model family explains a substantial share of prediction variance, especially in
-some hotspot regions, while within-family hyperparameters add further structure. Simple
+The analysis also shows that predictive multiplicity is associated with concrete modeling
+choices. Model family accounts for a substantial share of observed prediction variance,
+especially in some hotspot regions, while within-family hyperparameters add further
+structure. Simple
 rule-based descriptions indicate that selected high-multiplicity regions can be described
 in terms of original input features, although exact hotspot membership remains partly
 sensitive to the data split and graph construction.
@@ -25,6 +26,11 @@ Two models may have similar validation performance, and one deployed model may l
 acceptable on average, while some regions of the feature space remain highly sensitive to
 which near-optimal model is chosen. Spatial multiplicity analysis provides a way to
 identify such regions and to treat them as candidates for closer inspection.
+
+Taken together, the findings show that predictive multiplicity is most informative when
+it is analyzed both globally and locally: global metrics quantify the overall extent of
+model disagreement, while spatial hotspot analysis identifies the regions of feature space
+where model choice becomes especially consequential.
 
 \subsection{Future Work}
 

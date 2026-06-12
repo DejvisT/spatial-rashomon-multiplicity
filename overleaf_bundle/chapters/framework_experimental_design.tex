@@ -522,14 +522,13 @@ Family importance is defined as
 \mathrm{FI}(S) =
 \frac{\mathrm{Var}_{\mathrm{between}}(S)}{\mathrm{Var}_{\mathrm{total}}(S)}.
 \]
-A value close to one means that most predictive variance is explained by differences
-between model families. A lower value means that a larger share remains within families,
+A value close to one means that most observed predictive variance is attributable to
+differences between model-family mean predictions. A lower value means that a larger share remains within families,
 for example because of hyperparameter variation. Because each family contributes the
 same number of models, this decomposition gives equal weight to each model family.
 
 \paragraph{Within-family hyperparameter importance.}
-After separating the between-family component, the analysis asks which hyperparameters
-explain disagreement within a given model family. For family $g$, let $\bar{p}^{(g)}_i$ be
+After separating the between-family component, the analysis asks which grouped hyperparameter values are associated with disagreement within a given model family. For family $g$, let $\bar{p}^{(g)}_i$ be
 the mean prediction across models in $\mathcal{R}^{(g)}_K$:
 \[
 \bar{p}^{(g)}_i = \frac{1}{K}\sum_{m\in\mathcal{R}^{(g)}_K}\hat{p}^{(g)}_{mi}.
@@ -562,14 +561,14 @@ Results are aggregated over families and random seeds by mean importance, standa
 deviation, and the number of valid seeds.
 
 \paragraph{Hotspot-specific hyperparameter shifts.}
-To assess whether hyperparameter effects differ inside multiplicity hotspots, the same
+To assess whether these descriptive hyperparameter associations differ inside multiplicity hotspots, the same
 $V_m$-based importance calculation is repeated on HH observations. For each
 hyperparameter, the hotspot-specific importance is compared with its global importance:
 \[
 \Delta \rho(h) = \rho_{\mathrm{HH}}(h)-\rho_{\mathrm{all}}(h).
 \]
-Positive values indicate that the hyperparameter explains a larger share of within-family
-disagreement inside HH regions, while negative values indicate lower importance inside
+Positive values indicate that grouped values of the hyperparameter account for a larger
+share of within-family disagreement inside HH regions, while negative values indicate lower importance inside
 hotspots. Because HH subsets can be small, especially on German Credit, these estimates
 are interpreted descriptively and reported with seed coverage where relevant. An auxiliary
 performance-control meta-model diagnostic is reported in Appendix~\ref{app:meta-model-diagnostic}.
@@ -621,7 +620,7 @@ Measure where near-optimal models disagree & Predictive variance across $\mathca
 Test whether disagreement is spatially clustered & Feature-space $k$NN graph, Moran's $I$, prediction-permutation null & Sections~\ref{sec:results-metrics}--\ref{sec:results-null} \\
 Identify local high-multiplicity regions & LISA HH labels and connected HH components & Section~\ref{sec:results-spatial} \\
 Assess stability and robustness & Fixed-test-set stability, $K$ and $k$ sensitivity, calibration, alternative graphs & Sections~\ref{sec:results-spatial} and~\ref{sec:results-robustness} \\
-Attribute disagreement to modeling choices & Global vs per-family sets, family importance, within-family $V_m$ decomposition & Sections~\ref{sec:results-global-vs-family} and~\ref{sec:results-hp} \\
+Summarize associations with modeling choices & Global vs per-family sets, family importance, within-family $V_m$ decomposition & Sections~\ref{sec:results-global-vs-family} and~\ref{sec:results-hp} \\
 Validate and interpret hotspots & Synthetic ground-truth designs and shallow-tree rule extraction & Sections~\ref{sec:results-synthetic}--\ref{sec:results-rules} \\
 \bottomrule
 \end{tabular}
