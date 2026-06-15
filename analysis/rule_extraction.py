@@ -689,6 +689,19 @@ def recurring_rules_by_method_label(
     return recurring
 
 
+def _features_used_as_list(features: Any) -> List[str]:
+    """Normalize features_used from a rule row (list, ndarray, str, or missing)."""
+    if features is None:
+        return []
+    if isinstance(features, str):
+        return [f.strip() for f in features.split(",") if f.strip()]
+    if isinstance(features, np.ndarray):
+        return [str(f) for f in features.tolist() if str(f).strip()]
+    if isinstance(features, (list, tuple)):
+        return [str(f) for f in features if f is not None and str(f).strip()]
+    return []
+
+
 def rule_feature_frequency_across_seeds(
     rules_summary: pd.DataFrame,
     known_feature_names: Optional[List[str]] = None,
@@ -703,11 +716,7 @@ def rule_feature_frequency_across_seeds(
     feature_stats = {}
     
     for idx, row in rules_summary.iterrows():
-        features = row.get("features_used", [])
-        if isinstance(features, str):
-            features = [f.strip() for f in features.split(",") if f.strip()]
-        else:
-            features = list(features) if features else []
+        features = _features_used_as_list(row.get("features_used", []))
         
         purity = float(row.get("purity", 0.0))
         lift = float(row.get("lift", 0.0)) if "lift" in row else 0.0

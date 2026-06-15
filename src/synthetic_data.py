@@ -134,6 +134,7 @@ class SyntheticGT:
     p_true: np.ndarray           # true P(y=1|x)
     island_centers: List[Tuple[float, float]]
     island_radius: float
+    outlier_type: Optional[np.ndarray] = None  # -1 = not outlier, 0 = low-var, 1 = high-var
 
 
 def _sample_uniform_disk(
