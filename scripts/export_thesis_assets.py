@@ -530,7 +530,7 @@ def _pretty_family(name: str) -> str:
 
 
 def _format_delta_cell(value):
-    """
+    r"""
     Format strings like:
         'learning_rate_init (mean_delta=0.0475, n_seeds=10)'
         'max_depth (mean_delta=-0.0399, n_seeds=10)'

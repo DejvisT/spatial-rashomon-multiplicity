@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Mapping, Sequence
+from typing import Any, Dict, Iterable, List, Mapping
 
 import numpy as np
 import pandas as pd
@@ -115,57 +115,92 @@ def run_one_knn_sensitivity(run_dir: Path, dataset_name: str, K: int, k_nn: int)
     }
 
 
-def compute_knn_sensitivity(K: int, K_NN_LIST: Sequence[int], dataset_dirs: Sequence[Path]) -> pd.DataFrame:
-    """Compute sensitivity table across datasets, seeds, and k_nn values.
+def compute_knn_sensitivity(
+    results_dir: PathLike,
+    *,
+    datasets: Iterable[str],
+    k_values: Iterable[int],
+    K: int,
+) -> pd.DataFrame:
+    """Compute kNN-sensitivity results across datasets, seeds, and k values."""
+    results_dir = Path(results_dir)
+    rows: List[Dict[str, Any]] = []
 
-    Matches the output and column names used in notebooks/05_sensitivity_kNN.ipynb.
-    """
-    results_knn: List[Dict[str, Any]] = []
-    for dataset_dir in dataset_dirs:
-        dataset_name = dataset_dir.name
-        run_dirs = [p for p in dataset_dir.iterdir() if p.is_dir() and p.name.startswith("seed=")]
-        run_dirs.sort(key=lambda p: int(p.name.split("=")[1]) if "=" in p.name else 0)
-        for k_nn_val in K_NN_LIST:
+    for dataset_name in datasets:
+        dataset_dir = results_dir / dataset_name
+        if not dataset_dir.is_dir():
+            continue
+
+        run_dirs = get_run_dirs(dataset_dir)
+        if not run_dirs:
+            continue
+
+        for k_nn_val in k_values:
             for run_dir in run_dirs:
-                res = run_one_knn_sensitivity(run_dir, dataset_name, K, k_nn_val)
-                results_knn.append({
+                res = run_one_knn_sensitivity(
+                    run_dir,
+                    dataset_name,
+                    K,
+                    int(k_nn_val),
+                )
+                rows.append({
                     "dataset": dataset_name,
                     "seed": run_dir.name,
                     "k_nn": int(k_nn_val),
                     **res,
                 })
-    return pd.DataFrame(results_knn)
+
+    return pd.DataFrame(rows)
 
 
-def run_one_knn_masks(run_dir: Path, X_test: np.ndarray, k_nn: int) -> np.ndarray:
-    """Return boolean HH mask array for `run_dir` given precomputed `X_test` and `k_nn`.
-
-    Matches the notebook's `run_one_knn_masks` signature.
-    """
+def run_one_knn_masks(
+    run_dir: PathLike,
+    X_test: np.ndarray,
+    K: int,
+    k_nn: int,
+) -> np.ndarray:
+    """Return boolean HH mask for one run and one kNN value."""
+    run_dir = Path(run_dir)
     n_cand = len(load_meta(run_dir))
-    # Use module-level override if set by compute_knn_hh_overlay, otherwise default to 25
-    K_val = globals().get("_HH_OVERLAY_K", 25)
-    K_actual = min(K_val, n_cand)
+    K_actual = min(K, n_cand)
+
     spatial = run_spatial(run_dir, X_test, K=K_actual, k=k_nn)
-    hh_mask = np.asarray(spatial["HH_mask"], dtype=bool)
-    return hh_mask
+    return np.asarray(spatial["HH_mask"], dtype=bool)
 
 
-def compute_knn_hh_overlay(K: int, K_NN_LIST: Sequence[int], dataset_dirs: Sequence[Path]) -> pd.DataFrame:
-    """Compute HH-overlay table across datasets, seeds, and k_nn values.
+def compute_knn_hh_overlay(
+    results_dir: PathLike,
+    *,
+    datasets: Iterable[str],
+    k_values: Iterable[int],
+    K: int,
+) -> pd.DataFrame:
+    """Compute HH-overlay table across datasets, seeds, and kNN values.
 
     Returns DataFrame with columns: dataset, seed, k_nn, point_idx, is_hh.
     """
-    # expose K to run_one_knn_masks via module-level variable so the simple
-    # run_one_knn_masks signature matches the notebook's expectations
-    globals()["_HH_OVERLAY_K"] = K
+    results_dir = Path(results_dir)
     rows: List[Dict[str, Any]] = []
-    for dataset_dir in dataset_dirs:
-        dataset_name = dataset_dir.name
-        for k_nn_val in K_NN_LIST:
-            for run_dir in get_run_dirs(dataset_dir):
+
+    for dataset_name in datasets:
+        dataset_dir = results_dir / dataset_name
+        if not dataset_dir.is_dir():
+            continue
+
+        run_dirs = get_run_dirs(dataset_dir)
+        if not run_dirs:
+            continue
+
+        for k_nn_val in k_values:
+            for run_dir in run_dirs:
                 X_test = get_transformed_test_features(run_dir, dataset_name)
-                hh_mask = run_one_knn_masks(run_dir, X_test, k_nn_val)
+                hh_mask = run_one_knn_masks(
+                    run_dir,
+                    X_test,
+                    K=K,
+                    k_nn=int(k_nn_val),
+                )
+
                 for point_idx, is_hh in enumerate(hh_mask):
                     rows.append({
                         "dataset": dataset_name,
@@ -174,7 +209,5 @@ def compute_knn_hh_overlay(K: int, K_NN_LIST: Sequence[int], dataset_dirs: Seque
                         "point_idx": int(point_idx),
                         "is_hh": bool(is_hh),
                     })
-    # cleanup module-level override
-    if "_HH_OVERLAY_K" in globals():
-        del globals()["_HH_OVERLAY_K"]
+
     return pd.DataFrame(rows)

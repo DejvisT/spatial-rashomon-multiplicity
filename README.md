@@ -130,7 +130,7 @@ This is optional. The main thesis outputs are generated through the notebooks.
 Run the notebooks in numeric order:
 
 ```text
-01_primary_experiment.ipynb
+01_main_multiplicity_summary.ipynb
 02_null_experiment.ipynb
 03_spatial_patterns.ipynb
 04_sensitivity_K.ipynb
@@ -158,7 +158,7 @@ This ensures that the Notebook 03 outputs are regenerated for all datasets, incl
 Command-line execution is possible with:
 
 ```bash
-jupyter nbconvert --to notebook --execute notebooks/01_primary_experiment.ipynb --inplace --ExecutePreprocessor.timeout=-1
+jupyter nbconvert --to notebook --execute notebooks/01_main_multiplicity_summary.ipynb --inplace --ExecutePreprocessor.timeout=-1
 jupyter nbconvert --to notebook --execute notebooks/02_null_experiment.ipynb --inplace --ExecutePreprocessor.timeout=-1
 jupyter nbconvert --to notebook --execute notebooks/03_spatial_patterns.ipynb --inplace --ExecutePreprocessor.timeout=-1
 jupyter nbconvert --to notebook --execute notebooks/04_sensitivity_K.ipynb --inplace --ExecutePreprocessor.timeout=-1
@@ -227,7 +227,7 @@ The repository intentionally does not need to keep every intermediate diagnostic
 
 | # | Notebook | Purpose |
 |---|---|---|
-| 01 | `01_primary_experiment.ipynb` | Main Rashomon selection, multiplicity metrics, spatial metrics, and summary tables |
+| 01 | `01_main_multiplicity_summary.ipynb` | Default multiplicity and spatial summary tables/figures (aggregates saved training artifacts; no model training) |
 | 02 | `02_null_experiment.ipynb` | Prediction-matrix permutation null for Moran's I and HH counts |
 | 03 | `03_spatial_patterns.ipynb` | HH hotspot stability, Jaccard overlap, connected components, and PCA visualizations; run once per dataset |
 | 04 | `04_sensitivity_K.ipynb` | Sensitivity to Rashomon set size `K` |
