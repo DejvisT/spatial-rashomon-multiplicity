@@ -1,9 +1,10 @@
 This chapter presents the main empirical results. We begin with a cross-dataset overview
 of predictive multiplicity and its spatial structure (Section~\ref{sec:results-metrics}), then
 test the significance of the observed clustering against a permutation null and examine
-the stability of hotspot regions. We next assess robustness to analytical choices, including
-the Rashomon set size $K$, neighborhood size $k$, calibration, and graph construction.
-After that, we examine how model family and grouped hyperparameter values are
+the stability of hotspot regions. We next assess robustness to analytical choices, including the Rashomon set size $K$,
+neighborhood size $k$, calibration, and graph construction. We then examine whether
+variance-based hotspots can be explained by proximity to the ensemble decision boundary.
+After that, we analyze how model family and grouped hyperparameter values are
 associated with multiplicity (Section~\ref{sec:results-hp}). The chapter concludes with synthetic validation and
 interpretable rule extraction. Unless stated otherwise, all analyses use the global Rashomon
 approximation (top-$K$ with $K=25$) and the default spatial parameters defined in
@@ -72,7 +73,10 @@ Table~\ref{tab:null_significance} summarizes the results for predictive variance
 COMPAS and Adult exhibit significant variance-based Moran's $I$ in all runs, while
 German Credit is significant in 9 out of 10 runs. For COMPAS and Adult, the empirical
 permutation $p$-value reaches the minimum possible value under $R=100$ permutations in
-every run, namely $p = 1/(R+1) = 1/101 \approx 0.0099$. German Credit shows the same
+every run, namely $p = 1/(R+1) = 1/101 \approx 0.0099$. This should not be interpreted as a precise estimate of an extremely small probability,
+but as a consequence of the finite permutation resolution. Substantively, it indicates that
+after model predictions are detached from their original feature-space locations, the
+recomputed variance fields do not reproduce the observed level of spatial clustering. German Credit shows the same
 pattern in most runs, but one run does not reach the $0.05$ threshold, indicating that its
 spatial signal is weaker and less stable.
 
@@ -305,6 +309,49 @@ calibration, and graph construction. The magnitude of this signal and the result
 regions remain dataset-dependent, with German Credit showing the weakest and least
 stable hotspot structure.
 
+%% ---------------------------------------------------------------------------
+\subsection{Decision-Boundary Proximity}
+\label{sec:results-boundary-proximity}
+
+A remaining question is whether variance-based hotspots simply correspond to ordinary
+classification ambiguity near the decision boundary. If this were the case, high predictive
+variance would mainly occur for observations whose mean predicted probability across
+the Rashomon set is close to $0.5$. To test this, we compute the margin
+\[
+m_i = |\bar{p}_i - 0.5|,
+\]
+where $\bar{p}_i$ is the mean predicted probability across the selected Rashomon models.
+Lower values of $m_i$ indicate observations closer to the ensemble decision boundary.
+
+Table~\ref{tab:variance-margin-main} summarizes the relationship between predictive
+variance and margin. Adult and German Credit show the expected boundary-proximity
+pattern: predictive variance is negatively correlated with margin, meaning that
+high-variance observations tend to lie closer to the decision boundary. This is especially
+clear in rank terms, with mean Spearman correlations of $-0.89$ on Adult and $-0.70$
+on German Credit.
+
+COMPAS behaves differently. The correlation between predictive variance and margin is
+close to zero, with mean Pearson correlation $-0.04$ and mean Spearman correlation
+$-0.07$. Moreover, HH observations on COMPAS do not have smaller average margins
+than non-HH observations. This indicates that COMPAS hotspots are not well explained
+by ordinary decision-boundary proximity. Instead, they appear to capture a more
+structural form of model disagreement: nearby observations for which near-optimal
+models disagree despite not being especially close to the classification threshold.
+
+\begin{table}[htbp]
+\centering
+\caption{Variance--margin relationship by dataset (mean $\pm$ std across runs). Margin is defined as $m_i = |\bar{p}_i - 0.5|$, so lower values indicate observations closer to the decision boundary. HH and non-HH columns report the average margin inside and outside variance-based HH hotspots.}
+\label{tab:variance-margin-main}
+\input{presentation_assets/tab/margin_summary}
+\end{table}
+
+This diagnostic refines the interpretation of the real-data hotspots. On Adult and German
+Credit, part of the spatial multiplicity signal is consistent with boundary ambiguity. On
+COMPAS, however, the clearest hotspot structure is largely decoupled from boundary
+proximity. This strengthens the central claim that the proposed framework can detect
+localized Rashomon multiplicity beyond simply rediscovering observations near the
+classification threshold. Additional Mann--Whitney tests for the HH and non-HH margin
+distributions are reported in Appendix~\ref{app:decision-boundary-proximity}.
 
 %% ---------------------------------------------------------------------------
 \subsection{Model-Family and Hyperparameter Associations}
@@ -408,6 +455,14 @@ is large in all three datasets, indicating that disagreement among near-optimal 
 strongly associated with broad model-class differences rather than only with variation
 within a fixed family.
 
+These values use the balanced per-family construction defined in Section~\ref{sec:meth-attribution},
+where each model family contributes the same number of retained models. The HH regions,
+however, are defined using the global top-$K$ variance field. The comparison between all
+observations, HH observations, and non-HH observations therefore asks whether the
+balanced family decomposition differs across regions identified by the main hotspot
+pipeline. It should not be read as a decomposition of the exact same global top-$K$ model
+set that produced the HH labels.
+
 The strongest family association appears on Adult, where the between-family share is
 about $0.71$ over all test observations and increases to about $0.79$ inside HH regions.
 COMPAS shows a lower but still substantial family contribution, increasing from about
@@ -427,9 +482,11 @@ family-level disagreement is already visible in the broader candidate pool.
 
 Taken together, these results support the interpretation that predictive multiplicity is
 partly structured by model-family choice. This association is especially pronounced in
-Adult and remains substantial on COMPAS and German Credit. Moreover, for Adult and
-COMPAS, the family contribution increases inside HH regions, suggesting that hotspot
-predictions are particularly sensitive to the choice among model classes.
+Adult and remains substantial on COMPAS and German Credit. Moreover, for Adult and COMPAS, the balanced family decomposition assigns a larger
+between-family share to observations inside HH regions than to all observations. This
+suggests that hotspot regions are especially associated with model-family differences,
+while remaining a descriptive regional comparison rather than a causal or within-set
+effect.
 
 \begin{figure}[htbp]
 \centering
@@ -541,8 +598,13 @@ Appendix~\ref{app:meta-model-diagnostic}.
 \label{sec:results-synthetic}
 
 To validate the proposed pipeline, we evaluate it on synthetic datasets with known
-ground-truth ambiguous regions. These experiments test whether LISA-based hotspot
-detection can recover regions of inherent predictive uncertainty.
+ground-truth instability regions. The experiments cover two complementary mechanisms.
+The single-island design tests the classical aleatoric ambiguity case, where the intended
+hotspot is generated by a region with $P(y=1\mid x)\approx 0.5$. The structural
+non-boundary design tests a different mechanism: localized multiplicity away from an
+ordinary decision boundary. This distinction is important because the real-data results in
+Section~\ref{sec:results-boundary-proximity} show that COMPAS hotspots are largely decoupled from
+decision-boundary proximity.
 
 \subsubsection{Single-Island Design}
 
@@ -597,58 +659,83 @@ shows that when predictive ambiguity is concentrated in one coherent region, the
 combination of pointwise variance, Moran's $I$, and LISA recovers that region accurately
 and with strong statistical support.
 
-\subsubsection{Three-Islands Design}
+\subsubsection{Structural Non-Boundary Design}
 
-The second synthetic design consists of $n=5000$ observations in a two-dimensional
-feature space $(x_1, x_2)$. It contains two stable Gaussian clusters ($n=3400$), three
-ambiguous islands ($n=1500$ in total), and an additional set of $100$ outliers. The
-outliers are constructed in two groups: low-multiplicity outliers placed in regions with
-stable class probability, and high-multiplicity outliers placed in small ambiguous regions.
-This makes it explicit which outliers should and should not be detected as hotspots.
-Figure~\ref{fig:synthetic_three_islands_setup} shows the data-generating process, while
-Figure~\ref{fig:synthetic_three_islands_variance_lisa} shows the resulting predictive
-variance and detected LISA HH hotspots.
+The structural non-boundary design complements the ambiguous-island validation by
+testing whether the pipeline can recover localized multiplicity away from the ordinary
+decision boundary. The dataset contains $n=11600$ observations in a two-dimensional
+feature space. It consists of two stable Gaussian regions ($n=6000$ in total), a dense
+ordinary boundary strip with $P(y=1\mid x)=0.5$ ($n=5000$), and two compact structural
+exception regions ($n=600$ in total). One exception is a positive island inside the
+negative side of the feature space, and the other is a negative island inside the positive
+side. These two exception regions are the expected high-multiplicity regions.
+
+The design uses a larger sample size than the other synthetic experiments because it
+combines two competing structures: a dense ordinary decision boundary and compact
+exception regions away from that boundary. The larger sample keeps the boundary strip
+sufficiently dense while retaining enough held-out observations in the compact exception
+regions for stable local hotspot detection.
+
+Figure~\ref{fig:structural-exceptions-setup} shows the data-generating structure.
+Figure~\ref{fig:structural-exceptions-variance-lisa} shows the resulting predictive
+variance and LISA HH hotspots.
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.6\textwidth]{three_islands_ground_truth.pdf}
-    \caption{Synthetic three-islands dataset. Two stable Gaussian clusters, three ambiguous
-    islands, and two types of outliers: stable low-multiplicity outliers and ambiguous
-    high-multiplicity outliers.}
-    \label{fig:synthetic_three_islands_setup}
+    \includegraphics[width=0.75\textwidth]{structural_exceptions_ground_truth.pdf}
+    \caption{Structural non-boundary synthetic dataset, with points colored by the observed
+class label $y$. The central vertical strip is an ordinary $P(y=1\mid x)=0.5$ boundary
+region. The dashed circles mark the two compact structural exception regions, which are
+placed away from the boundary and define the expected high-multiplicity regions.}
+    \label{fig:structural-exceptions-setup}
 \end{figure}
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.9\textwidth]{three_islands_pred_var_lisa.pdf}
-    \caption{Left: Predictive variance across the Rashomon set. Right: LISA HH hotspots
-    (red). The detected hotspots align with the three ambiguous islands and additionally
-    recover the designed high-multiplicity outliers, while the stable outliers are not
-    systematically selected.}
-    \label{fig:synthetic_three_islands_variance_lisa}
+    \includegraphics[width=0.95\textwidth]{structural_exceptions_pred_var_lisa.pdf}
+    \caption{Structural non-boundary design. Left: Predictive variance across the
+    Rashomon set. Right: LISA HH hotspots. The detected hotspots contain the compact structural exception regions, while also expanding
+to some nearby and boundary-adjacent points at the default FDR threshold.}
+    \label{fig:structural-exceptions-variance-lisa}
 \end{figure}
 
-Applying the standard pipeline yields $268$ HH points. The variance map shows that
-predictive multiplicity is concentrated in the three ambiguous islands and in the designed
-high-multiplicity outliers, while the stable Gaussian clusters and low-multiplicity outliers
-remain largely outside the hotspot region. This makes hotspot detections outside the main
-islands directly interpretable, since they can be compared against the known outlier
-construction.
+The observed variance field is spatially structured. Moran's $I$ is $0.1999$, and the
+prediction-permutation null yields an empirical $p$-value of $0.0099$. At the default FDR
+level $\alpha=0.05$, LISA identifies $215$ HH points and recovers all $120$ structural
+exception test points. This corresponds to precision $0.5581$, recall $1.0000$, and
+Jaccard overlap $0.5581$. Thus, the intended exception regions are fully contained in
+the HH set, although the HH mask also expands to nearby and boundary-adjacent points.
+In particular, $42$ HH points lie in the ordinary boundary strip.
 
-At the local level, recovery of the three island regions is strong. Relative to the
-ground-truth islands, which contain $294$ test observations in total, the HH mask achieves
-a precision of $0.9627$, a recall of $0.8776$, and a Jaccard overlap of $0.8487$. In
-absolute terms, $258$ of the $268$ HH points lie inside one of the three ground-truth
-islands. The remaining HH points correspond to the intentionally designed high-multiplicity
-outliers rather than arbitrary false positives. Sensitivity to the LISA false-discovery-rate
-threshold is reported in Appendix~\ref{app:synthetic-fdr}; across the tested thresholds,
-the detected HH structure remains stable.
+The decision-boundary diagnostic shows that this hotspot structure is not simply a
+boundary-proximity effect. Figure~\ref{fig:structural-exceptions-margin} compares
+pointwise predictive variance with the margin
+$m_i = |\bar{p}_i - 0.5|$. The Pearson correlation between predictive variance and
+margin is close to zero ($r=0.0182$), and the Spearman rank correlation is weak
+($\rho=0.1111$). Moreover, the structural exceptions are far from the ordinary boundary:
+their mean margin is $0.4241$, compared with $0.0292$ in the boundary strip. At the
+same time, their mean predictive variance is higher than in the boundary strip
+($0.002455$ vs.\ $0.000601$).
 
-This experiment shows that the pipeline can recover several disconnected regions of
-predictive ambiguity while also distinguishing between outliers that should and should not
-exhibit high multiplicity. The resulting hotspot structure is therefore not only accurate
-with respect to the three island regions, but also consistent with the known behavior of
-the outlier groups.
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.72\textwidth]{structural_exceptions_variance_margin.pdf}
+    \caption{Predictive variance versus distance to the ensemble decision boundary in the
+    structural non-boundary design. The structural exception points have large margins
+    and are therefore not ordinary boundary-near observations, while still exhibiting
+    elevated predictive variance.}
+    \label{fig:structural-exceptions-margin}
+\end{figure}
+
+This experiment therefore validates a different regime from the ambiguous-island design.
+The single-island experiment shows that the pipeline recovers localized instability when
+it is generated by $P(y=1\mid x)\approx 0.5$ ambiguity. The structural non-boundary
+design shows that localized multiplicity can also be recovered when the intended
+high-variance regions are away from the decision boundary. This provides a controlled
+positive-control analogue for the COMPAS result in Section~\ref{sec:results-boundary-proximity},
+without claiming that the synthetic mechanism reproduces the real COMPAS data-generating process.
+
+
 %% ---------------------------------------------------------------------------
 \subsection{Interpretable Rules for High-Multiplicity Regions}
 \label{sec:results-rules}
@@ -737,6 +824,13 @@ multiplicity, with the highest mean predictive variance ($0.0050$). Adult has we
 absolute number of HH observations, reflecting a broader and more diffuse hotspot
 structure.
 
+\item \textbf{Decision-boundary proximity differs by dataset:} Adult and German Credit
+show a boundary-proximity pattern, where high predictive variance is associated with
+smaller margins to the ensemble decision boundary. COMPAS does not show this pattern:
+variance--margin correlations are close to zero, and HH observations are not closer to the
+decision boundary than non-HH observations. This suggests that COMPAS hotspots reflect
+structural model disagreement rather than ordinary boundary ambiguity.
+
 \item \textbf{Region-level stability despite point-level instability:} Exact HH membership
 varies across runs, but the fixed-test analysis on COMPAS shows moderate rather than
 negligible pointwise overlap, with mean pairwise Jaccard similarity around $0.36$.
@@ -746,13 +840,15 @@ as a regional phenomenon with partially recurring structure, while avoiding the 
 claim that individual observations have fixed hotspot labels.
 
 
-\item \textbf{Model family is strongly associated with predictive variance:} Model family
-accounts for a substantial share of observed predictive variance, and this share increases
-inside hotspot regions on COMPAS and Adult. In the Rashomon set, family importance
-rises from about $0.41$ to $0.52$ on COMPAS and from about $0.71$ to $0.79$ on Adult
-when moving from all observations to HH regions. German Credit also shows high family
-importance, but its HH-specific estimate is less stable because very few HH points are
-detected.
+\item \textbf{Model family is strongly associated with predictive variance:}
+Using the balanced per-family construction, model family accounts for a substantial share
+of observed predictive variance, and this share is larger inside hotspot regions on COMPAS
+and Adult. Family importance rises from about 0.41 to 0.52 on COMPAS and from about
+0.71 to 0.79 on Adult when comparing all observations with HH observations. This should
+be interpreted as a descriptive regional comparison: HH labels are defined using the global
+top-$K$ variance field, while the family decomposition is evaluated using balanced
+per-family top-$K$ model sets. German Credit also shows high family importance, but its
+HH-specific estimate is less stable because very few HH points are detected.
 
 \item \textbf{Within-family hyperparameters add structured variation:} Within model
 families, disagreement is not diffuse across all hyperparameters. Variation in $V_m$ is
@@ -771,12 +867,15 @@ extent; calibration and alternative graph constructions alter exact HH masks wit
 eliminating the clustering signal. German Credit shows the weakest and least stable
 hotspot structure throughout these checks.
 
-\item \textbf{Validation on synthetic data:} On synthetic datasets with known ambiguous
-regions, the pipeline recovers the intended instability regions with high precision and
-substantial recall. In the single-island design, LISA HH detection achieves precision
-$0.97$, recall $0.80$, and Jaccard overlap $0.78$. In the three-islands design, it achieves
-precision $0.96$, recall $0.88$, and Jaccard overlap $0.85$. This supports the validity of
-the spatial pipeline under controlled ground-truth conditions.
+\item \textbf{Validation on synthetic data:} The synthetic experiments validate the
+pipeline in two complementary regimes. In the single-island design, where the intended
+hotspot is generated by $P(y=1\mid x)\approx 0.5$ ambiguity, LISA HH detection achieves
+precision $0.97$, recall $0.80$, and Jaccard overlap $0.78$. In the structural
+non-boundary design, the intended hotspots are compact exception regions away from the
+ordinary decision boundary. LISA recovers all structural-exception test points at the
+default FDR level, while the variance--margin correlations remain close to zero
+(Pearson $r=0.018$, Spearman $\rho=0.111$). This supports the validity of the spatial
+pipeline both for boundary-driven ambiguity and for localized non-boundary multiplicity.
 
 \item \textbf{Interpretability of hotspot regions:} High-multiplicity regions can be partly
 described by compact rules in the original feature space. Global HH rules show a strong

@@ -132,12 +132,51 @@ Full pool & 15 & 11 & 0.596 & 0.285 \\
 \FloatBarrier
 
 
-\section{Synthetic FDR Sensitivity}
+\section{Additional Synthetic Validation and FDR Sensitivity}
 \label{app:synthetic-fdr}
 
 To assess whether the synthetic validation results depend on the multiple-testing
 threshold used for LISA, we vary the false-discovery-rate level over
 $\alpha \in \{0.01, 0.05, 0.10, 0.20\}$.
+
+\subsection*{Additional three-islands validation}
+
+The three-islands design is reported here as an additional synthetic validation. It extends
+the single-island design from the main text to several disconnected ambiguous regions
+and a small number of outliers with known region labels.
+
+The design consists of $n=5000$ observations in a two-dimensional feature space
+$(x_1, x_2)$. It contains two stable Gaussian clusters ($n=3400$), three ambiguous
+islands ($n=1500$ in total), and an additional set of $100$ outliers. The outliers are
+constructed in two groups: low-multiplicity outliers placed in regions with stable class
+probability, and high-multiplicity outliers placed in small ambiguous regions. This makes
+it explicit which outliers should and should not be detected as hotspots.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.6\textwidth]{three_islands_ground_truth.pdf}
+    \caption{Synthetic three-islands dataset. Two stable Gaussian clusters, three ambiguous
+    islands, and two types of outliers: stable low-multiplicity outliers and ambiguous
+    high-multiplicity outliers.}
+    \label{fig:app-synthetic-three-islands-setup}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{three_islands_pred_var_lisa.pdf}
+    \caption{Three-islands design. Left: Predictive variance across the Rashomon set.
+    Right: LISA HH hotspots. The detected hotspots align with the three ambiguous
+    islands and additionally recover the designed high-multiplicity outliers, while the
+    stable outliers are not systematically selected.}
+    \label{fig:app-synthetic-three-islands-variance-lisa}
+\end{figure}
+
+Applying the standard pipeline yields $268$ HH points. Relative to the ground-truth
+islands, which contain $294$ test observations in total, the HH mask achieves precision
+$0.9627$, recall $0.8776$, and Jaccard overlap $0.8487$. In absolute terms, $258$ of the
+$268$ HH points lie inside one of the three ground-truth islands. The remaining HH
+points correspond to the intentionally designed high-multiplicity outliers rather than
+arbitrary false positives.
 
 \paragraph{Single-island design.}
 In the single-island setting, the results are stable across the tested thresholds. As
@@ -174,6 +213,25 @@ plus one additional outlier-driven hotspot component.
     \caption{FDR sensitivity analysis for the three-islands design. HH count and Jaccard
     overlap are shown as a function of the LISA false-discovery-rate threshold $\alpha$.}
     \label{fig:app-synthetic-fdr-three}
+\end{figure}
+
+\paragraph{Structural non-boundary design.}
+For the structural non-boundary design, the FDR sensitivity reveals a clear
+core-expansion pattern. At the strictest threshold $\alpha=0.01$, the HH mask is highly
+selective, with precision $0.9344$, recall $0.9500$, and Jaccard overlap $0.8906$ against
+the structural exception regions. At the default threshold $\alpha=0.05$, recall increases
+to $1.0000$, while precision decreases to $0.5581$ because the HH mask expands beyond
+the compact exception regions. This indicates that the structural exceptions form the
+high-confidence core of the detected hotspot signal, while looser thresholds include
+additional nearby or boundary-adjacent observations.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.6\textwidth]{structural_exceptions_fdr_sensitivity.pdf}
+    \caption{FDR sensitivity analysis for the structural non-boundary design. HH count
+    and Jaccard overlap are shown as a function of the LISA false-discovery-rate threshold
+    $\alpha$.}
+    \label{fig:app-structural-fdr}
 \end{figure}
 
 
@@ -313,55 +371,38 @@ analysis is treated as supplementary rather than as part of the main empirical a
 
 
 \section{Decision-Boundary Proximity}
-\label{app:boundary-proximity}
+\label{app:decision-boundary-proximity}
 
-As an auxiliary diagnostic, we test whether variance-based hotspots mainly occur near the
-ensemble decision boundary. For each test observation, we compute the margin
+This appendix provides additional detail for the decision-boundary proximity diagnostic
+summarized in Section~\ref{sec:results-boundary-proximity}. The main text reports the
+correlations between predictive variance and margin, as well as the average margin inside
+and outside HH regions (Table~\ref{tab:variance-margin-main}). Here, we add a
+distributional comparison between HH and non-HH observations using one-sided
+Mann--Whitney U tests.
+
+For each test observation, the margin is defined as
 \[
 m_i = |\bar{p}_i - 0.5|,
 \]
 where $\bar{p}_i$ is the mean predicted probability across the selected Rashomon models.
-Lower values of $m_i$ indicate observations closer to the decision boundary. We summarize
-this relationship using Pearson and Spearman correlations between pointwise predictive
-variance and margin. In addition, we compare the margin distributions of HH and non-HH
-observations using a one-sided Mann--Whitney U test.
+Lower values of $m_i$ indicate observations closer to the ensemble decision boundary.
+The one-sided test uses the alternative hypothesis that HH observations have lower
+margins than non-HH observations.
 
-Table~\ref{tab:app-margin-summary} shows a clear cross-dataset contrast. On Adult and
-German Credit, predictive variance and margin are negatively correlated, meaning that
-high-variance observations tend to lie closer to the decision boundary. This pattern is
-especially pronounced in rank terms: the mean Spearman correlation is $-0.89$ on Adult
-and $-0.70$ on German Credit. The HH comparison points in the same direction: HH
-observations have smaller average margins than non-HH observations on both datasets.
+The Mann--Whitney U tests support the same interpretation as the main
+variance--margin summary. On Adult, the alternative hypothesis that HH observations
+have lower margins than non-HH observations is significant in all runs
+(mean $p \approx 3.5 \times 10^{-22}$). On German Credit, the effect is weaker but still
+present, with significance in $57\%$ of runs. On COMPAS, the test is significant in only
+$30\%$ of runs and the mean $p$-value is $0.59$, providing no evidence that HH
+observations systematically lie closer to the decision boundary.
 
-COMPAS behaves differently. The mean Pearson correlation is $-0.04 \pm 0.09$ and the
-mean Spearman correlation is $-0.07 \pm 0.18$, both close to zero. HH observations also
-do not have smaller margins than non-HH observations; their mean margin is slightly
-larger ($0.19$ vs.\ $0.18$). Thus, COMPAS hotspots are not well explained by ordinary
-decision-boundary proximity.
-
-\begin{table}[htbp]
-\centering
-\caption{Variance--margin relationship by dataset (mean $\pm$ std across runs). Margin
-is defined as $m_i = |\bar{p}_i - 0.5|$, so lower values indicate observations closer to the
-decision boundary. HH and non-HH columns report the average margin inside and outside
-variance-based HH hotspots.}
-\label{tab:app-margin-summary}
-\input{presentation_assets/tab/margin_summary}
-\end{table}
-
-The Mann--Whitney U tests support the same interpretation. On Adult, the alternative
-hypothesis that HH observations have lower margins than non-HH observations is
-significant in all runs (mean $p \approx 3.5 \times 10^{-22}$). On German Credit, the
-effect is weaker but still present, with significance in $57\%$ of runs. On COMPAS, the
-test is significant in only $30\%$ of runs and the mean $p$-value is $0.59$, providing no
-evidence that HH observations systematically lie closer to the decision boundary.
-
-Overall, the diagnostic suggests that predictive multiplicity has different mechanisms
-across datasets. On Adult and German Credit, high-variance regions are more closely
-linked to boundary ambiguity. On COMPAS, predictive variance is largely decoupled from
-decision-boundary proximity, suggesting that its hotspot structure is driven more by
-structural disagreement among near-optimal models than by closeness to the classification
-threshold.
+Overall, the additional tests support the interpretation from
+Section~\ref{sec:results-boundary-proximity}. On Adult and German Credit,
+high-variance regions are more closely linked to boundary ambiguity. On COMPAS,
+predictive variance is largely decoupled from decision-boundary proximity, suggesting
+that its hotspot structure is driven more by structural disagreement among near-optimal
+models than by closeness to the classification threshold.
 
 \section{Fairness and Subgroup Exposure on COMPAS}
 \label{app:fairness-exposure}
@@ -377,7 +418,7 @@ African-American test points exhibit a higher mean HH rate than Caucasian and Hi
 test points. However, some groups have small sample sizes and correspondingly high
 variability, so these raw differences should be interpreted cautiously.
 
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
 \caption{COMPAS: HH rates by subgroup (mean $\pm$ std across 10 seeds). Larger groups
 are more reliable.}

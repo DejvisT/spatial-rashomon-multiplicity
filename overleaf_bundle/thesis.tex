@@ -22,6 +22,7 @@
 bindingoffset = 0mm]{geometry}
 \usepackage[utf8]{inputenc}
 \usepackage{ragged2e}
+\usepackage{float}
 \usepackage{xcolor}
 \usepackage[round, comma]{natbib}
 \usepackage{fancyhdr}
@@ -123,8 +124,8 @@ tested benchmark settings and the prediction-permutation null, predictive multip
 often spatially structured. Model family accounts for a substantial share of observed
 disagreement, with stronger hotspot-specific contributions on COMPAS and Adult. These
 patterns remain visible under changes in Rashomon set size, neighborhood definition,
-probability calibration, and graph construction. Synthetic experiments with known
-ambiguous regions validate the pipeline's ability to recover ground-truth instability.
+probability calibration, and graph construction. Synthetic experiments with known ground-truth instability regions validate the pipeline's ability
+to recover both boundary-driven ambiguous regions and localized non-boundary exception regions.
 High-multiplicity regions can additionally be characterized by compact, interpretable
 rules in the original feature space.
 

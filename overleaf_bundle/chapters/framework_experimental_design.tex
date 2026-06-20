@@ -254,6 +254,11 @@ connect observations that are similar according to the preprocessed input featur
 Throughout this thesis, ``spatial'' therefore refers to neighborhoods in feature space, not
 to geographic space.
 
+This section builds on the observation-wise predictive variance defined in
+Section~\ref{sec:meth-metrics}, the preprocessing and test-set construction described
+in Section~\ref{sec:framework-data-model-pool}, and the feature-space localization motivation introduced
+in Section~\ref{sec:spatial-review}.
+
 \paragraph{Graph construction.}
 \label{sec:method-spatial}
 For each dataset and run, the graph is constructed on the held-out test set. Euclidean
@@ -324,10 +329,10 @@ Global Moran's $I$ summarizes the overall degree of spatial clustering, but it d
 show where clustering occurs. For this reason, we also use Local Indicators of Spatial
 Association (LISA), introduced by \citet{anselin1995local}. LISA decomposes spatial
 association into observation-level statistics and identifies observations that contribute to
-local clusters.
+local clusters. Local Moran's $I$ is the specific LISA statistic used in this thesis; LISA denotes the broader class of local spatial association measures.
 
-In the PySAL implementation, the input variable is standardized before local Moran
-statistics are computed. Let
+In the PySAL implementation (Python Spatial Analysis Library; \citealp{pysal2007}),
+the input variable is standardized before local Moran statistics are computed. Let
 \[
 z_i = \frac{v_i-\bar{v}}{s_v}
 \]
@@ -343,13 +348,22 @@ z_i[W\mathbf{z}]_i,
 \]
 up to a constant scaling factor. It is large and positive when observation $i$ and its
 neighbors are on the same side of the mean, for example when both have above-average
-predictive variance.
+predictive variance. This connection to the global statistic is the defining LISA property:
+up to normalization, the sum of the local Moran statistics is proportional to global
+Moran's $I$.
 
-For each observation, a permutation test compares the observed local statistic with a
-reference distribution obtained by randomly rearranging neighboring values. This produces
-one local $p$-value per observation. Because many local tests are performed at once, the
-Benjamini--Hochberg procedure is applied to control the false discovery rate
-\citep{benjamini_hochberg_1995}. Observations that remain significant after this
+For each observation, PySAL computes a local permutation reference distribution for the
+observed Local Moran statistic. This local procedure is conditional on the focal
+observation: the value $z_i$ of the focal observation is held fixed, while the values used
+to form the local spatial lag around that observation are randomized under the null of
+local spatial randomness. The observed local Moran statistic is then compared with this
+conditional reference distribution. This yields one local pseudo-$p$-value for each
+observation.
+
+Because many local tests are performed at once, some observations may appear significant
+by chance alone. We therefore apply the Benjamini--Hochberg procedure
+\citep{benjamini_hochberg_1995} to control the false discovery rate before assigning final
+LISA labels. Observations that remain significant after this
 correction are assigned to one of four local spatial categories:
 
 \begin{itemize}
@@ -383,13 +397,17 @@ by paths in the graph. Each component is interpreted as a contiguous high-multip
 region in feature space. Very small components may be discarded to avoid treating
 isolated fragments as substantive hotspot regions.
 
-For the standard spatial-statistics computations, PySAL's value-permutation tests are used:
-global Moran's $I$ is assessed with 999 permutations, and Local Moran (LISA) also uses
-999 permutations per observation. These permutations assess spatial autocorrelation of the
-already-computed predictive-variance field on the fixed feature-space graph. For LISA, the
-resulting local $p$-values are corrected with the Benjamini--Hochberg procedure at
-$\alpha=0.05$ before assigning HH and LL labels. This PySAL value-permutation procedure
-is distinct from the prediction-matrix permutation null introduced in the next section.
+For the standard spatial-statistics computations, PySAL's value-permutation procedures
+are applied to the already-computed predictive-variance field on the fixed feature-space
+graph. Global Moran's $I$ is assessed with global value permutations: the predictive
+variance values are randomly reassigned over the graph, producing a reference
+distribution for one dataset-level statistic. Local Moran's $I$ is assessed with conditional
+local permutations: for each focal observation, the focal value is held fixed while the
+surrounding values used for the local comparison are randomized. Thus, the two PySAL
+procedures differ in scope. The global test assesses overall spatial autocorrelation,
+whereas the local test provides observation-level pseudo-$p$-values used for LISA cluster
+labels. These PySAL value-permutation procedures are distinct from the
+prediction-matrix permutation null introduced in Section~\ref{sec:meth-null}.
 
 \subsection{Permutation Null Model}
 \label{sec:meth-null}
@@ -419,6 +437,18 @@ significant when the empirical $p$-value is below 0.05. Because $R=100$, the sma
 attainable empirical $p$-value is $1/(R+1)=1/101\approx 0.0099$. Reported values of
 ``$p<0.01$'' should therefore be interpreted at this resolution limit.
 
+The prediction-matrix null has a different role from the PySAL value-permutation tests
+in Section~\ref{sec:meth-graph}. The PySAL procedures treat the predictive-variance
+vector as fixed and test whether those already-computed values are spatially organized
+on the fixed graph. The prediction-matrix null instead intervenes one step earlier: it
+destroys the alignment between each model's predictions and the feature-space locations,
+then recomputes the predictive-variance field. It therefore has power against alternatives
+in which model disagreement is systematically tied to regions of feature space. Because
+this null deliberately removes the feature-space alignment of the predictions, the
+recomputed variance field is expected to be close to spatially unstructured. This also
+explains why datasets with strong observed structure can reach the minimum attainable
+empirical $p$-value of $1/(R+1)$.
+
 \subsection{Robustness and Validation Design}
 \label{sec:framework-robustness-validation}
 
@@ -426,9 +456,11 @@ Several additional analyses test whether the observed spatial structure is robus
 methodologically stable, and recoverable under controlled conditions.
 
 \paragraph{Sensitivity to Rashomon set size.}
-The default global Rashomon approximation uses $K=25$. Sensitivity to this choice is
-examined by varying
-$K \in \{5, 10, 15, 20, 25, 30, 35, 40, 45, 50\}$ using global top-$K$ selection. For each $K$,
+The default global Rashomon approximation uses $K=25$. Sensitivity to this choice is examined by varying the Rashomon set size over
+\[
+K \in \{5, 10, 15, 20, 25, 30, 35, 40, 45, 50\}
+\]
+using global top-$K$ selection. For each $K$,
 predictive variance, Moran's $I$, and HH counts are recomputed.
 
 \paragraph{Sensitivity to neighborhood size.}
@@ -462,19 +494,25 @@ using cosine distance on $\ell_2$-normalized features. All other pipeline parame
 kept fixed, and Moran's $I$ and HH counts are compared across graph definitions.
 
 \paragraph{Synthetic validation.}
-Two synthetic data designs are used to validate whether LISA-based HH regions recover
-known ambiguous regions. The single-island design contains two well-separated stable
-Gaussian blobs and one ambiguous island, with points drawn uniformly in a disk and weak
-XOR-like conditional probability $P(y=1\mid x)=0.5\pm\delta$. The three-islands design
-contains two stable blobs, three ambiguous islands, and a small number of isolated
-outliers with known region labels. The same training pipeline is applied: a 60/20/20
-split, the same five model families, and top-$K$ selection by validation Brier score.
-Recovery of the ground-truth ambiguous regions by LISA HH classification is evaluated
-using precision, recall, and Jaccard overlap. The prediction-permutation null is used to
-verify that observed Moran's $I$ is significant.
+Three synthetic data designs are used to validate whether LISA-based HH regions recover
+known ground-truth instability regions under controlled conditions. The single-island
+design contains two well-separated stable Gaussian blobs and one ambiguous island, with
+points drawn uniformly in a disk and weak XOR-like conditional probability
+$P(y=1\mid x)=0.5\pm\delta$. This design validates the pipeline in the classical
+aleatoric or boundary-ambiguity setting. The three-islands design extends this setup to
+several disconnected ambiguous regions and a small number of outliers with known region
+labels; it is reported as an additional validation in Appendix~\ref{app:synthetic-fdr}.
+Finally, the structural non-boundary design contains a dense ordinary decision-boundary
+strip with $P(y=1\mid x)=0.5$ and two compact exception regions away from that
+boundary. This design tests whether the pipeline can recover localized multiplicity when
+the intended high-variance regions are not generated by ordinary boundary proximity.
+The same training pipeline is applied: a 60/20/20 split, the same five model families,
+and top-$K$ selection by validation Brier score. Recovery of the ground-truth regions by
+LISA HH classification is evaluated using precision, recall, and Jaccard overlap. The
+prediction-permutation null is used to verify that observed Moran's $I$ is significant.
 
 \subsection{Attribution and Interpretation Analyses}
-\label{sec:framework-attribution}
+\label{sec:meth-attribution}
 
 The attribution analyses ask which modeling choices are associated with predictive
 multiplicity and whether hotspot regions can be described in terms of original features. All
@@ -526,6 +564,20 @@ A value close to one means that most observed predictive variance is attributabl
 differences between model-family mean predictions. A lower value means that a larger share remains within families,
 for example because of hyperparameter variation. Because each family contributes the
 same number of models, this decomposition gives equal weight to each model family.
+
+This construction is intentionally balanced across families and is therefore not identical
+to the global top-$K$ Rashomon set used to compute the main predictive-variance field
+and the LISA HH labels. In the hotspot-specific family-importance analysis, HH membership
+is first defined from the global top-$K$ variance field, and the family decomposition is then
+evaluated on those same observations using the balanced per-family model sets. The
+resulting values should therefore be read as a descriptive comparison of regions, not as a
+within-set decomposition of the exact variance field that produced the HH labels.
+
+Because the balanced construction gives each family equal weight, it may emphasize
+between-family variation more strongly than an unbalanced empirical Rashomon set in
+which some families contribute many near-optimal models and others contribute few.
+This is useful for comparing families, but it should not be interpreted as the model-family
+share that would arise under every possible Rashomon-set sampling scheme.
 
 \paragraph{Within-family hyperparameter importance.}
 After separating the between-family component, the analysis asks which grouped hyperparameter values are associated with disagreement within a given model family. For family $g$, let $\bar{p}^{(g)}_i$ be

@@ -10,8 +10,13 @@ autocorrelation, and high-instability observations often form local hotspot regi
 strength and interpretation of these regions differ across datasets: COMPAS shows the
 clearest localized structure, German Credit shows high overall disagreement with weaker
 spatial concentration, and Adult shows broader but more diffuse instability regions.
+A decision-boundary diagnostic further shows that the COMPAS hotspots are largely
+decoupled from proximity to the ensemble classification threshold, indicating that the
+strongest localized structure in this dataset is not merely ordinary boundary ambiguity.
 The synthetic experiments further show that the proposed pipeline can recover known
-ambiguous regions under controlled conditions.
+instability regions under controlled conditions, both in boundary-ambiguity settings and
+in a structural non-boundary design where the intended hotspots are placed away from the
+ordinary decision boundary.
 
 The analysis also shows that predictive multiplicity is associated with concrete modeling
 choices. Model family accounts for a substantial share of observed prediction variance,
@@ -30,7 +35,10 @@ identify such regions and to treat them as candidates for closer inspection.
 Taken together, the findings show that predictive multiplicity is most informative when
 it is analyzed both globally and locally: global metrics quantify the overall extent of
 model disagreement, while spatial hotspot analysis identifies the regions of feature space
-where model choice becomes especially consequential.
+where model choice becomes especially consequential. Under the tested specifications,
+positive spatial clustering persists across robustness checks, but hotspot magnitude and
+boundaries remain dataset-dependent, with German Credit showing the weakest hotspot
+structure.
 
 \subsection{Future Work}
 

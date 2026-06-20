@@ -5,12 +5,14 @@ overleaf_bundle/presentation_assets/.
 
 Notebook PDFs are copied into presentation_assets/fig/ only if they are referenced
 by \\includegraphics in thesis.tex and overleaf_bundle/chapters/*.tex (use
---copy-all-figures for the old behaviour). Use --prune-presentation-figs to remove
+--copy-all-figures for the old behaviour). Notebook 08 Part C synthetic figures
+(structural_exceptions_*.pdf) are always copied. Use --prune-presentation-figs to remove
 PDFs in that folder that are not thesis- or export-generated.
 
 Run from repo root: python scripts/export_thesis_assets.py
 """
 from pathlib import Path
+import shutil
 import sys
 import re
 
@@ -25,6 +27,7 @@ from thesis_layout import (  # noqa: E402
     dataset_plot_color,
     display_dataset_name,
     resolve_csv,
+    thesis_figure_dir,
 )
 
 from thesis_presentation_figures import copy_notebook_figures  # noqa: E402
@@ -45,6 +48,15 @@ FIG_DIR.mkdir(parents=True, exist_ok=True)
 TAB_DIR.mkdir(parents=True, exist_ok=True)
 
 SUPPORTED_DATASETS = ("compas", "german", "adult")
+
+# Notebook 08 Part C (non-boundary exception islands); copied even if not yet in thesis.tex.
+SYNTHETIC_STRUCTURAL_EXCEPTIONS_PDFS = (
+    "structural_exceptions_ground_truth.pdf",
+    "structural_exceptions_pred_var_lisa.pdf",
+    "structural_exceptions_fdr_sensitivity.pdf",
+    "structural_exceptions_fdr_sensitivity_precision_recall.pdf",
+    "structural_exceptions_variance_margin.pdf",
+)
 
 
 def build_dataset_summary():
@@ -1434,6 +1446,24 @@ def write_dataset_characteristics_tex():
     print("Wrote", out_path)
 
 
+def copy_synthetic_structural_exceptions_figures() -> None:
+    """Copy notebook 08 Part C PDFs into presentation_assets/fig/."""
+    src_dir = thesis_figure_dir("synthetic")
+    copied = 0
+    for name in SYNTHETIC_STRUCTURAL_EXCEPTIONS_PDFS:
+        src = src_dir / name
+        if not src.is_file():
+            print(
+                f"Warning: missing synthetic figure {src} "
+                "(run notebooks/08_synthetic_multiplicity.ipynb Part C)."
+            )
+            continue
+        shutil.copy2(src, FIG_DIR / name)
+        copied += 1
+        print(f"  Copied {name}")
+    print(f"Copied {copied} synthetic structural-exceptions figure(s) to {FIG_DIR}")
+
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Export thesis assets")
@@ -1473,6 +1503,7 @@ def main():
     write_hh_moran_per_run_compas()
     write_spatial_patterns_figure()
     write_hh_by_family_figure()
+    copy_synthetic_structural_exceptions_figures()
     copy_notebook_figures(
         FIG_DIR,
         copy_all=args.copy_all_figures,

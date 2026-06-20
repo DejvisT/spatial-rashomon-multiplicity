@@ -189,11 +189,7 @@ would be much closer to zero.
 \paragraph{Local Moran statistics and LISA.}
 \label{sec:meth-lisa}
 
-Global Moran's $I$ summarizes the overall degree of spatial clustering, but it does not
-show where the clustering occurs. For this reason, we also use Local Indicators of Spatial
-Association (LISA), introduced by \citet{anselin1995local}. LISA decomposes spatial
-association into observation-level statistics and identifies which observations contribute
-to local clusters.
+Global Moran's $I$ summarizes the overall degree of spatial clustering, but it does not show where clustering occurs. For this reason, we also use local spatial association statistics. Local Indicators of Spatial Association (LISA), introduced by \citet{anselin1995lisa}, are a class of local measures whose defining property is that local statistics decompose, or are proportional to, a corresponding global measure of spatial association. In this thesis, the specific LISA statistic used is Local Moran's $I$, implemented through PySAL (Python Spatial Analysis Library; \citealp{rey2007pysal}).
 
 In the PySAL implementation, the input variable is standardized before the local Moran
 statistics are computed. In this thesis, the input variable is the vector of predictive
@@ -210,16 +206,17 @@ deviation. The spatial lag of the standardized values is
 that is, the weighted average of the standardized values among the neighbors of
 observation $i$. The local Moran statistic used by PySAL is proportional to
 \[
-z_i [W\mathbf{z}]_i,
+z_i[Wz]_i,
 \]
-up to a constant scaling factor. Therefore, its interpretation is straightforward: the
-statistic is large and positive when observation $i$ and its neighbors are on the same side
-of the mean, for example when both have above-average predictive variance.
+up to a constant scaling factor. It is large and positive when observation $i$ and its neighbors are on the same side of the mean, for example when both have above-average predictive variance. Because Local Moran's $I$ is a LISA statistic, the collection of local values connects back to the global Moran statistic: their sum is proportional to the corresponding global spatial autocorrelation measure. This is the link between the global clustering test and the local hotspot labels used below.
 
-To decide whether a local pattern is stronger than expected by chance, a permutation
-test is used for each observation. The values of the neighboring observations are randomly
-rearranged many times, and the observed local statistic is compared with the resulting
-reference distribution. This yields one local $p$-value for each observation.
+To decide whether a local pattern is stronger than expected by chance, PySAL computes
+a local permutation reference distribution for each observation. This local procedure is
+conditional on the focal observation: the value $z_i$ of the focal observation is held fixed,
+while the values used to form the local spatial lag around that observation are randomized
+under the null of local spatial randomness. The observed local Moran statistic is then
+compared with this conditional reference distribution. This yields one local pseudo-$p$-value
+for each observation.
 
 Because this produces many local tests at once, some observations may appear significant
 by chance alone. We therefore apply the Benjamini--Hochberg procedure
@@ -269,9 +266,17 @@ its connected components. A connected component is a set of HH observations that
 linked to each other through paths in the graph. Each component is therefore interpreted
 as a contiguous high-multiplicity region in feature space.
 
-Very small components may be discarded to avoid treating isolated fragments as
-substantive hotspot regions. The minimum component size used in the experiments is
-specified in Chapter~4.
+For the standard spatial-statistics computations, PySAL's value-permutation procedures
+are applied to the already-computed predictive-variance field on the fixed feature-space
+graph. Global Moran's $I$ is assessed with global value permutations: the predictive-variance
+values are randomly reassigned over the graph, producing a reference distribution for one
+dataset-level statistic. Local Moran's $I$ is assessed with conditional local permutations:
+for each focal observation, the focal value is held fixed while the surrounding values used
+for the local comparison are randomized. Thus, the two PySAL procedures differ in scope.
+The global test assesses overall spatial autocorrelation, whereas the local test provides
+observation-level pseudo-$p$-values used for LISA cluster labels. These PySAL
+value-permutation procedures are distinct from the prediction-matrix permutation null
+introduced in Section~\ref{sec:meth-null}.
 
 
 \subsection{Null Model for Significance Testing}

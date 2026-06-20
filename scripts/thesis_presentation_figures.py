@@ -67,6 +67,15 @@ def export_script_pdf_basenames() -> frozenset[str]:
         s.add(f"calibration_delta_metrics_{ds}.pdf")
         s.add(f"hh_stability_freq_{ds}.pdf")
         s.add(f"rules_support_purity_{ds}.pdf")
+    s.update(
+        {
+            "structural_exceptions_ground_truth.pdf",
+            "structural_exceptions_pred_var_lisa.pdf",
+            "structural_exceptions_fdr_sensitivity.pdf",
+            "structural_exceptions_fdr_sensitivity_precision_recall.pdf",
+            "structural_exceptions_variance_margin.pdf",
+        }
+    )
     return frozenset(s)
 
 
