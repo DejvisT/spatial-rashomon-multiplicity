@@ -3,18 +3,17 @@
 % directly motivates the thesis contribution.
 % ===================================================================
 
-Predictive multiplicity lies at the intersection of three lines of work: the study of
-Rashomon sets, the design of metrics that quantify disagreement among near-optimal
-models, and the broader question of what such disagreement implies for model selection,
-fairness, and reliability. The central observation is that a single deployed model is often
-only one choice among several similarly well-performing alternatives. Even when a
-machine-learning workflow ultimately returns one final model, other choices of model
-family, hyperparameters, or random seed may lead to models with nearly identical
-predictive performance but different outputs for the same individual. This chapter
-reviews the literature most directly connected to that observation and uses it to motivate
-the perspective taken in this thesis: predictive multiplicity should be studied not only as
-a global property of a dataset or model class, but also as a localized phenomenon in
-feature space.
+Predictive multiplicity connects three lines of work: Rashomon sets, metrics for
+disagreement among near\hyp{}optimal models, and the consequences of such disagreement
+for model selection, fairness, and reliability. The central observation is that a single
+deployed model is often only one choice among several similarly well\hyp{}performing
+alternatives. Even when a machine-learning workflow ultimately returns one final model,
+other choices of model family, hyperparameters, or random seed may lead to models with
+nearly identical predictive performance but different outputs for the same individual.
+This chapter reviews the literature most directly connected to that observation and uses
+it to motivate the perspective taken in this thesis: predictive multiplicity should be
+studied not only as a global property of a dataset or model class, but also as a localized
+phenomenon in feature space.
 
 % -------------------------------------------------------------------
 \subsection{Rashomon Sets and Predictive Multiplicity}
@@ -95,10 +94,7 @@ Closely related, \cite{hsu_rashomon_nodate} propose \emph{Rashomon Capacity}, an
 information-theoretic measure of predictive multiplicity in probabilistic classification.
 The measure is defined at the level of an individual observation and captures how much
 the possible predicted scores for that observation vary across models in the Rashomon set.
-\cite{hsu_rashomongb_2024} extend this line in the context of gradient boosting,
-introducing \emph{RashomonGB} as a practical method for inspecting multiplicity in boosted
-models and discussing score-based notions such as the \emph{Viable Prediction Range} for
-individual observations.
+\cite{hsu_rashomongb_2024} extend this line in the context of gradient boosting, introducing RashomonGB as a practical method for inspecting and mitigating predictive multiplicity in boosted models.
 
 At the per-observation level, one particularly useful hard-disagreement measure is the
 \emph{conflict ratio}, which records the fraction of models on the minority side of a
@@ -107,7 +103,7 @@ individual-level multiplicity measures are not only methodologically useful but 
 policy-relevant, because they can help operationalize per-person performance reporting
 requirements in high-stakes settings under the EU AI Act.
 
-Taken together, the literature now offers several ways to quantify multiplicity globally
+The existing literature therefore offers several ways to quantify multiplicity globally
 and per instance, in both label space and probability space. What remains much less
 developed is how to move from pointwise disagreement scores to an analysis of whether
 disagreement forms coherent \emph{regions} in feature space.

@@ -12,7 +12,10 @@
 \usepackage{booktabs}
 \usepackage{placeins}
 \usepackage{booktabs}
+\usepackage{hyphenat}
 \usepackage{url}
+\usepackage{array}
+\usepackage{ragged2e}
 
 \newcommand{\mytitle}{Variance-Based Analysis of Predictive Multiplicity in Rashomon Sets}
 \newcommand{\myname}{Dejvis Toptani}
@@ -103,11 +106,11 @@ Supervised by \mysupervisor
 
 \begin{abstract}
     
-Modern machine learning pipelines often produce many models with near-identical
+Modern machine learning pipelines often produce many models with near\hyp{}identical
 predictive performance, yet these models can disagree substantially on individual
-predictions---a phenomenon known as predictive multiplicity. Existing approaches
-quantify this disagreement at the aggregate level but do not reveal where in the
-feature space it concentrates or which modeling choices are associated with it.
+predictions, a phenomenon known as predictive multiplicity. Existing approaches quantify this disagreement globally or for individual observations,
+but they do not directly analyze whether high-disagreement observations form coherent
+regions in feature space or which modeling choices are associated with such regions.
 
 This thesis introduces a spatial analysis framework for predictive multiplicity. We
 compute observation-wise predictive variance across finite top-$K$ Rashomon
@@ -132,8 +135,8 @@ rules in the original feature space.
 The results suggest that predictive multiplicity is not merely a global property of model
 classes, but can also appear as a localized phenomenon affecting specific regions of the
 feature space. The proposed framework provides a diagnostic for identifying predictions
-that are especially sensitive to the choice among near-optimal models, with implications
-for the reliability and governance of automated decision systems.
+that are especially sensitive to the choice among near-optimal models, with potential implications for the reliability assessment and governance of automated
+decision systems.
 \end{abstract}
 
 \newpage
@@ -212,8 +215,7 @@ The main repository is organized around the following entry points:
     validation Brier score, constructs the finite top-$K$ Rashomon approximations, and
     saves prediction matrices and run-level summaries.
 
-    \item \path{run_training_pipeline_fixed_test.py}: repeats the training pipeline
-    with a fixed test set for the cross-seed hotspot stability analysis.
+    \item \path{run_training_pipeline_fixed_test.py}: runs the training pipeline with a held-out test set that is kept fixed across seeds for the hotspot stability analysis.
 
     \item \path{analysis/}: contains the main analysis modules, including multiplicity
     metrics, spatial analysis, calibration robustness, family and hyperparameter

@@ -88,7 +88,9 @@ suggest a prospective reliability-screening workflow that differs from standard
 
 The practical contribution is therefore not merely another descriptive metric, but a way to separate \emph{stable predictions} from \emph{predictions that are sensitive to model choice}. In high-stakes applications, this distinction is operationally relevant. A system should not treat a prediction in a stable region and a prediction in a hotspot as equally trustworthy simply because both come with similar point estimates.
 
-A useful way to interpret the proposed workflow is as a \emph{reliability screening mechanism}. Predictions in stable regions may proceed through the standard pipeline. Predictions in localized hotspots should be interpreted more cautiously because the selected model represents only one of several equally accurate alternatives that may not agree on the same observation. The precise intervention will depend on the application domain, but the general principle is clear: multiplicity hotspots identify cases where model choice itself becomes decision-relevant.
+A useful way to interpret the proposed workflow is as a \emph{reliability screening mechanism}. Predictions in stable regions may proceed through the standard pipeline. Predictions in localized hotspots should be interpreted more cautiously because the selected model represents only one of several equally accurate alternatives that may not agree on the same observation. The precise intervention will depend on the application domain, but the general principle
+is that multiplicity hotspots identify cases where model choice itself may become
+decision-relevant.
 
 This workflow should be understood as a prospective implication of the empirical findings,
 not as a deployment policy evaluated in this thesis. In practice, hotspot maps would need

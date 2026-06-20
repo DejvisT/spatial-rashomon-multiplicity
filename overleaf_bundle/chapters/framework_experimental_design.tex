@@ -96,8 +96,8 @@ selection frequency and Jaccard overlap meaningful, because the same test observ
 compared across runs.
 
 \paragraph{Model families, training, and preprocessing.}
-All models are implemented in Python using \texttt{scikit-learn}
-\citep{pedregosa2011scikit}. The candidate pool contains five model families: logistic
+All models are implemented  using \texttt{scikit-learn}
+\citep{pedregosa2011scikit} in Python. The candidate pool contains five model families: logistic
 regression with elastic-net regularization, $k$-nearest neighbors (kNN), random forest,
 gradient boosting, and multilayer perceptron (MLP). These families cover a linear model,
 an instance-based method, two tree-based ensemble methods, and a neural-network model.
@@ -362,9 +362,9 @@ observation.
 
 Because many local tests are performed at once, some observations may appear significant
 by chance alone. We therefore apply the Benjamini--Hochberg procedure
-\citep{benjamini_hochberg_1995} to control the false discovery rate before assigning final
-LISA labels. Observations that remain significant after this
-correction are assigned to one of four local spatial categories:
+\citep{benjamini_hochberg_1995} at a default false-discovery-rate level of
+$\alpha = 0.05$ before assigning final LISA labels. Sensitivity to this threshold is
+examined for the synthetic validation experiments in Appendix~\ref{app:synthetic-fdr}.
 
 \begin{itemize}
   \item \textbf{High--High (HH):} $z_i>0$ and $[W\mathbf{z}]_i>0$. The observation has
@@ -394,8 +394,7 @@ The LISA classification identifies individual HH observations. To obtain larger 
 regions, the symmetrized $k$NN graph is restricted to HH observations only and connected
 components are extracted. A connected component is a set of HH observations connected
 by paths in the graph. Each component is interpreted as a contiguous high-multiplicity
-region in feature space. Very small components may be discarded to avoid treating
-isolated fragments as substantive hotspot regions.
+region in feature space. Unless stated otherwise, components smaller than five HH observations are discarded to avoid treating isolated fragments as substantive hotspot regions.
 
 For the standard spatial-statistics computations, PySAL's value-permutation procedures
 are applied to the already-computed predictive-variance field on the fixed feature-space
@@ -664,16 +663,39 @@ classification and would require adaptation for regression or multiclass setting
 \small
 \caption{Overview of the main analysis goals, methods, and corresponding result sections.}
 \label{tab:framework-method-result-map}
-\begin{tabular}{p{0.30\textwidth}p{0.34\textwidth}p{0.25\textwidth}}
+\begin{tabular}{
+@{}
+>{\RaggedRight\arraybackslash}p{0.30\textwidth}
+>{\RaggedRight\arraybackslash}p{0.34\textwidth}
+>{\RaggedRight\arraybackslash}p{0.25\textwidth}
+@{}
+}
 \toprule
 \textbf{Analysis goal} & \textbf{Main method} & \textbf{Result section} \\
 \midrule
-Measure where near-optimal models disagree & Predictive variance across $\mathcal{R}_K$ & Section~\ref{sec:results-metrics} \\
-Test whether disagreement is spatially clustered & Feature-space $k$NN graph, Moran's $I$, prediction-permutation null & Sections~\ref{sec:results-metrics}--\ref{sec:results-null} \\
-Identify local high-multiplicity regions & LISA HH labels and connected HH components & Section~\ref{sec:results-spatial} \\
-Assess stability and robustness & Fixed-test-set stability, $K$ and $k$ sensitivity, calibration, alternative graphs & Sections~\ref{sec:results-spatial} and~\ref{sec:results-robustness} \\
-Summarize associations with modeling choices & Global vs per-family sets, family importance, within-family $V_m$ decomposition & Sections~\ref{sec:results-global-vs-family} and~\ref{sec:results-hp} \\
-Validate and interpret hotspots & Synthetic ground-truth designs and shallow-tree rule extraction & Sections~\ref{sec:results-synthetic}--\ref{sec:results-rules} \\
+Measure where near-optimal models disagree
+& Predictive variance across $\mathcal{R}_K$
+& Section~\ref{sec:results-metrics} \\
+
+Test whether disagreement is spatially clustered
+& Feature-space $k$NN graph, Moran's $I$, prediction-permutation null
+& Sections~\ref{sec:results-metrics}--\ref{sec:results-null} \\
+
+Identify local high-multiplicity regions
+& LISA HH labels and connected HH components
+& Section~\ref{sec:results-spatial} \\
+
+Assess stability and robustness
+& Fixed-test-set stability, $K$ and $k$ sensitivity, calibration, alternative graphs
+& Sections~\ref{sec:results-spatial} and~\ref{sec:results-robustness} \\
+
+Summarize associations with modeling choices
+& Global vs.\ per-family sets, family importance, within-family $V_m$ decomposition
+& Section~\ref{sec:results-hp} \\
+
+Validate and interpret hotspots
+& Synthetic ground-truth designs and shallow-tree rule extraction
+& Sections~\ref{sec:results-synthetic}--\ref{sec:results-rules} \\
 \bottomrule
 \end{tabular}
 \end{table}

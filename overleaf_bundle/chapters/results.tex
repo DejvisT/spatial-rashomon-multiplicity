@@ -46,7 +46,7 @@ Table~\ref{tab:aggregate_multiplicity_metrics} reports additional aggregate mult
 \input{presentation_assets/tab/aggregate_multiplicity_summary.tex}
 \end{table}
 
-The additional aggregate metrics confirm the same cross-dataset ordering as the predictive-variance results. German Credit exhibits the largest overall multiplicity, with the highest ambiguity, disagreement rate, and discrepancy. COMPAS lies in the middle in terms of aggregate disagreement magnitude, while Adult has the lowest values on these global metrics. This reinforces the main distinction of this section: disagreement magnitude and spatial concentration need not coincide. German Credit shows the strongest aggregate multiplicity, whereas COMPAS shows the clearest localized structure according to Moran's $I$. Adult has lower disagreement magnitude and weaker spatial clustering, but still contains a large absolute number of HH observations, reflecting its larger test set and more diffuse hotspot structure.
+The additional aggregate metrics confirm the same cross-dataset ordering as the predictive variance results. German Credit exhibits the largest overall multiplicity, with the highest ambiguity, disagreement rate, and discrepancy. COMPAS lies in the middle in terms of aggregate disagreement magnitude, while Adult has the lowest values on these global metrics. This reinforces the main distinction of this section: disagreement magnitude and spatial concentration need not coincide. German Credit shows the strongest aggregate multiplicity, whereas COMPAS shows the clearest localized structure according to Moran's $I$. Adult has lower disagreement magnitude and weaker spatial clustering, but still contains a large absolute number of HH observations, reflecting its larger test set and more diffuse hotspot structure.
 
 In the following sections, COMPAS is therefore used as the main running example for detailed spatial analyses, while German Credit and Adult are used primarily for cross-dataset comparison.
 
@@ -158,7 +158,8 @@ We then compare these regions across seeds. For each pair of runs, each componen
 
 The main contribution of the component analysis is therefore not to show that hotspot regions are fixed across runs. Rather, it shows that when HH points are detected, they often form contiguous graph regions. This supports a regional interpretation of multiplicity and motivates the component-level rule extraction in Section~\ref{sec:results-rules}.
 
-Taken together, the stability analysis shows that exact HH labels vary across seeds, while HH observations still tend to form contiguous graph regions. On COMPAS, Moran's $I$ remains positive in all runs, but both HH counts and hotspot boundaries vary substantially. Predictive multiplicity should therefore be interpreted as a regional phenomenon with partially recurring structure, rather than as a fixed pointwise-stable labeling.
+The stability analysis therefore shows that exact HH labels vary across seeds, while
+HH observations still tend to form contiguous graph regions. On COMPAS, Moran's $I$ remains positive in all runs, but both HH counts and hotspot boundaries vary substantially. Predictive multiplicity should therefore be interpreted as a regional phenomenon with partially recurring structure, rather than as a fixed pointwise-stable labeling.
 
 
 %% ---------------------------------------------------------------------------
@@ -169,7 +170,7 @@ Taken together, the stability analysis shows that exact HH labels vary across se
 We next assess whether the main spatial conclusions depend on several key analytical choices: the Rashomon set size $K$, the neighborhood size $k$ used in the feature-space graph, post-hoc probability calibration, and the precise graph construction itself. Across all four checks, the absolute magnitude of disagreement and the extent of detected hotspot
 regions can change, but the central conclusion remains stable: predictive multiplicity continues to show positive spatial clustering under a wide range of reasonable specifications.
 
-\subsubsection{Sensitivity to Rashomon Set Size $K$}
+\subsubsection{Sensitivity to Rashomon Set Size \texorpdfstring{$K$}{K}}
 \label{sec:results-sensitivity-K}
 
 We first vary the Rashomon set size over $K \in \{5, 10, 15, 20, 25, 30, 35, 40, 45, 50\}$ using global top-$K$ selection. Figure~\ref{fig:sensitivity_K} shows the resulting sensitivity curves for COMPAS; the
@@ -198,7 +199,7 @@ Panels show mean predictive variance, Moran's $I$, and variance-based HH count.}
 \label{fig:sensitivity_K}
 \end{figure}
 
-\subsubsection{Sensitivity to kNN Neighborhood Size $k$}
+\subsubsection{Sensitivity to kNN Neighborhood Size \texorpdfstring{$k$}{k}}
 \label{sec:results-sensitivity-kNN}
 
 We next vary the neighborhood size $k$ used in the feature-space graph and recompute the
@@ -249,7 +250,7 @@ threshold. The overlap results should therefore be interpreted as evidence that 
 boundaries are sensitive to calibration, not as evidence that the exact same HH points are
 recovered after calibration.
 
-Overall, the calibration analysis supports a moderate robustness conclusion. Post-hoc
+The calibration analysis supports a moderate robustness conclusion. Post-hoc
 calibration changes the scale of disagreement and the precise hotspot masks, but it does
 not remove the positive spatial autocorrelation of predictive multiplicity. This complements
 work that studies calibration as a way to reduce aggregate predictive multiplicity
@@ -301,7 +302,7 @@ The key cross-dataset pattern remains similar across graph constructions: COMPAS
 the strongest localized spatial structure, German Credit shows a weaker signal with few
 HH observations, and Adult shows broader but more diffuse hotspot regions.
 
-Taken together, the robustness checks show a consistent pattern. Analytical choices can
+Across these robustness checks, a consistent pattern emerges. Analytical choices can
 affect the \emph{magnitude} of disagreement, the size of detected hotspot regions, and the
 exact HH assignments, but they do not remove the positive spatial clustering signal. The qualitative finding that predictive multiplicity shows positive spatial clustering
 therefore persists across the tested variations in Rashomon set size, neighborhood size,
@@ -428,7 +429,7 @@ reference, especially for MLP, so the pooled global Rashomon set understates the
 of family-specific hotspot structure.
 
 \paragraph{German Credit and Adult.}
-The same comparison is informative on the other datasets, but with different emphases.
+The same comparison is informative on the other data\hyp{}sets, but with different emphases.
 On German Credit, the absolute HH counts remain small across all constructions, so
 family differences should be interpreted cautiously in absolute terms. Nonetheless,
 Figure~\ref{fig:hh_by_family}(b) still shows that the spatial signal is not uniform across
@@ -438,7 +439,7 @@ remains comparatively low on both measures. Thus, as on COMPAS, the pooled globa
 construction compresses family-level structure that is clearly visible when families are
 examined separately.
 
-Taken together, these comparisons support two conclusions. First, the model families
+These comparisons support two conclusions. First, the model families
 associated with stronger structured disagreement are dataset-dependent rather than fixed
 across problems. Second, global pooling can mask substantial family-specific multiplicity
 patterns, particularly on COMPAS and Adult. This motivates the variance-decomposition
@@ -480,8 +481,8 @@ the role of model family depends on the dataset: in Adult and German Credit,
 near-optimal selection sharpens between-family differences, whereas on COMPAS
 family-level disagreement is already visible in the broader candidate pool.
 
-Taken together, these results support the interpretation that predictive multiplicity is
-partly structured by model-family choice. This association is especially pronounced in
+These results support the interpretation that predictive multiplicity is partly structured
+by model-family choice. This association is especially pronounced in
 Adult and remains substantial on COMPAS and German Credit. Moreover, for Adult and COMPAS, the balanced family decomposition assigns a larger
 between-family share to observations inside HH regions than to all observations. This
 suggests that hotspot regions are especially associated with model-family differences,
@@ -645,16 +646,16 @@ deviation $0.0098$, and the one-sided empirical $p$-value is $0.0099$. Thus, the
 clustering is far larger than expected when predictions are detached from feature-space
 locations.
 
-At the local level, LISA identifies $99$ HH points and $405$ LL points. Relative to the
-ground-truth island, which contains $120$ test observations, this yields a precision of
-$0.9697$, a recall of $0.8000$, and a Jaccard overlap of $0.7805$. In absolute terms,
-$96$ of the $99$ detected HH points lie inside the ambiguous island. This shows that the
-detected hotspot is highly specific to the intended ambiguous region, while still recovering
-most of its extent. Sensitivity to the LISA false-discovery-rate threshold is reported in
+At the local level, LISA identifies $105$ HH points at the default FDR level
+$\alpha = 0.05$. Relative to the ground-truth island, which contains $120$ test
+observations, this yields a precision of $0.9429$, a recall of $0.8250$, and a Jaccard
+overlap of $0.7857$. In absolute terms, $99$ of the $105$ detected HH points lie inside
+the ambiguous island. This shows that the detected hotspot is largely concentrated in the intended ambiguous
+region, while still recovering most of its extent. Sensitivity to the LISA false-discovery-rate threshold is reported in
 Appendix~\ref{app:synthetic-fdr}; across the tested thresholds, the detected HH region
 remains stable and continues to align with the ground-truth island.
 
-Overall, the single-island experiment provides a controlled validation of the pipeline. It
+The single-island experiment therefore provides a controlled validation of the pipeline. It
 shows that when predictive ambiguity is concentrated in one coherent region, the
 combination of pointwise variance, Moran's $I$, and LISA recovers that region accurately
 and with strong statistical support.
@@ -797,7 +798,9 @@ The feature-frequency results in Table~\ref{tab:component_rule_features_compas} 
 
 We therefore interpret stability at the feature level rather than at the exact-rule level. The precise tree thresholds are not expected to be invariant across seeds or components, but the repeated use of the same variables indicates a robust descriptive pattern.
 
-Overall, the rule analysis shows that HH regions are only partially interpretable at the global level, but substantially more interpretable once decomposed into connected hotspot components. This supports the main interpretation of the thesis: predictive multiplicity is localized and heterogeneous, but not arbitrary. It concentrates in recognizable regions of the feature space, especially regions characterized by age and prior criminal history.
+The rule analysis shows that HH regions are only partially interpretable at the global
+level, but substantially more interpretable once decomposed into connected hotspot
+components. This supports the main interpretation of the thesis: predictive multiplicity is localized and heterogeneous, but not arbitrary. It concentrates in recognizable regions of the feature space, especially regions characterized by age and prior criminal history.
 
 
 %% ---------------------------------------------------------------------------
@@ -870,7 +873,7 @@ hotspot structure throughout these checks.
 \item \textbf{Validation on synthetic data:} The synthetic experiments validate the
 pipeline in two complementary regimes. In the single-island design, where the intended
 hotspot is generated by $P(y=1\mid x)\approx 0.5$ ambiguity, LISA HH detection achieves
-precision $0.97$, recall $0.80$, and Jaccard overlap $0.78$. In the structural
+precision $0.94$, recall $0.83$, and Jaccard overlap $0.79$. In the structural
 non-boundary design, the intended hotspots are compact exception regions away from the
 ordinary decision boundary. LISA recovers all structural-exception test points at the
 default FDR level, while the variance--margin correlations remain close to zero
@@ -887,7 +890,7 @@ components.
 
 \end{enumerate}
 
-Overall, the findings support the central claim of this thesis: predictive multiplicity
+The findings support the central claim of this thesis: predictive multiplicity
 is often localized and structured rather than uniformly diffuse. It concentrates in
 identifiable regions of feature space, remains visible under several robustness checks,
 and can be partially characterized by interpretable rules. Spatial multiplicity analysis

@@ -12,7 +12,13 @@ from these spaces.
 \caption{Hyperparameter search spaces used for candidate model training. Parameters
 listed as fixed are not varied, but are included for reproducibility.}
 \label{tab:hp-search-space}
-\begin{tabular}{p{0.18\textwidth}p{0.26\textwidth}p{0.48\textwidth}}
+\begin{tabular}{
+@{}
+>{\RaggedRight\arraybackslash}p{0.13\textwidth}
+>{\RaggedRight\arraybackslash}p{0.27\textwidth}
+>{\RaggedRight\arraybackslash}p{0.54\textwidth}
+@{}
+}
 \toprule
 \textbf{Family} & \textbf{Hyperparameter} & \textbf{Values} \\
 \midrule
@@ -22,7 +28,8 @@ LogReg & \texttt{C} & 20 log-spaced values from $10^{-5}$ to $10^{5}$ \\
        & \texttt{solver} & \texttt{saga} (fixed) \\
        & \texttt{max\_iter} & 2000 (fixed) \\
 \midrule
-kNN & \texttt{n\_neighbors} & $\{3,5,7,10,15,20,25,30,50,70,90,100,150\}$ \\
+kNN & \texttt{n\_neighbors} &
+$\{3, 5, 7, 10, 15, 20, 25, 30, 50, 70, 90, 100, 150\}$ \\
     & \texttt{weights} & \texttt{uniform}, \texttt{distance} \\
     & \texttt{p} & $\{1,2\}$ \\
 \midrule
@@ -101,14 +108,7 @@ candidate pool. Values are aggregated over 15 dataset--family combinations. ``Br
 rank-1'' reports in how many combinations validation Brier score is the most important
 predictor of $V_m$.}
 \label{tab:app-hp-meta-pool-summary}
-\begin{tabular}{lrrrr}
-\toprule
-Pool & Groups & Brier rank-1 & Mean Brier importance & Mean top HP importance \\
-\midrule
-Rashomon & 15 & 7 & 0.290 & 0.498 \\
-Full pool & 15 & 11 & 0.596 & 0.285 \\
-\bottomrule
-\end{tabular}
+\input{presentation_assets/tab/hp_meta_summary_by_pool.tex}
 \end{table}
 
 \section{Additional Rule-Extraction Results}
@@ -179,12 +179,12 @@ points correspond to the intentionally designed high-multiplicity outliers rathe
 arbitrary false positives.
 
 \paragraph{Single-island design.}
-In the single-island setting, the results are stable across the tested thresholds. As
-$\alpha$ increases, the number of HH points rises moderately from $88$ to $109$, while
-the Jaccard overlap with the ground-truth island increases from $0.72$ to $0.79$. This
-reflects the expected precision--recall trade-off: precision decreases only slightly, from
-about $0.99$ at $\alpha=0.01$ to about $0.93$ at $\alpha=0.20$, whereas recall increases
-from $0.73$ to $0.84$. Across all tested $\alpha$ values, the detected HH region remains a
+In the single-island setting, the results are stable across the
+tested thresholds. As $\alpha$ increases, the number of HH points rises moderately from
+$93$ to $110$, while the Jaccard overlap with the ground-truth island remains between 0.746
+and $0.786$. This reflects the expected precision--recall trade-off: precision decreases from
+$0.9785$ at $\alpha = 0.01$ to $0.9182$ at $\alpha = 0.20$, whereas recall increases from
+$0.7583$ to $0.8417$. Across all tested $\alpha$ values, the detected HH region remains a
 single connected component, matching the geometry of the true island.
 
 \begin{figure}[htbp]
