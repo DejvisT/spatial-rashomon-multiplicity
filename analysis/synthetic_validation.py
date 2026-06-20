@@ -124,3 +124,31 @@ def compute_three_islands_fdr_sensitivity(
         tree_max_depth=tree_max_depth,
         min_samples_leaf=min_samples_leaf,
     )
+
+
+def compute_structural_exceptions_fdr_sensitivity(
+    v: np.ndarray,
+    X_test: np.ndarray,
+    X_test_2d: np.ndarray,
+    island_test: np.ndarray,
+    fdr_alphas: Sequence[float],
+    *,
+    k_nn: int,
+    seed: int,
+    min_component_size: int = 5,
+    tree_max_depth: int = 5,
+    min_samples_leaf: int = 10,
+) -> pd.DataFrame:
+    """FDR alpha sensitivity for the structural-exception synthetic design."""
+    return _compute_fdr_sensitivity(
+        v,
+        X_test,
+        X_test_2d,
+        island_test,
+        fdr_alphas,
+        k_nn=k_nn,
+        seed=seed,
+        min_component_size=min_component_size,
+        tree_max_depth=tree_max_depth,
+        min_samples_leaf=min_samples_leaf,
+    )

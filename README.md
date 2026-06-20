@@ -13,7 +13,7 @@ The final analyses cover benchmark datasets, null testing, hotspot stability, gl
 - **COMPAS** (recidivism prediction; local CSV in `data/`)
 - **German Credit** (`credit-g`, loaded from OpenML)
 - **Adult** (income prediction, loaded from OpenML)
-- **Synthetic single-island and three-islands datasets** for controlled validation
+- **Synthetic single-island, three-islands, and structural-exception datasets** for controlled validation
 
 ## Pipeline
 
@@ -234,7 +234,7 @@ The repository intentionally does not need to keep every intermediate diagnostic
 | 05 | `05_sensitivity_kNN.ipynb` | Sensitivity to kNN neighborhood size `k` |
 | 06 | `06_hyperparameter_analysis.ipynb` | Family importance, within-family hyperparameter importance, hotspot-specific shifts, and meta-model diagnostics |
 | 07 | `07_calibration_robustness.ipynb` | Platt/isotonic calibration robustness |
-| 08 | `08_synthetic_multiplicity.ipynb` | Single-island and three-islands synthetic validation |
+| 08 | `08_synthetic_multiplicity.ipynb` | Single-island, three-islands, and structural-exception synthetic validation |
 | 09 | `09_interpretable_rules.ipynb` | Global and component-level rule extraction for high-multiplicity regions |
 | 10 | `10_robustness_and_fairness.ipynb` | Alternative graph construction, decision-boundary proximity, and subgroup exposure diagnostics |
 

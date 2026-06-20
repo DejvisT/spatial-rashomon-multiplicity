@@ -135,6 +135,7 @@ class SyntheticGT:
     island_centers: List[Tuple[float, float]]
     island_radius: float
     outlier_type: Optional[np.ndarray] = None  # -1 = not outlier, 0 = low-var, 1 = high-var
+    boundary_mask: Optional[np.ndarray] = None  # ordinary decision-boundary strip (structural design)
 
 
 def _sample_uniform_disk(
@@ -372,5 +373,143 @@ def make_synth_three_islands_plus_outliers(
         island_centers=island_centers,
         island_radius=island_radius,
         outlier_type=outlier_type,
+    )
+    return X, y, feature_info, gt
+
+
+# ---------------------------------------------------------------------------
+# Non-boundary islands (COMPAS-like mechanism)
+# ---------------------------------------------------------------------------
+
+
+def make_synth_nonboundary_islands(
+    *,
+    n_stable_neg: int = 3000,
+    n_stable_pos: int = 3000,
+    n_boundary: int = 5000,
+    n_each_exception: int = 300,
+    stable_neg_center: Tuple[float, float] = (-3.0, 0.0),
+    stable_pos_center: Tuple[float, float] = (3.0, 0.0),
+    stable_std: float = 0.9,
+    pos_exception_center: Tuple[float, float] = (-3.0, 3.0),
+    neg_exception_center: Tuple[float, float] = (3.0, 3.0),
+    exception_radius: float = 0.35,
+    boundary_x1_std: float = 0.35,
+    boundary_x2_range: Tuple[float, float] = (-2.0, 2.0),
+    p_stable_neg: float = 0.05,
+    p_stable_pos: float = 0.95,
+    p_boundary: float = 0.50,
+    random_state: int = 0,
+    shuffle: bool = True,
+) -> Tuple[pd.DataFrame, pd.Series, Dict[str, list], SyntheticGT]:
+    """
+    Synthetic dataset with stable blobs, a dense ordinary boundary strip, and
+    two structural exception islands placed away from the ensemble decision boundary.
+
+    Regions:
+      - stable negative blob (p ≈ 0.05) and stable positive blob (p ≈ 0.95)
+      - ordinary boundary strip around x1 = 0 (p = 0.50), dense aleatoric ambiguity
+      - positive exception inside the negative side (p ≈ 0.95)
+      - negative exception inside the positive side (p ≈ 0.05)
+
+    The structural exception disks are the expected HH regions: localized multiplicity
+    away from the ordinary x1 = 0 decision boundary (COMPAS-like mechanism).
+
+    Ground truth:
+        island_mask     — structural exception islands (expected HH)
+        boundary_mask   — ordinary boundary strip (not the primary recovery target)
+        stable_mask     — stable negative + stable positive blobs
+        island_centers  — exception disk centers
+        island_radius   — exception disk radius
+    """
+    if n_each_exception < 1:
+        raise ValueError("n_each_exception must be >= 1.")
+    if not (0.0 < p_stable_neg < p_stable_pos < 1.0):
+        raise ValueError("Require 0 < p_stable_neg < p_stable_pos < 1.")
+
+    rng = np.random.default_rng(random_state)
+
+    X_neg = rng.normal(
+        loc=stable_neg_center,
+        scale=stable_std,
+        size=(n_stable_neg, 2),
+    )
+    p_neg = np.full(n_stable_neg, p_stable_neg)
+
+    X_pos = rng.normal(
+        loc=stable_pos_center,
+        scale=stable_std,
+        size=(n_stable_pos, 2),
+    )
+    p_pos = np.full(n_stable_pos, p_stable_pos)
+
+    X_boundary = np.column_stack([
+        rng.normal(0.0, boundary_x1_std, n_boundary),
+        rng.uniform(boundary_x2_range[0], boundary_x2_range[1], n_boundary),
+    ])
+    p_boundary_arr = np.full(n_boundary, p_boundary)
+
+    X_pos_exception = _sample_uniform_disk(
+        rng, n_each_exception, exception_radius, pos_exception_center
+    )
+    p_pos_exception = np.full(n_each_exception, p_stable_pos)
+
+    X_neg_exception = _sample_uniform_disk(
+        rng, n_each_exception, exception_radius, neg_exception_center
+    )
+    p_neg_exception = np.full(n_each_exception, p_stable_neg)
+
+    X_all = np.vstack([
+        X_neg,
+        X_pos,
+        X_boundary,
+        X_pos_exception,
+        X_neg_exception,
+    ])
+    p_true_all = np.concatenate([
+        p_neg,
+        p_pos,
+        p_boundary_arr,
+        p_pos_exception,
+        p_neg_exception,
+    ])
+    y_all = rng.binomial(1, p_true_all).astype(int)
+
+    n_total = len(y_all)
+    island_id = np.concatenate([
+        np.full(n_stable_neg + n_stable_pos, -1, dtype=int),
+        np.full(n_boundary, 2, dtype=int),
+        np.full(n_each_exception, 0, dtype=int),
+        np.full(n_each_exception, 1, dtype=int),
+    ])
+    island_mask = np.isin(island_id, [0, 1])
+    boundary_mask = island_id == 2
+    stable_mask = island_id == -1
+    outlier_mask = np.zeros(n_total, dtype=bool)
+
+    if shuffle:
+        perm = rng.permutation(n_total)
+        X_all = X_all[perm]
+        y_all = y_all[perm]
+        p_true_all = p_true_all[perm]
+        island_id = island_id[perm]
+        island_mask = island_mask[perm]
+        boundary_mask = boundary_mask[perm]
+        stable_mask = stable_mask[perm]
+        outlier_mask = outlier_mask[perm]
+
+    X = pd.DataFrame(X_all, columns=["x1", "x2"])
+    y = pd.Series(y_all, name="target")
+    feature_info = {"numeric": ["x1", "x2"], "categorical": []}
+
+    gt = SyntheticGT(
+        island_id=island_id,
+        island_mask=island_mask,
+        outlier_mask=outlier_mask,
+        stable_mask=stable_mask,
+        p_true=p_true_all,
+        island_centers=[pos_exception_center, neg_exception_center],
+        island_radius=exception_radius,
+        boundary_mask=boundary_mask,
     )
     return X, y, feature_info, gt
