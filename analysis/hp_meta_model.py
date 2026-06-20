@@ -10,9 +10,8 @@ secondary / appendix material.
 
 RandomForest fits are **not** causal or fully calibrated predictors. We report
 leave-one-(outer-)seed-out metrics when possible (else a labeled row-level KFold
-fallback) and **importance stability** under resampling. Stability tables use
-columns ``mean_importance``, ``std_importance``, ``top1_frequency``,
-``top3_frequency``, ``mean_rank``, ``n_reps_used``.
+fallback). ``run_hp_meta_model_suite`` writes compact thesis-facing summary CSVs
+only (no per-group importance dumps).
 """
 from __future__ import annotations
 
@@ -424,13 +423,12 @@ def run_hp_meta_model_suite(
     *,
     table_dir: Path,
     fig_dir: Optional[Path] = None,
-    n_stability_reps: int = N_STABILITY_REPS_DEFAULT,
     random_state: int = 0,
     seed_col: Optional[str] = None,
 ) -> None:
     """
     Fit descriptive meta-models per (dataset, family, pool_type) and optional
-    target columns V_m / V_m_HH / V_m_nonHH; write CSV summaries and effect grids.
+    target columns V_m / V_m_HH / V_m_nonHH; write compact summary CSVs.
 
     If ``seed_col`` is None, uses ``outer_seed`` when available else ``seed`` for LOSO / bootstrap.
     """
@@ -457,7 +455,6 @@ def run_hp_meta_model_suite(
 
     summary_rows: List[Dict[str, Any]] = []
     compact_meta_rows: List[Dict[str, Any]] = []
-    stability_summary_parts: List[pd.DataFrame] = []
 
     for keys, grp in meta_df.groupby(group_cols):
         if isinstance(keys, tuple):
@@ -467,9 +464,8 @@ def run_hp_meta_model_suite(
         ds = key_map.get("dataset", "unknown")
         fam = key_map.get("family", "unknown")
         pt = key_map.get("pool_type", "unknown")
-        safe_pt = _safe_filename_part(pt)
 
-        for target_col, target_suffix in target_specs:
+        for target_col, _target_suffix in target_specs:
             g = grp.dropna(subset=[target_col]).copy()
             if len(g) < MIN_GROUP_ROWS or g[target_col].nunique() < MIN_TARGET_UNIQUE:
                 continue
@@ -544,33 +540,6 @@ def run_hp_meta_model_suite(
                     }
                 )
 
-            fname_suffix = f"{ds}_{fam}_{safe_pt}{target_suffix}.csv"
-            imp_grouped.to_csv(table_dir / f"hp_meta_importance_{fname_suffix}", index=False)
-
-            if n_stability_reps > 0:
-                stab = stability_importance_tables(
-                    g.reset_index(drop=True),
-                    hp_cols_all,
-                    target_col,
-                    seed_col_eff if seed_col_eff in g.columns else "",
-                    n_stability_reps,
-                    random_state + 17,
-                )
-                if not stab.empty:
-                    stab_out = stab.assign(
-                        dataset=ds,
-                        family=fam,
-                        pool_type=pt,
-                        target_vm=target_col,
-                    )
-                    front = ["dataset", "family", "pool_type", "target_vm"]
-                    rest = [c for c in stab_out.columns if c not in front]
-                    stab_out = stab_out[front + rest]
-                    stab_out.to_csv(table_dir / f"hp_meta_importance_stability_{fname_suffix}", index=False)
-                    top_stable = stab_out.sort_values("mean_importance", ascending=False).head(5).copy()
-                    top_stable["group_key"] = f"{ds}|{fam}|{pt}|{target_col}"
-                    stability_summary_parts.append(top_stable)
-
     if summary_rows:
         meta_summary = pd.DataFrame(summary_rows).sort_values(["dataset", "family", "pool_type", "target_vm"])
         meta_summary.to_csv(table_dir / "hp_meta_model_summary.csv", index=False)
@@ -603,11 +572,6 @@ def run_hp_meta_model_suite(
                 .reset_index()
             )
             pool_cmp.to_csv(table_dir / "hp_meta_summary_by_pool.csv", index=False)
-
-        if stability_summary_parts:
-            pd.concat(stability_summary_parts, ignore_index=True).to_csv(
-                table_dir / "hp_meta_stability_summary.csv", index=False
-            )
 
 
 __all__ = [

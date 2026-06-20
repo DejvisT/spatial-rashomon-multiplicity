@@ -633,6 +633,74 @@ def write_hp_hotspot_delta_compas_tex():
     )
     print("Wrote", TAB_DIR / "hp_hotspot_delta_compas_compact.tex")
 
+
+def write_hp_meta_summary_by_pool_tex():
+    """Write appendix meta-model diagnostic summary table."""
+    path = resolve_csv("hp_meta_summary_by_pool.csv", "nb06")
+    if path is None or not path.is_file():
+        print(
+            "Missing hp_meta_summary_by_pool.csv (nb06). "
+            "Skipping hp_meta_summary_by_pool.tex"
+        )
+        return
+
+    df = pd.read_csv(path)
+
+    required = {
+        "pool_type",
+        "n_dataset_family_groups",
+        "n_val_brier_rank_1",
+        "mean_validation_brier_importance",
+        "mean_top_non_performance_feature_importance",
+    }
+    missing = required - set(df.columns)
+    if missing:
+        raise ValueError(
+            f"hp_meta_summary_by_pool.csv is missing columns: {sorted(missing)}"
+        )
+
+    def pool_label(x):
+        x = str(x).lower()
+        if "rashomon" in x:
+            return "Rashomon"
+        if "full" in x:
+            return "Full pool"
+        return str(x)
+
+    order = {"Rashomon": 0, "Full pool": 1}
+    df = df.copy()
+    df["Pool"] = df["pool_type"].map(pool_label)
+    df["order"] = df["Pool"].map(order).fillna(99)
+    df = df.sort_values(["order", "Pool"])
+
+    out = []
+    out.append(r"% Auto-generated from nb06/hp_meta_summary_by_pool.csv")
+    out.append(r"\begin{tabular}{lcccc}")
+    out.append(r"\toprule")
+    out.append(
+        r"Pool & Groups & \shortstack[c]{Brier\\rank 1} & "
+        r"\shortstack[c]{Mean Brier\\importance} & "
+        r"\shortstack[c]{Mean top HP\\importance} \\"
+    )
+    out.append(r"\midrule")
+
+    for _, r in df.iterrows():
+        out.append(
+            f"{r['Pool']} & "
+            f"{int(r['n_dataset_family_groups'])} & "
+            f"{int(r['n_val_brier_rank_1'])} & "
+            f"{r['mean_validation_brier_importance']:.3f} & "
+            f"{r['mean_top_non_performance_feature_importance']:.3f} \\\\"
+        )
+
+    out.append(r"\bottomrule")
+    out.append(r"\end{tabular}")
+
+    out_path = TAB_DIR / "hp_meta_summary_by_pool.tex"
+    out_path.write_text("\n".join(out), encoding="utf-8")
+    print("Wrote", out_path)
+
+
 def write_interpretable_rules_top_compas_tex():
     """Top COMPAS HH rules from notebook 09."""
     path = resolve_csv("rules_summary_compas.csv", "nb09")
@@ -1493,6 +1561,7 @@ def main():
     write_conflict_summary_tex()
     write_aggregate_multiplicity_summary_tex()
     write_hp_hotspot_delta_compas_tex()
+    write_hp_meta_summary_by_pool_tex()
 
     write_interpretable_rules_top_compas_tex()
     write_interpretable_rule_features_compas_tex()
