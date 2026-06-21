@@ -129,40 +129,6 @@ def write_dataset_summary_tex():
     print("Wrote", TAB_DIR / "dataset_summary.tex")
 
 
-def write_global_summary_tex():
-    df = build_dataset_summary()
-    if df.empty:
-        print("No global summary. Skipping global_summary.tex")
-        return
-
-    out = []
-    out.append(r"\begin{tabular}{lccccc}")
-    out.append(r"\hline")
-    out.append(
-        r"Dataset & Mean variance & Moran's $I$ & \shortstack{HH count} & \shortstack{HH rate} & \shortstack{Significant\\runs} \\"
-    )
-    out.append(
-        r" & (mean $\pm$ std) & (mean $\pm$ std) & (mean $\pm$ std) & (mean $\pm$ std) & (\%) \\"
-    )
-    out.append(r"\hline")
-
-    for _, r in df.iterrows():
-        mv = f"{r['mean_variance_mean']:.4f} $\\pm$ {r['mean_variance_std']:.4f}"
-        mi = f"{r['moran_i_mean']:.3f} $\\pm$ {r['moran_i_std']:.3f}"
-        hh = f"{r['n_hh_mean']:.1f} $\\pm$ {r['n_hh_std']:.1f}"
-        hh_rate = f"{100 * r['hh_rate_mean']:.1f}\\% $\\pm$ {100 * r['hh_rate_std']:.1f}\\%"
-        sig = f"{100 * r['frac_significant']:.0f}\\%"
-
-        out.append(
-            f"{r['dataset']} & {mv} & {mi} & {hh} & {hh_rate} & {sig} \\\\"
-        )
-
-    out.append(r"\hline")
-    out.append(r"\end{tabular}")
-
-    (TAB_DIR / "global_summary.tex").write_text("\n".join(out), encoding="utf-8")
-    print("Wrote", TAB_DIR / "global_summary.tex")
-
 def write_family_summary_tex():
     """COMPAS global reference + per-family Rashomon sets (top-25 per family)."""
     agg_path = RESULTS_DIR / "compas" / "per_family_spatial_aggregated.csv"
@@ -275,109 +241,6 @@ def write_family_summary_tex():
 
     (TAB_DIR / "family_summary.tex").write_text("\n".join(out), encoding="utf-8")
     print("Wrote", TAB_DIR / "family_summary.tex")
-
-
-def write_hh_moran_per_run_compas():
-    """HH count and Moran's I per run for COMPAS only -> hh_moran_per_run_compas.pdf."""
-    path = RESULTS_DIR / "compas" / "summary_per_run.csv"
-    if not path.exists():
-        print("Missing compas/summary_per_run.csv. Skipping hh_moran_per_run_compas.pdf")
-        return
-    df = pd.read_csv(path).sort_values("outer_seed")
-    ds_label = display_dataset_name("compas")
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
-    x = np.arange(len(df))
-    ax1.bar(x, df["n_hh"].values, color="steelblue", edgecolor="white")
-    ax1.set_xlabel("Run (outer seed)")
-    ax1.set_ylabel("HH count")
-    ax1.set_title(f"HH count per run ({ds_label})")
-    ax2.bar(x, df["moran_i"].values, color="seagreen", edgecolor="white")
-    ax2.set_xlabel("Run (outer seed)")
-    ax2.set_ylabel("Moran's I")
-    ax2.set_title(f"Moran's I per run ({ds_label})")
-    plt.tight_layout()
-    fig.savefig(FIG_DIR / "hh_moran_per_run_compas.pdf", bbox_inches="tight")
-    plt.close()
-    print("Wrote", FIG_DIR / "hh_moran_per_run_compas.pdf")
-
-
-def write_spatial_patterns_figure():
-    """HH count and Moran's I per run (all datasets) -> spatial_patterns_per_run.pdf."""
-    rows = []
-    for name in SUPPORTED_DATASETS:
-        path = RESULTS_DIR / name / "summary_per_run.csv"
-        if not path.exists():
-            continue
-        df = pd.read_csv(path)
-        df["dataset_key"] = name
-        df["dataset"] = display_dataset_name(name)
-        rows.append(df)
-    if not rows:
-        print("No summary_per_run. Skipping spatial_patterns_per_run.pdf")
-        return
-    big = pd.concat(rows, ignore_index=True)
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
-    x_offset = 0
-    xticks, xlabels = [], []
-    for ds_key in SUPPORTED_DATASETS:
-        d = big[big["dataset_key"] == ds_key].sort_values("outer_seed")
-        if d.empty:
-            continue
-        ds_label = display_dataset_name(ds_key)
-        n = len(d)
-        x = np.arange(x_offset, x_offset + n)
-        color = dataset_plot_color(ds_key)
-        ax1.bar(x, d["n_hh"].values, color=color, edgecolor="white", label=ds_label)
-        ax2.bar(x, d["moran_i"].values, color=color, edgecolor="white")
-        xticks.append(x_offset + (n - 1) / 2)
-        xlabels.append(ds_label)
-        x_offset += n + 1
-    ax1.set_xticks(xticks)
-    ax1.set_xticklabels(xlabels)
-    ax1.set_ylabel("HH count")
-    ax1.set_title("HH count per run")
-    ax1.legend()
-    ax2.set_xticks(xticks)
-    ax2.set_xticklabels(xlabels)
-    ax2.set_ylabel("Moran's I")
-    ax2.set_title("Moran's I per run")
-    plt.suptitle("Spatial patterns by dataset (notebook 03 / summary_per_run)")
-    plt.tight_layout()
-    fig.savefig(FIG_DIR / "spatial_patterns_per_run.pdf", bbox_inches="tight")
-    plt.close()
-    print("Wrote", FIG_DIR / "spatial_patterns_per_run.pdf")
-
-
-def write_hh_by_family_figure():
-    """HH count by family (COMPAS, per-family top-K) -> hh_by_family.pdf."""
-    agg_path = RESULTS_DIR / "compas" / "per_family_spatial_aggregated.csv"
-    if agg_path.is_file():
-        df = pd.read_csv(agg_path)
-        yerr = df["n_hh_std"].values if "n_hh_std" in df.columns else None
-        fig, ax = plt.subplots(figsize=(6, 4))
-        x = np.arange(len(df))
-        ax.bar(x, df["n_hh_mean"], yerr=yerr, capsize=3, color="steelblue", edgecolor="white")
-        ax.set_xticks(x)
-        ax.set_xticklabels(df["family"].values, rotation=45, ha="right")
-    else:
-        path = resolve_csv("family_hv_hh_summary_compas.csv", "nb06")
-        if path is None:
-            print("Missing per_family_spatial_aggregated.csv and family_hv_hh_summary_compas.csv. Skipping hh_by_family.pdf")
-            return
-        df = pd.read_csv(path)
-        fig, ax = plt.subplots(figsize=(6, 4))
-        ax.bar(df["family"], df["hh_count"], color="steelblue", edgecolor="white")
-        plt.xticks(rotation=45, ha="right")
-    ax.set_ylabel("HH count")
-    ax.set_xlabel("Model family")
-    ds_label = display_dataset_name("compas")
-    ax.set_title(
-        f"HH count by family ({ds_label}, per-family top-25, mean ± std over runs)"
-    )
-    plt.tight_layout()
-    fig.savefig(FIG_DIR / "hh_by_family.pdf", bbox_inches="tight")
-    plt.close()
-    print("Wrote", FIG_DIR / "hh_by_family.pdf")
 
 
 def write_null_significance_tex():
@@ -1569,9 +1432,6 @@ def main():
     write_component_rule_features_compas_tex()
 
     write_quadrant_compas_tex()
-    write_hh_moran_per_run_compas()
-    write_spatial_patterns_figure()
-    write_hh_by_family_figure()
     copy_synthetic_structural_exceptions_figures()
     copy_notebook_figures(
         FIG_DIR,

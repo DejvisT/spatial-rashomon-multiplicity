@@ -41,35 +41,47 @@
 	pages = {1827--1858}
 }
 
-@misc{marx_predictive_2020,
-	title = {Predictive {Multiplicity} in {Classification}},
-	url = {http://arxiv.org/abs/1909.06677},
-	doi = {10.48550/arXiv.1909.06677},
-	abstract = {Prediction problems often admit competing models that perform almost equally well. This effect challenges key assumptions in machine learning when competing models assign conflicting predictions. In this paper, we define predictive multiplicity as the ability of a prediction problem to admit competing models with conflicting predictions. We introduce formal measures to evaluate the severity of predictive multiplicity and develop integer programming tools to compute them exactly for linear classification problems. We apply our tools to measure predictive multiplicity in recidivism prediction problems. Our results show that real-world datasets may admit competing models that assign wildly conflicting predictions, and motivate the need to measure and report predictive multiplicity in model development.},
-	urldate = {2025-09-26},
-	publisher = {arXiv},
-	author = {Marx, Charles T. and Calmon, Flavio du Pin and Ustun, Berk},
-	month = sep,
-	year = {2020},
-	note = {arXiv:1909.06677 [cs]},
-	keywords = {Computer Science - Machine Learning, Statistics - Machine Learning, Computer Science - Computers and Society}
-}
 
-@article{hsu_rashomon_nodate,
-	title = {{Rashomon} {Capacity}: {A} {Metric} for {Predictive} {Multiplicity} in {Classification}},
-	abstract = {Predictive multiplicity occurs when classification models with statistically indistinguishable performances assign conflicting predictions to individual samples. When used for decision-making in applications of consequence (e.g., lending, education, criminal justice), models developed without regard for predictive multiplicity may result in unjustified and arbitrary decisions for specific individuals. We introduce a new metric, called Rashomon Capacity, to measure predictive multiplicity in probabilistic classification. Prior metrics for predictive multiplicity focus on classifiers that output thresholded (i.e., 0-1) predicted classes. In contrast, Rashomon Capacity applies to probabilistic classifiers, capturing more nuanced score variations for individual samples. We provide a rigorous derivation for Rashomon Capacity, argue its intuitive appeal, and demonstrate how to estimate it in practice. We show that Rashomon Capacity yields principled strategies for disclosing conflicting models to stakeholders. Our numerical experiments illustrate how Rashomon Capacity captures predictive multiplicity in various datasets and learning models, including neural networks. The tools introduced in this paper can help data scientists measure and report predictive multiplicity prior to model deployment.},
-	language = {en},
-	author = {Hsu, Hsiang and Calmon, Flavio P},
-    year={2022}
+@InProceedings{marx_predictive_2020,
+  title = 	 {{Predictive} {Multiplicity} in {Classification}},
+  author =       {Marx, Charles and Calmon, Flavio and Ustun, Berk},
+  booktitle = 	 {Proceedings of the 37th International Conference on Machine Learning},
+  pages = 	 {6765--6774},
+  year = 	 {2020},
+  editor = 	 {III, Hal Daumé and Singh, Aarti},
+  volume = 	 {119},
+  series = 	 {Proceedings of Machine Learning Research},
+  month = 	 {13--18 Jul},
+  publisher =    {PMLR},
+  pdf = 	 {http://proceedings.mlr.press/v119/marx20a/marx20a.pdf},
+  url = 	 {https://proceedings.mlr.press/v119/marx20a.html},
+  abstract = 	 {Prediction problems often admit competing models that perform almost equally well. This effect challenges key assumptions in machine learning when competing models assign conflicting predictions. In this paper, we define predictive multiplicity as the ability of a prediction problem to admit competing models with conflicting predictions. We introduce measures to evaluate the severity of predictive multiplicity, and develop integer programming tools to compute these measures exactly for linear classification problems. We apply our tools to measure predictive multiplicity in recidivism prediction problems. Our results show that real-world datasets may admit competing models that assign wildly conflicting predictions, and motivate the need to report predictive multiplicity in model development.}
 }
 
 
-@article{hsu_rashomongb_2024,
-	title = {{RashomonGB}: {Analyzing} the {Rashomon} {Effect} and {Mitigating} {Predictive} {Multiplicity} in {Gradient} {Boosting}},
-	abstract = {The Rashomon effect is a mixed blessing in responsible machine learning. It enhances the prospects of finding models that perform well in accuracy while adhering to ethical standards, such as fairness or interpretability. Conversely, it poses a risk to the credibility of machine decisions through predictive multiplicity. While recent studies have explored the Rashomon effect across various machine learning algorithms, its impact on gradient boosting—an algorithm widely applied to tabular datasets—remains unclear. This paper addresses this gap by systematically analyzing the Rashomon effect and predictive multiplicity in gradient boosting algorithms. We provide rigorous theoretical derivations to examine the Rashomon effect in the context of gradient boosting and offer an information-theoretic characterization of the Rashomon set. Additionally, we introduce a novel inference technique called RashomonGB to efficiently inspect the Rashomon effect in practice. On more than 20 datasets, our empirical results show that RashomonGB outperforms existing baselines in terms of improving the estimation of predictive multiplicity metrics and model selection with group fairness constraints. Lastly, we propose a framework to mitigate predictive multiplicity in gradient boosting and empirically demonstrate its effectiveness.},
-	language = {en},
-	author = {Hsu, Hsiang and Brugere, Ivan and Sharma, Shubham and Lecue, Freddy and Chen, Chun-Fu},
-    year={2024}
+@inproceedings{hsu_rashomon_nodate,
+     author = {Hsu, Hsiang and Calmon, Flavio},
+     booktitle = {Advances in Neural Information Processing Systems},
+     editor = {S. Koyejo and S. Mohamed and A. Agarwal and D. Belgrave and K. Cho and A. Oh},
+     pages = {28988--29000},
+     publisher = {Curran Associates, Inc.},
+     title = {Rashomon {Capacity}: A Metric for Predictive Multiplicity in Classification},
+     volume = {35},
+     year = {2022}
+}
+
+
+
+@inproceedings{hsu_rashomongb_2024,
+     author = {Hsu, Hsiang and Brugere, Ivan and Sharma, Shubham and Lecue, Freddy and Chen, Chun-Fu},
+     booktitle = {Advances in Neural Information Processing Systems},
+     doi = {10.52202/079017-3854},
+     editor = {A. Globerson and L. Mackey and D. Belgrave and A. Fan and U. Paquet and J. Tomczak and C. Zhang},
+     pages = {121265--121303},
+     publisher = {Curran Associates, Inc.},
+     title = {{RashomonGB}: Analyzing the {Rashomon} Effect and Mitigating Predictive Multiplicity in Gradient Boosting},
+     volume = {37},
+     year = {2024}
 }
 
 % ===================================================================
@@ -89,14 +101,16 @@
 	pages = {850--863},
 }
 
-@misc{watson-daniels_predictive_2023,
-	title = {Predictive {Multiplicity} in {Probabilistic} {Classification}},
-	url = {http://arxiv.org/abs/2206.01131},
-	doi = {10.48550/arXiv.2206.01131},
-	publisher = {arXiv},
-	author = {Watson-Daniels, Jamelle and Parkes, David C. and Ustun, Berk},
-	year = {2023},
-	note = {arXiv:2206.01131 [cs]},
+@article{watson-daniels_predictive_2023,
+  title={Predictive Multiplicity in Probabilistic Classification},
+  author={Watson-Daniels, Jamelle and Parkes, David C. and Ustun, Berk},
+  journal={Proceedings of the AAAI Conference on Artificial Intelligence},
+  volume={37},
+  number={9},
+  pages={10306--10314},
+  year={2023},
+  doi={10.1609/aaai.v37i9.26227},
+  url = {https://ojs.aaai.org/index.php/AAAI/article/view/26227}
 }
 
 
@@ -177,14 +191,15 @@
 	pages = {2997--3042},
 }
 
-@misc{haghighat_resolving_2026,
-	title = {Resolving {Predictive} {Multiplicity} for the {Rashomon} {Set}},
-	url = {http://arxiv.org/abs/2601.09071},
-	doi = {10.48550/arXiv.2601.09071},
-	publisher = {arXiv},
-	author = {Haghighat, Parian and Anahideh, Hadis and Rudin, Cynthia},
-	year = {2026},
-	note = {arXiv:2601.09071 [cs]},
+@article{haghighat_resolving_2026,
+  title = {Resolving Predictive Multiplicity for the {Rashomon} Set},
+  author = {Haghighat, Parian and Anahideh, Hadis and Rudin, Cynthia},
+  journal = {Proceedings of the AAAI Conference on Artificial Intelligence},
+  volume = {40},
+  number = {44},
+  pages = {37435--37442},
+  year = {2026},
+  doi = {10.1609/aaai.v40i44.41076}
 }
 
 @article{coker_theory_2021,
@@ -210,14 +225,17 @@
 }
 
 @article{anselin1995local,
-  title={Local Indicators of Spatial Association---{LISA}},
-  author={Anselin, Luc},
-  journal={Journal of Machine Learning Research},
-  volume={27},
-  number={2},
-  pages={93--115},
-  year={1995},
-  publisher={Wiley Online Library}
+author = {Anselin, Luc},
+title = {Local Indicators of Spatial Association---{LISA}},
+journal = {Geographical Analysis},
+volume = {27},
+number = {2},
+pages = {93--115},
+doi = {10.1111/j.1538-4632.1995.tb00338.x},
+url = {https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1538-4632.1995.tb00338.x},
+eprint = {https://onlinelibrary.wiley.com/doi/pdf/10.1111/j.1538-4632.1995.tb00338.x},
+abstract = {The capabilities for visualization, rapid data retrieval, and manipulation in geographic information systems (GIS) have created the need for new techniques of exploratory data analysis that focus on the “spatial” aspects of the data. The identification of local patterns of spatial association is an important concern in this respect. In this paper, I outline a new general class of local indicators of spatial association (LISA) and show how they allow for the decomposition of global indicators, such as Moran's I, into the contribution of each observation. The LISA statistics serve two purposes. On one hand, they may be interpreted as indicators of local pockets of nonstationarity, or hot spots, similar to the Gi and G*i statistics of Getis and Ord (1992). On the other hand, they may be used to assess the influence of individual locations on the magnitude of the global statistic and to identify “outliers,” as in Anselin's Moran scatterplot (1993a). An initial evaluation of the properties of a LISA statistic is carried out for the local Moran, which is applied in a study of the spatial pattern of conflict for African countries and in a number of Monte Carlo simulations.},
+year = {1995}
 }
 
 @article{moran1950notes,
@@ -237,9 +255,10 @@
   author={Cooper, A Feder and Lee, Katherine and Choksi, Madiha Zahrah and Barocas, Solon and De Sa, Christopher and Grimmelmann, James and Kleinberg, Jon and Sen, Siddhartha and Zhang, Baobao},
   booktitle={Proceedings of the AAAI Conference on Artificial Intelligence},
   volume={38},
-  number={20},
+  number = {20},
   pages={22004--22012},
-  year={2024}
+  year={2024},
+  doi={10.1609/aaai.v38i20.30203}
 }
 
 @article{fisher2019all,
@@ -259,9 +278,9 @@ title = {Controlling the False Discovery Rate: A Practical and Powerful Approach
 journal = {Journal of the Royal Statistical Society: Series B (Methodological)},
 volume = {57},
 number = {1},
-pages = {289-300},
+pages = {289--300},
 keywords = {bonferroni-type procedures, familywise error rate, multiple-comparison procedures, p-values},
-doi = {https://doi.org/10.1111/j.2517-6161.1995.tb02031.x},
+doi = {10.1111/j.2517-6161.1995.tb02031.x},
 url = {https://rss.onlinelibrary.wiley.com/doi/abs/10.1111/j.2517-6161.1995.tb02031.x},
 eprint = {https://rss.onlinelibrary.wiley.com/doi/pdf/10.1111/j.2517-6161.1995.tb02031.x},
 abstract = {SUMMARY The common approach to the multiplicity problem calls for controlling the familywise error rate (FWER). This approach, though, has faults, and we point out a few. A different approach to problems of multiple significance testing is presented. It calls for controlling the expected proportion of falsely rejected hypotheses — the false discovery rate. This error rate is equivalent to the FWER when all hypotheses are true but is smaller otherwise. Therefore, in problems where the control of the false discovery rate rather than that of the FWER is desired, there is potential for a gain in power. A simple sequential Bonferronitype procedure is proved to control the false discovery rate for independent test statistics, and a simulation study shows that the gain in power is substantial. The use of the new procedure and the appropriateness of the criterion are illustrated with examples.},
@@ -269,13 +288,13 @@ year = {1995}
 }
 
 
-@article{larson_how_2016,
-  title={How we analyzed the {COMPAS} recidivism algorithm},
-  author={Larson, Jeff},
-  journal={ProPublica (5 2016)},
-  volume={9},
-  number={1},
-  year={2016}
+@misc{larson_how_2016,
+  title={How We Analyzed the {COMPAS} Recidivism Algorithm},
+  author = {Larson, Jeff and Mattu, Surya and Kirchner, Lauren and Angwin, Julia},
+  year = {2016},
+  month = may,
+  day = {23},
+  howpublished = {ProPublica}
 }
 
 @misc{angwin_machine_2016,
@@ -288,22 +307,20 @@ year = {1995}
   url          = {https://www.propublica.org/article/machine-bias-risk-assessments-in-criminal-sentencing}
 }
 
-@article{hofmann_statlog_1994,
+
+@misc{hofmann_statlog_1994,
   title = {Statlog ({German} Credit Data)},
-  author={Hofmann, Hans},
-  journal={UCI Machine Learning Repository},
-  volume={10},
-  pages={C5NC77},
-  year={1994}
+  author = {Hofmann, Hans},
+  year = {1994},
+  howpublished = {UCI Machine Learning Repository},
+  doi = {10.24432/C5NC77}
 }
 
-@article{becker_adult_1996,
-  title={Adult data set},
-  author={Kohavi, Ronny and Becker, Barry},
-  journal={UCI machine learning repository},
-  volume={5},
-  pages={2093},
-  year={1996}
+@misc{becker_adult_1996,
+  title = {Adult},
+  author = {Kohavi, Ronny and Becker, Barry},
+  year = {1996},
+  howpublished = {UCI Machine Learning Repository}
 }
 
 @article{pedregosa2011scikit,
@@ -325,4 +342,15 @@ year = {1995}
       primaryClass={cs.LG},
       note={arXiv:2603.11750 [cs.LG]},
       url={https://arxiv.org/abs/2603.11750}, 
+}
+
+@Article{pysal2007,
+  author={Rey, Sergio J. and Anselin, Luc},
+  title={{PySAL}: A Python Library of Spatial Analytical Methods},
+  journal={The Review of Regional Studies},
+  year=2007,
+  volume={37},
+  number={1},
+  pages={5--27},
+  keywords={Open Source; Software; Spatial}
 }

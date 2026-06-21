@@ -52,7 +52,7 @@ def collect_referenced_pdf_basenames(overleaf_bundle: Path | None = None) -> fro
 
 
 def export_script_pdf_basenames() -> frozenset[str]:
-    """PDFs written by export_thesis_assets.py / quick export into presentation_assets/fig/."""
+    """PDFs written by export_thesis_assets.py into presentation_assets/fig/."""
     s = {
         "spatial_patterns_per_run.pdf",
         "hh_by_family.pdf",
@@ -142,7 +142,7 @@ def copy_notebook_figures(
             print(
                 f"Warning: {len(missing_export)} thesis-referenced PDF(s) are normally written by "
                 f"export_thesis_assets.py but missing under {fig_dir}: {tail}{extra}. "
-                "Run a full export (omit --quick) if needed."
+                "Run export_thesis_assets.py if needed."
             )
 
     if prune_orphans:
