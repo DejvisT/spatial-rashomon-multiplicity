@@ -66,8 +66,8 @@ def per_seed_analysis_tables(
 ) -> Dict[str, pd.DataFrame]:
     """
     One seed: decomposition (family + within-family HP on **P**, secondary) on
-    all/HH/non-HH; legacy V_m grouped by unique HP values (secondary); model-level
-    ``V_m`` / ``V_m_HH`` / ``V_m_nonHH`` table for meta-models.
+    all/HH/non-HH; V_m-based HP importance with adaptive grouping (secondary);
+    model-level ``V_m`` / ``V_m_HH`` / ``V_m_nonHH`` table for meta-models.
 
     Returns keys: ``models``, ``metrics_long``, ``decomp_hp_wide``,
     ``vm_hp_wide`` (wide = seed-level frames suitable for aggregation).
@@ -153,6 +153,8 @@ def per_seed_analysis_tables(
     vm_imp_rows: List[pd.DataFrame] = []
 
     def run_vm_subset(subset: str, mask: Optional[np.ndarray]) -> None:
+        if not grouping_info:
+            return
         families = sorted(meta_sel["model_name"].unique())
         for family in families:
             fam_mask = (meta_sel["model_name"] == family).values
@@ -161,7 +163,7 @@ def per_seed_analysis_tables(
             P_f = P_sel[fam_mask]
             meta_f = meta_sel.loc[fam_mask].reset_index(drop=True)
             V_m = compute_Vm(P_f, obs_mask=mask)
-            fam_grouping = grouping_info.get(family, {}) if grouping_info else {}
+            fam_grouping = grouping_info.get(family, {})
             imp = hp_importance_Vm(V_m, meta_f, fam_grouping)
             if imp.empty:
                 continue

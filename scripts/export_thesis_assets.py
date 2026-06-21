@@ -22,7 +22,6 @@ sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "scripts"))
 
 from thesis_layout import (  # noqa: E402
-    LEGACY_TABLES,
     THESIS_TABLES_ROOT,
     dataset_plot_color,
     display_dataset_name,
@@ -212,29 +211,11 @@ def write_family_summary_tex():
             out.append(f"{fam} & {mv} & {mi} & {hh} & {hh_rate} \\\\")
 
     else:
-        path = resolve_csv("family_hv_hh_summary_compas.csv", "nb06")
-        if path is None:
-            print(
-                "Missing per_family_spatial_aggregated.csv and "
-                "family_hv_hh_summary_compas.csv. Skipping family_summary.tex"
-            )
-            return
-
-        df = pd.read_csv(path)
-        out[0] = (
-            r"% COMPAS: global top-K reference plus per-family Rashomon sets. "
-            r"Legacy single-run CSV; re-run notebook 01 to get mean$\pm$std."
+        print(
+            "Missing results/compas/per_family_spatial_aggregated.csv. "
+            "Skipping family_summary.tex"
         )
-
-        for _, r in df.iterrows():
-            fam = r["family"]
-            mv = f"{r['mean_var']:.6f}"
-            mi = f"{r['moran_I']:.3f}"
-            hh_count = int(r["hh_count"])
-            hh = str(hh_count)
-            hh_rate = f"{100 * hh_count / compas_n_test:.1f}\\%"
-
-            out.append(f"{fam} & {mv} & {mi} & {hh} & {hh_rate} \\\\")
+        return
 
     out.append(r"\hline")
     out.append(r"\end{tabular}")
@@ -246,7 +227,7 @@ def write_family_summary_tex():
 def write_null_significance_tex():
     path = resolve_csv("null_significance_summary.csv", "nb02")
     if path is None:
-        print("Missing null_significance_summary.csv (nb02 / legacy tables). Skipping null_significance.tex")
+        print("Missing null_significance_summary.csv (nb02). Skipping null_significance.tex")
         return
 
     df = pd.read_csv(path)
@@ -281,7 +262,7 @@ def write_conflict_null_significance_tex():
     path = resolve_csv("conflict_null_significance_summary.csv", "nb02")
     if path is None:
         print(
-            "Missing conflict_null_significance_summary.csv (nb02 / legacy tables). "
+            "Missing conflict_null_significance_summary.csv (nb02). "
             "Skipping conflict_null_significance.tex"
         )
         return
@@ -318,16 +299,13 @@ def write_hh_component_summary_tex():
     HH connected-component summary for COMPAS only
     (notebook 03, min component size 5).
 
-    Reads thesis_outputs/tables/nb03/hh_component_summary_compas.csv
-    with fallback to legacy tables/.
+    Reads thesis_outputs/tables/nb03/hh_component_summary_compas.csv.
     """
     ds = "compas"
     label = "COMPAS"
     name = f"hh_component_summary_{ds}.csv"
 
-    path = THESIS_TABLES_ROOT / "nb03" / name
-    if not path.is_file():
-        path = LEGACY_TABLES / name
+    path = resolve_csv(name, "nb03")
 
     out = []
     out.append(r"% Auto-generated from notebook 03 CSV: hh_component_summary_compas.csv")
@@ -338,10 +316,9 @@ def write_hh_component_summary_tex():
     )
     out.append(r"\hline")
 
-    if not path.is_file():
+    if path is None:
         raise FileNotFoundError(
-            f"Missing {name}. Expected at {THESIS_TABLES_ROOT / 'nb03' / name} "
-            f"or {LEGACY_TABLES / name}."
+            f"Missing {name}. Expected at {THESIS_TABLES_ROOT / 'nb03' / name}."
         )
 
     df = pd.read_csv(path)
@@ -1401,7 +1378,7 @@ def main():
     parser.add_argument(
         "--copy-all-figures",
         action="store_true",
-        help="Copy every PDF from thesis_outputs/figures and legacy figures/ (ignore thesis allowlist).",
+        help="Copy every PDF from thesis_outputs/figures/ (ignore thesis allowlist).",
     )
     parser.add_argument(
         "--prune-presentation-figs",

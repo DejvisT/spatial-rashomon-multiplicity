@@ -2,9 +2,7 @@
 Map thesis \\includegraphics{*.pdf} references to notebook outputs and copy into
 overleaf_bundle/presentation_assets/fig/.
 
-Sources (via thesis_layout.iter_derived_figure_pdfs): legacy repo figures/ and
-thesis_outputs/figures/nb*/. Duplicate basenames resolve like the old exporter
-(the last occurrence in iteration wins: thesis_outputs over legacy).
+Sources (via thesis_layout.iter_derived_figure_pdfs): ``thesis_outputs/figures/``.
 """
 from __future__ import annotations
 
@@ -80,7 +78,7 @@ def export_script_pdf_basenames() -> frozenset[str]:
 
 
 def build_figure_source_map() -> dict[str, Path]:
-    """Map PDF basename -> source path; later paths overwrite earlier (thesis over legacy)."""
+    """Map PDF basename -> source path under thesis_outputs/figures/."""
     from thesis_layout import iter_derived_figure_pdfs
 
     m: dict[str, Path] = {}
@@ -97,7 +95,7 @@ def copy_notebook_figures(
     overleaf_bundle: Path | None = None,
 ) -> None:
     """
-    Copy PDFs from thesis_outputs/figures (and legacy figures/) into fig_dir.
+    Copy PDFs from thesis_outputs/figures/ into fig_dir.
 
     By default only copies PDFs whose basenames appear in \\includegraphics in
     thesis.tex and overleaf_bundle/chapters/*.tex.
@@ -123,7 +121,7 @@ def copy_notebook_figures(
         for n in sorted(missing_sources):
             print(
                 f"Warning: thesis references {n} but no PDF found under "
-                "legacy figures/ or thesis_outputs/figures/ (generate via notebooks or export script)."
+                "thesis_outputs/figures/ (generate via notebooks or export script)."
             )
 
     copied = 0

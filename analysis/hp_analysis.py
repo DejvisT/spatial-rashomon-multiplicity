@@ -25,7 +25,6 @@ import numpy as np
 import pandas as pd
 
 from analysis.run_analysis import load_meta, select_rashomon_per_family_k_each
-from analysis.hp_decomposition import make_hp_key
 
 PathLike = Union[str, Path]
 
@@ -182,7 +181,7 @@ def compute_Vm(
 def hp_importance_Vm(
     V_m: np.ndarray,
     meta_sel: pd.DataFrame,
-    grouping_info: Optional[Dict[str, Tuple[str, Optional[List[float]]]]] = None,
+    grouping_info: Dict[str, Tuple[str, Optional[List[float]]]],
     *,
     min_groups: int = 2,
     min_group_size: int = 2,
@@ -196,55 +195,33 @@ def hp_importance_Vm(
 
     for hp_col in hp_cols:
         hp_name = hp_col.replace("hp_", "")
-        if grouping_info is not None and hp_name not in grouping_info:
+        if hp_name not in grouping_info:
             continue
-        
-        if grouping_info is not None:
-            grouping_type, bins = grouping_info[hp_name]
-            # Apply grouping
-            grouped_keys = apply_grouping(meta_sel[hp_col], grouping_type, bins)
-        else:
-            # Old logic
-            keys = np.array([make_hp_key(v) for v in meta_sel[hp_col].values], dtype=object)
-            grouped_keys = pd.Series(keys)
-            grouping_type = 'legacy_exact'
-        
+
+        grouping_type, bins = grouping_info[hp_name]
+        grouped_keys = apply_grouping(meta_sel[hp_col], grouping_type, bins)
+
         valid = grouped_keys.notna() & (grouped_keys != 'nan')
         if valid.sum() < 3:
             continue
         V_valid = V_m[valid]
         keys_valid = grouped_keys[valid]
-        
-        if grouping_info is not None:
-            group_counts = Counter(keys_valid)
-            merge_map = merge_small_groups(group_counts, min_group_size)
-            valid_groups = get_valid_groups(group_counts, merge_map, min_group_size)
-            
-            if len(valid_groups) < min_groups:
-                continue
-            
-            # Apply merging
-            keys_merged = keys_valid.map(lambda x: merge_map.get(x, x))
-            keep_mask = keys_merged.isin(valid_groups.keys())
-            V_use = V_valid[keep_mask]
-            keys_use = keys_merged[keep_mask]
-            
-            n_groups = len(valid_groups)
-            min_group_size_actual = min(valid_groups.values())
-        else:
-            # Old logic
-            counts = Counter(keys_valid)
-            keep_keys = {k for k, c in counts.items() if c >= min_group_size}
-            if len(keep_keys) < min_groups:
-                continue
 
-            keep_mask = np.array([k in keep_keys for k in keys_valid])
-            V_use = V_valid[keep_mask]
-            keys_use = keys_valid[keep_mask]
-            
-            n_groups = len(keep_keys)
-            min_group_size_actual = min(counts[k] for k in keep_keys)
-        
+        group_counts = Counter(keys_valid)
+        merge_map = merge_small_groups(group_counts, min_group_size)
+        valid_groups = get_valid_groups(group_counts, merge_map, min_group_size)
+
+        if len(valid_groups) < min_groups:
+            continue
+
+        keys_merged = keys_valid.map(lambda x: merge_map.get(x, x))
+        keep_mask = keys_merged.isin(valid_groups.keys())
+        V_use = V_valid[keep_mask]
+        keys_use = keys_merged[keep_mask]
+
+        n_groups = len(valid_groups)
+        min_group_size_actual = min(valid_groups.values())
+
         var_total = float(np.var(V_use))
         if var_total < EPS:
             continue

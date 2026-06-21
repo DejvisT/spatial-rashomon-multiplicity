@@ -7,9 +7,6 @@ from ``run_training_pipeline.py``. The experiment runner still writes
 
 Each analysis notebook writes exports under ``thesis_outputs/tables/<nbXX>/`` and
 ``thesis_outputs/figures/<nbXX>/`` so filenames map cleanly to a notebook.
-
-Legacy flat ``tables/`` and ``figures/`` at the repo root are still checked when
-resolving inputs (so old runs keep working until you re-execute notebooks).
 """
 from __future__ import annotations
 
@@ -23,9 +20,6 @@ RAW_RESULTS = _ROOT / "results"
 THESIS_ROOT = _ROOT / "thesis_outputs"
 THESIS_TABLES_ROOT = THESIS_ROOT / "tables"
 THESIS_FIGURES_ROOT = THESIS_ROOT / "figures"
-
-LEGACY_TABLES = _ROOT / "tables"
-LEGACY_FIGURES = _ROOT / "figures"
 
 DATASET_DISPLAY_NAMES = {
     "compas": "COMPAS",
@@ -82,30 +76,20 @@ def thesis_output_dirs(notebook_id: str) -> tuple[Path, Path]:
 
 def resolve_csv(filename: str, *notebook_ids: str) -> Optional[Path]:
     """
-    Find a CSV by basename: try ``thesis_outputs/tables/<nb>/filename`` for each
-    ``notebook_ids`` in order, then ``tables/filename`` (legacy).
+    Find a CSV by basename under ``thesis_outputs/tables/<nb>/filename`` for each
+    ``notebook_ids`` in order.
     """
     for nb in notebook_ids:
         p = THESIS_TABLES_ROOT / nb / filename
         if p.is_file():
             return p
-    leg = LEGACY_TABLES / filename
-    if leg.is_file():
-        return leg
     return None
 
 
 def iter_derived_figure_pdfs() -> Iterator[Path]:
-    """
-    Yield PDF paths for bundling. Legacy ``figures/`` paths come first; ``thesis_outputs/figures/``
-    last so duplicate basenames prefer the new layout when copied in sequence.
-    """
-    if LEGACY_FIGURES.is_dir():
-        for sub in sorted(LEGACY_FIGURES.glob("nb*")):
-            if sub.is_dir():
-                yield from sorted(sub.glob("*.pdf"))
-        yield from sorted(LEGACY_FIGURES.glob("*.pdf"))
-    if THESIS_FIGURES_ROOT.is_dir():
-        for sub in sorted(THESIS_FIGURES_ROOT.iterdir()):
-            if sub.is_dir():
-                yield from sorted(sub.glob("*.pdf"))
+    """Yield PDF paths under ``thesis_outputs/figures/``."""
+    if not THESIS_FIGURES_ROOT.is_dir():
+        return
+    for sub in sorted(THESIS_FIGURES_ROOT.iterdir()):
+        if sub.is_dir():
+            yield from sorted(sub.glob("*.pdf"))
