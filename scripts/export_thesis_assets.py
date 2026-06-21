@@ -1388,7 +1388,6 @@ def main():
     args = parser.parse_args()
 
     write_dataset_summary_tex()
-    write_global_summary_tex()
     write_dataset_characteristics_tex()
     write_topk_brier_gap_tex()
     write_family_summary_tex()
