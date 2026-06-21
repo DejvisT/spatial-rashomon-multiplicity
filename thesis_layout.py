@@ -33,6 +33,8 @@ DATASET_PLOT_COLORS = {
     "adult": "C2",
 }
 
+SUPPORTED_DATASETS = ("compas", "german", "adult")
+
 
 def _dataset_key(dataset: str) -> str:
     key = str(dataset).strip().lower().replace(" ", "_")

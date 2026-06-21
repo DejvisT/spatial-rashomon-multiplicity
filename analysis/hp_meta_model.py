@@ -1,12 +1,12 @@
 """
 Descriptive / exploratory meta-models for model-level disagreement score ``V_m``.
 
-**Thesis role (Section 5.7):** this is the **main descriptive** tool for
-within-family hyperparameter *importance* and *range-style* summaries, conditional
-on validation Brier. **Family decomposition** (between vs within family on ``P``)
-lives in ``hp_results.py`` / ``hyperparams.py`` and is the main
-*structural* analysis. **Unique-value HP variance decompositions** on ``P`` are
-secondary / appendix material.
+**This is the **main descriptive** tool for within-family hyperparameter 
+*importance* and *range-style* summaries, conditional on validation Brier.
+**Family decomposition** (between vs within family on ``P``) lives in 
+``hp_results.py`` / ``hp_decomposition.py`` and is the main *structural* analysis.
+**Unique-value HP variance decompositions** on ``P`` are secondary / appendix
+material.
 
 RandomForest fits are **not** causal or fully calibrated predictors. We report
 leave-one-(outer-)seed-out metrics when possible (else a labeled row-level KFold
