@@ -1,44 +1,28 @@
 This thesis investigated whether predictive multiplicity---the disagreement among
 near-optimal models---is spatially structured in feature space. The results show that
-prediction instability is often not spread uniformly over the test set, but appears in
-localized regions. The thesis therefore treats predictive multiplicity not only as an
-aggregate property of a model set, but also as a local property of particular parts of the
-feature space.
+prediction instability often appears in localized regions rather than spreading uniformly over the test set. Predictive multiplicity should therefore be understood as both an
+aggregate property of a model set and a local property of particular regions of
+the feature space.
 
 Across the real-world benchmark datasets, predictive variance shows positive spatial
 autocorrelation, and high-instability observations often form local hotspot regions. The
 strength and interpretation of these regions differ across datasets: COMPAS shows the
 clearest localized structure, German Credit shows high overall disagreement with weaker
 spatial concentration, and Adult shows broader but more diffuse instability regions.
-A decision-boundary diagnostic further shows that the COMPAS hotspots are largely
-decoupled from proximity to the ensemble classification threshold, indicating that the
-strongest localized structure in this dataset is not merely ordinary boundary ambiguity.
-The synthetic experiments further show that the proposed pipeline can recover known
-instability regions under controlled conditions, both in boundary-ambiguity settings and
-in a structural non-boundary design where the intended hotspots are placed away from the
-ordinary decision boundary.
+Additional diagnostics show that these hotspots are not always reducible to ordinary
+decision-boundary ambiguity.
 
 The analysis also shows that predictive multiplicity is associated with concrete modeling
 choices. Model family accounts for a substantial share of observed prediction variance,
 especially in some hotspot regions, while within-family hyperparameters add further
-structure. Simple
-rule-based descriptions indicate that selected high-multiplicity regions can be described
-in terms of original input features, although exact hotspot membership remains partly
-sensitive to the data split and graph construction.
+structure. Synthetic experiments validate the pipeline under controlled conditions, and
+simple rule-based descriptions show that selected high-multiplicity regions can be
+partially characterized in the original feature space.
 
-The results suggest that model reliability should not be assessed only globally.
-Two models may have similar validation performance, and one deployed model may look
-acceptable on average, while some regions of the feature space remain highly sensitive to
-which near-optimal model is chosen. Spatial multiplicity analysis provides a way to
-identify such regions and to treat them as candidates for closer inspection.
-
-The findings show that predictive multiplicity is most informative when it is analyzed
-both globally and locally: global metrics quantify the overall extent of
-model disagreement, while spatial hotspot analysis identifies the regions of feature space
-where model choice becomes especially consequential. Under the tested specifications,
-positive spatial clustering persists across robustness checks, but hotspot magnitude and
-boundaries remain dataset-dependent, with German Credit showing the weakest hotspot
-structure.
+The main implication is that model reliability should be assessed both globally and locally. Two models may have similar validation performance, and a deployed model may look
+acceptable on average. Nevertheless, some regions of the feature space can remain highly
+sensitive to which near-optimal model is chosen. Spatial multiplicity analysis provides a way to
+identify such regions and treat them as candidates for closer inspection.
 
 \subsection{Future Work}
 

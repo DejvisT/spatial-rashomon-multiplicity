@@ -2,12 +2,17 @@ This chapter interprets the empirical results beyond metric reporting, connects 
 
 \subsection{From Global Multiplicity to Local Risk}
 
-The central empirical message of this thesis is that predictive multiplicity is \emph{localized}: it is not spread uniformly across the population, but concentrates in identifiable regions of feature space. Global disagreement metrics such as ambiguity, discrepancy, or disagreement rate remain useful because they quantify \emph{how much} disagreement exists overall. However, by construction, they do not reveal \emph{where} disagreement occurs or \emph{which} individuals are most exposed to it. By combining observation-wise predictive variance with Moran's $I$ and LISA, this thesis
-shows that disagreement is often organized into contiguous HH (High--High)
-regions---multiplicity hotspots---rather than appearing as a purely diffuse
-observation-level quantity.
+The central empirical message of this thesis is that predictive multiplicity is localized:
+it concentrates in identifiable regions of feature space rather than spreading uniformly
+across the population. Global disagreement metrics such as ambiguity, discrepancy, or
+disagreement rate remain useful because they quantify how much disagreement exists
+overall. However, by construction, they do not reveal where disagreement occurs or which
+individuals are most exposed to it. By combining observation-wise predictive variance
+with Moran's \(I\) and LISA, this thesis turns predictive multiplicity into a regional
+reliability diagnostic: it identifies where model choice becomes especially relevant.
 
-This changes the practical interpretation of predictive reliability. Under a single deployed model, two individuals may receive similarly confident predicted probabilities, yet their predictions need not be equally reliable. One individual may lie in a stable region where near-optimal models agree closely, while the other may lie in a hotspot where equally accurate models disagree substantially. In that case, the second prediction is operationally less reliable even when its reported score appears equally confident. The key point is therefore not only \emph{how uncertain} a prediction is, but also \emph{how sensitive it is to the choice among near-optimal models}.
+This changes the practical interpretation of predictive reliability. Under a single deployed model, two individuals may receive similarly confident predicted
+probabilities. Their predictions, however, need not be equally reliable. One individual may lie in a stable region where near-optimal models agree closely, while the other may lie in a hotspot where equally accurate models disagree substantially. In that case, the second prediction is operationally less reliable even when its reported score appears equally confident. The key point is therefore the combination of \emph{how uncertain} a prediction is and \emph{how sensitive it is to the choice among near-optimal models}.
 
 \textbf{Hotspots form regions, not isolated points.}
 The connected-component analysis shows that HH observations often form contiguous graph regions rather than isolated outliers. This matters in practice because regional structure is more actionable than isolated unstable predictions: it enables subgroup-level auditing, rule extraction, and targeted monitoring.
@@ -19,60 +24,43 @@ It is also important to distinguish the present framework from more standard unc
 
 \paragraph{RQ1: Where do similarly well-performing models disagree?}
 The results show that predictive multiplicity is present at the observation level across all
-three benchmark datasets. The magnitude of disagreement differs by dataset: German
-Credit exhibits the largest aggregate multiplicity, while COMPAS and Adult show lower
-mean predictive variance. This confirms that near-optimal models can disagree
-substantially on individual observations even when they have similar validation
-performance.
+three benchmark datasets. Its magnitude differs by dataset: German Credit exhibits the
+largest aggregate multiplicity, while COMPAS and Adult show lower average predictive
+variance. This confirms that near-optimal models can disagree substantially on individual
+observations even when their validation performance is similar.
 
 \paragraph{RQ2: Does disagreement form local regions in feature space?}
-Predictive variance is spatially structured with respect to the feature-space graph. Across all three
-datasets, variance-based Moran's $I$ is positive and significant under the null model
-based on prediction permutations in nearly all runs. The spatial structure is strongest on
-COMPAS, where high-variance observations form clearer localized HH regions. Adult
-shows broader and more diffuse hotspot structure, while German Credit has high overall
-disagreement but weaker spatial concentration. Thus, disagreement magnitude and spatial
-concentration are related but distinct properties. The decision-boundary diagnostic further shows that these regions do not always coincide
-with ordinary classification ambiguity: on COMPAS, hotspot structure is largely decoupled
-from proximity to the ensemble decision boundary.
+Predictive variance is spatially structured with respect to the feature-space graph. Across
+datasets, high-variance observations tend to occur near other high-variance observations
+more often than expected under the prediction-permutation null. The strength of this
+structure differs across datasets: COMPAS shows the clearest localized hotspots, Adult
+shows broader and more diffuse regions, and German Credit shows high aggregate
+disagreement but weaker spatial concentration. The decision-boundary diagnostic further
+shows that these regions do not always coincide with ordinary classification ambiguity.
 
 \paragraph{RQ3: How stable are these regions under changes in the analysis?}
-The stability and robustness analyses show that hotspot structure is partly stable, but
-not pointwise fixed. Exact HH membership varies across seeds, and individual observations
-are not reliably classified as hotspots in every run. However, HH observations often form
-contiguous graph regions, and higher-frequency HH points remain spatially localized.
-
-Under the tested specifications, predictive multiplicity continues to show positive spatial
-clustering under changes to the Rashomon set size $K$, the neighborhood size $k$,
-probability calibration, and graph construction. However, the \emph{magnitude} of
-Moran's $I$, HH counts, and exact hotspot masks remain dataset- and
-specification-dependent. German Credit shows the weakest and least stable hotspot
-structure throughout these checks. The appropriate interpretation is therefore regional
-rather than pointwise: hotspot areas recur to some extent, but their exact boundaries
-depend on the split, model set, and graph definition.
+The stability and robustness analyses show that hotspot structure is partly stable, but not
+pointwise fixed. Exact HH membership varies across seeds, and individual observations
+should not be interpreted as permanently hotspot-like. However, HH observations often
+form contiguous graph regions, and the positive spatial clustering signal persists under
+changes to \(K\), \(k\), calibration, and graph construction. The appropriate interpretation
+is therefore regional rather than pointwise.
 
 \paragraph{RQ4: Which modeling choices are associated with the instability?}
 Model family accounts for a substantial share of observed predictive variance, especially
 on Adult and COMPAS, and this contribution often increases inside HH regions. Within
 model families, disagreement is further associated with a smaller number of grouped
-hyperparameter values, such as regularization strength for logistic regression,
-neighborhood size for kNN, and complexity or optimization parameters for tree-based and
-neural-network models. Predictive multiplicity is therefore not just random training
-variation; within the sampled candidate pool, it is systematically associated with concrete
-modeling choices. These results are descriptive and should not be interpreted as causal
-effects of individual hyperparameters.
+hyperparameter values, such as regularization strength, neighborhood size, and complexity
+or optimization parameters. These results show that predictive multiplicity is systematically
+associated with concrete modeling choices, while remaining descriptive rather than causal.
 
 \paragraph{RQ5: Can the detected regions be validated and interpreted?}
 The synthetic experiments confirm that the pipeline can recover known high-instability
-regions when ground truth is available. Importantly, the validation now covers two
-regimes. The single-island design validates the classical aleatoric or boundary-ambiguity
-case, where the intended hotspot is generated by $P(y=1\mid x)\approx 0.5$. The
-structural non-boundary design shows that the pipeline can also recover compact
-exception regions away from the ordinary decision boundary, with near-zero correlation
-between predictive variance and decision-boundary margin. The rule-extraction analysis
+regions when ground truth is available. The validation covers both boundary-driven
+ambiguity and structural non-boundary exception regions. The rule-extraction analysis
 further shows that real-data hotspots, especially on COMPAS, can be partially described
-by compact feature-space rules. Together, these results show that the framework not only
-detects instability, but also helps localize and describe the affected regions.
+by compact feature-space rules. The framework therefore detects instability while
+also localizing and describing the affected regions.
 
 
 \subsection{Practical Implications}
@@ -86,7 +74,7 @@ suggest a prospective reliability-screening workflow that differs from standard
     \item treat predictions in hotspot regions differently, for example by attaching caution labels, triggering human review, or using abstention policies in high-stakes settings.
 \end{enumerate}
 
-The practical contribution is therefore not merely another descriptive metric, but a way to separate \emph{stable predictions} from \emph{predictions that are sensitive to model choice}. In high-stakes applications, this distinction is operationally relevant. A system should not treat a prediction in a stable region and a prediction in a hotspot as equally trustworthy simply because both come with similar point estimates.
+The practical contribution is therefore a way to separate \emph{stable predictions} from \emph{predictions that are sensitive to model choice}. In high-stakes applications, this distinction is operationally relevant. A system should not treat a prediction in a stable region and a prediction in a hotspot as equally trustworthy simply because both come with similar point estimates.
 
 A useful way to interpret the proposed workflow is as a \emph{reliability screening mechanism}. Predictions in stable regions may proceed through the standard pipeline. Predictions in localized hotspots should be interpreted more cautiously because the selected model represents only one of several equally accurate alternatives that may not agree on the same observation. The precise intervention will depend on the application domain, but the general principle
 is that multiplicity hotspots identify cases where model choice itself may become

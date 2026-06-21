@@ -44,9 +44,9 @@ hyperparameter choices.
 \label{sec:framework-data-model-pool}
 
 \paragraph{Problem setting and notation.}
-Let $(X,y)$ denote a supervised learning dataset with $N$ observations, where
-$X \in \mathbb{R}^{N \times d}$ is the feature matrix and
-$y \in \{0,1\}^N$ is a binary target variable. Let $\mathcal{F}$ denote a finite pool of
+Let \((x_i,y_i)_{i=1}^N\) denote a supervised binary classification dataset, where
+\(x_i\) is the feature vector of observation \(i\) and \(y_i \in \{0,1\}\) is the binary
+target. After preprocessing, the feature matrix is represented in a numeric space. Let $\mathcal{F}$ denote a finite pool of
 trained probabilistic classifiers, potentially spanning multiple model families and
 hyperparameter configurations. Each model $f \in \mathcal{F}$ outputs predicted
 probabilities $\hat{p}_{fi} \in [0,1]$ for observations $i=1,\dots,N$.
@@ -142,6 +142,8 @@ The main empirical Rashomon approximation is
 \[
 \mathcal{R}_K = \{f_{(1)},\ldots,f_{(K)}\}.
 \]
+
+In all experiments, the candidate pool is larger than \(K\), so \(|\mathcal{R}_K|=K\).
 Unless otherwise stated, $K=25$ and $\mathcal{R}_K$ refers to the global top-$K$ set
 selected from the full candidate pool across all families.
 
@@ -157,8 +159,8 @@ To audit how close the retained models are in validation performance, we report 
 validation Brier-score gap within the selected global top-$K$ set. For each run, this gap
 is computed relative to the best retained model,
 \[
-\Delta L_m = L(f_m) - \min_{f \in \mathcal{R}_K} L(f),
-\qquad f_m \in \mathcal{R}_K .
+\Delta L_m = L(f_{(m)}) - L(f_{(1)}),
+\quad m = 1,\ldots,K.
 \]
 Table~\ref{tab:topk-brier-gap} summarizes the maximum, median, and 95th-percentile
 gap across the selected top-$K=25$ models. This diagnostic makes the term
@@ -193,32 +195,32 @@ analyses.
 For each run, all models in the selected Rashomon approximation are applied to the
 held-out test set. This yields a prediction matrix
 \[
-P \in \mathbb{R}^{K \times N},
+P \in \mathbb{R}^{K \times N_{\mathrm{test}}},
 \]
-where $K$ is the number of selected models and $N$ is the number of test observations.
-The entry $\hat{p}_{mi}$ denotes the predicted probability assigned to test observation
-$i$ by model $m \in \mathcal{R}_K$.
+where \(K\) is the number of retained models and \(N_{\mathrm{test}}\) is the number of
+test observations. The entry \(\hat p_{mi}\) denotes the predicted probability assigned
+to test observation \(i\) by retained model \(m\), for \(m=1,\ldots,K\).
 
-The primary observation-wise multiplicity metric is predictive variance. Let
-$M = |\mathcal{R}_K|$ and let
+The primary observation-wise multiplicity metric is predictive variance. For each test
+observation \(i\), let
 \[
 \bar{p}_i =
-\frac{1}{M}
-\sum_{m=1}^{M}
+\frac{1}{K}
+\sum_{m=1}^{K}
 \hat{p}_{mi}
 \]
-denote the mean predicted probability for observation $i$ across the retained models.
-The observation-wise predictive variance is computed as the population variance over the
+denote the mean predicted probability across the retained top-\(K\) models. The
+observation-wise predictive variance is computed as the population variance over the
 finite selected model set:
 \[
 v_i =
-\frac{1}{M}
-\sum_{m=1}^{M}
+\frac{1}{K}
+\sum_{m=1}^{K}
 \left(\hat{p}_{mi} - \bar{p}_i\right)^2,
-\quad i=1,\dots,N.
+\quad i=1,\dots,N_{\mathrm{test}}.
 \]
-Thus, the denominator is $M$ rather than $M-1$. This convention matches the empirical
-pipeline, where the selected top-$K$ model set is treated as the finite Rashomon
+Thus, the denominator is \(K\) rather than \(K-1\). This convention matches the empirical
+pipeline, where the selected top-\(K\) model set is treated as the finite Rashomon
 approximation under study rather than as a random sample from a larger population.
 
 High values of $v_i$ indicate that near-optimal models assign substantially different
@@ -237,9 +239,17 @@ probability spread, and can be decomposed naturally in the later family- and
 hyperparameter-level analyses.
 
 In addition to pointwise predictive variance, the results report aggregate multiplicity
-summaries. Mean variance averages $v_i$ across test observations. Ambiguity is the mean
-prediction range across Rashomon models,
-$\max_m \hat{p}_{mi} - \min_m \hat{p}_{mi}$. The disagreement rate is the fraction of
+summaries. Mean variance averages $v_i$ across test observations. We report a probability-space analogue of ambiguity, defined as the test-set average of
+the pointwise prediction range across Rashomon models,
+\[
+\frac{1}{N_{\mathrm{test}}}
+\sum_{i=1}^{N_{\mathrm{test}}}
+\left(
+\max_{m=1,\dots,K} \hat{p}_{mi}
+-
+\min_{m=1,\dots,K} \hat{p}_{mi}
+\right).
+\]. The disagreement rate is the fraction of
 test observations for which model predictions differ by more than $\delta=0.05$.
 Discrepancy is the maximum, over model pairs, of the mean absolute prediction
 difference. A supplementary decision-level analysis based on the conflict ratio is reported
@@ -270,19 +280,19 @@ observation is among the $k$ nearest neighbors of the other.
 
 Let
 \[
-A \in \{0,1\}^{N \times N}
+A \in \{0, 1\}^{N_{\mathrm{test}}\times N_{\mathrm{test}}}
 \]
 denote the resulting symmetric adjacency matrix, where $A_{ij}=1$ means that
 observations $i$ and $j$ are connected. The adjacency matrix is row-standardized to obtain
 the spatial weight matrix $W$:
 \[
-W_{ij} = \frac{A_{ij}}{\sum_{j'=1}^{N} A_{ij'}},
-\quad i=1,\dots,N.
+W_{ij} = \frac{A_{ij}}{\sum_{j'=1}^{N_{\mathrm{test}}} A_{ij'}},
+\quad i=1,\dots,N_{\mathrm{test}}.
 \]
 After this normalization, each row of $W$ sums to one. Therefore, for an
-observation-level quantity $\mathbf{v}=(v_1,\dots,v_N)^\top$, the spatial lag
+observation-level quantity $\mathbf{v}=(v_1,\dots,v_{N_{\mathrm{test}}})^\top$, the spatial lag
 \[
-[W\mathbf{v}]_i = \sum_{j=1}^{N} W_{ij}v_j
+[W\mathbf{v}]_i = \sum_{j=1}^{N_{\mathrm{test}}} W_{ij}v_j
 \]
 is the average value of $\mathbf{v}$ among the neighbors of observation $i$. If $v_i$ is
 predictive variance, then $[W\mathbf{v}]_i$ is the average predictive variance in the local
@@ -310,13 +320,13 @@ graph. Here it tests whether high-variance observations tend to be close to othe
 high-variance observations, and whether low-variance observations tend to be close to
 other low-variance observations.
 
-Let $\mathbf{v}=(v_1,\dots,v_N)^\top$ denote the predictive variance values on the test set,
+Let $\mathbf{v}=(v_1,\dots,v_{N_{\mathrm{test}}})^\top$ denote the predictive variance values on the test set,
 and let $\bar{v}$ be their mean. Because $W$ is row-standardized, Moran's $I$ can be
 written as
 \[
 I =
-\frac{\sum_{i=1}^N \sum_{j=1}^N W_{ij}(v_i-\bar{v})(v_j-\bar{v})}
-{\sum_{i=1}^N (v_i-\bar{v})^2}.
+\frac{\sum_{i=1}^{N_{\mathrm{test}}} \sum_{j=1}^{N_{\mathrm{test}}} W_{ij}(v_i-\bar{v})(v_j-\bar{v})}
+{\sum_{i=1}^{N_{\mathrm{test}}} (v_i-\bar{v})^2}.
 \]
 If observations with above-average variance tend to have neighbors that are also above
 average, the numerator becomes positive and Moran's $I$ is positive. Values close to zero
@@ -340,7 +350,7 @@ denote the standardized predictive variance of observation $i$, where $s_v$ is t
 deviation of predictive variance across test observations. The spatial lag of the
 standardized values is
 \[
-[W\mathbf{z}]_i = \sum_{j=1}^{N} W_{ij}z_j.
+[W\mathbf{z}]_i = \sum_{j=1}^{N_{\mathrm{test}}} W_{ij}z_j.
 \]
 The local Moran statistic used by PySAL is proportional to
 \[
@@ -417,8 +427,8 @@ we use a separate prediction-matrix permutation null. This second null is design
 whether the spatial clustering of predictive variance depends on the alignment between
 model predictions and feature-space locations.
 
-The null operates on the prediction matrix $P \in \mathbb{R}^{K \times N}$. For each model
-$m$ independently, the vector $(\hat{p}_{m1},\dots,\hat{p}_{mN})$ is randomly permuted
+The null operates on the prediction matrix $P \in \mathbb{R}^{K \times N_{\mathrm{test}}}$. For each model
+$m$ independently, the vector $(\hat{p}_{m1},\dots,\hat{p}_{mN_{\mathrm{test}}})$ is randomly permuted
 across observations. This within-model permutation preserves each model's marginal
 distribution of predictions, but destroys systematic alignment between predictions and
 the feature-space graph. Predictive variance is then recomputed from the permuted
@@ -426,10 +436,16 @@ prediction matrix, and global Moran's $I$ is recalculated. Any spatial clusterin
 a null in which predictions retain their model-specific marginal distributions but are no
 longer attached to their original feature-space locations.
 
-For each of $R$ permutations, observation-wise predictive variance and global Moran's
-$I$ are recomputed. The empirical one-sided $p$-value is
+For each of \(R\) permutations, observation-wise predictive variance and global
+Moran's \(I\) are recomputed. The empirical one-sided \(p\)-value is
 \[
-p = \frac{1 + \#\{\text{null} \geq \text{observed}\}}{R+1}.
+p =
+\frac{
+    1 + \sum_{r=1}^{R}
+    \mathds{1}\!\left\{ I_{\mathrm{null}}^{(r)} \ge I_{\mathrm{obs}} \right\}
+}{
+    R + 1
+}.
 \]
 In the experiments, $R=100$ null permutations are used per run. A run is treated as
 significant when the empirical $p$-value is below 0.05. Because $R=100$, the smallest
@@ -497,7 +513,7 @@ Three synthetic data designs are used to validate whether LISA-based HH regions 
 known ground-truth instability regions under controlled conditions. The single-island
 design contains two well-separated stable Gaussian blobs and one ambiguous island, with
 points drawn uniformly in a disk and weak XOR-like conditional probability
-$P(y=1\mid x)=0.5\pm\delta$. This design validates the pipeline in the classical
+$P(y = 1 \mid x) \approx 0.5$. This design validates the pipeline in the classical
 aleatoric or boundary-ambiguity setting. The three-islands design extends this setup to
 several disconnected ambiguous regions and a small number of outliers with known region
 labels; it is reported as an additional validation in Appendix~\ref{app:synthetic-fdr}.
@@ -528,14 +544,14 @@ across families hides family-specific multiplicity patterns.
 Predictive variance is decomposed into a between-family component and a within-family
 component. Let $\mathcal{G}$ denote the set of model families and
 $\mathcal{R}^{(g)}_K$ the top-$K$ model set for family $g\in\mathcal{G}$. For observation
-$i$, let $\hat{p}_{gmi}$ be the predicted probability from model
+$i$, let $\hat{p}^{(g)}_{mi}$ be the predicted probability from model
 $m\in\mathcal{R}^{(g)}_K$. The mean prediction of family $g$ is
 \[
-\bar{p}_{gi} = \frac{1}{K}\sum_{m\in\mathcal{R}^{(g)}_K}\hat{p}_{gmi},
+\bar{p}^{(g)}_i = \frac{1}{K}\sum_{m\in\mathcal{R}^{(g)}_K}\hat{p}^{(g)}_{mi},
 \]
 and the overall mean prediction across family-specific model sets is
 \[
-\bar{p}_{i} = \frac{1}{|\mathcal{G}|}\sum_{g\in\mathcal{G}}\bar{p}_{gi}.
+\bar{p}_{i} = \frac{1}{|\mathcal{G}|}\sum_{g\in\mathcal{G}}\bar{p}^{(g)}_i.
 \]
 For a set of observations $S$, such as all test observations, HH observations, or non-HH
 observations, the between-family component is
@@ -544,7 +560,7 @@ observations, the between-family component is
 =
 \frac{1}{|S|}\sum_{i\in S}
 \frac{1}{|\mathcal{G}|}\sum_{g\in\mathcal{G}}
-(\bar{p}_{gi}-\bar{p}_{i})^2.
+(\bar{p}^{(g)}_{i}-\bar{p}_{i})^2.
 \]
 The total predictive variance across all family-specific model sets is
 \[
@@ -552,7 +568,7 @@ The total predictive variance across all family-specific model sets is
 =
 \frac{1}{|S|}\sum_{i\in S}
 \frac{1}{|\mathcal{G}|K}\sum_{g\in\mathcal{G}}
-\sum_{m\in\mathcal{R}^{(g)}_K}(\hat{p}_{gmi}-\bar{p}_{i})^2.
+\sum_{m\in\mathcal{R}^{(g)}_K}(\hat{p}^{(g)}_{mi}-\bar{p}_{i})^2.
 \]
 Family importance is defined as
 \[
@@ -616,11 +632,14 @@ To assess whether these descriptive hyperparameter associations differ inside mu
 $V_m$-based importance calculation is repeated on HH observations. For each
 hyperparameter, the hotspot-specific importance is compared with its global importance:
 \[
-\Delta \rho(h) = \rho_{\mathrm{HH}}(h)-\rho_{\mathrm{all}}(h).
+\Delta\rho^{(g)}(h)
+=
+\rho^{(g)}_{\mathrm{HH}}(h)
+-
+\rho^{(g)}_{\mathrm{all}}(h).
 \]
-Positive values indicate that grouped values of the hyperparameter account for a larger
-share of within-family disagreement inside HH regions, while negative values indicate lower importance inside
-hotspots. Because HH subsets can be small, especially on German Credit, these estimates
+Positive values indicate that grouped values of hyperparameter $h$ account for a larger
+share of within-family disagreement inside HH regions for family $g$. Because HH subsets can be small, especially on German Credit, these estimates
 are interpreted descriptively and reported with seed coverage where relevant. An auxiliary
 performance-control meta-model diagnostic is reported in Appendix~\ref{app:meta-model-diagnostic}.
 
@@ -638,13 +657,29 @@ positive class and all other test observations are the negative class. Component
 therefore aim to describe compact high-multiplicity regions rather than the full HH set at
 once.
 
-Rules are evaluated using support, purity, recall, and lift. For global HH rules, purity is
-$P(\mathrm{HH}\mid\mathrm{rule\ region})$, and lift is measured relative to the HH base
-rate. For component-level rules, purity is
-$P(\mathrm{component}\mid\mathrm{rule\ region})$, and lift is measured relative to the
-base rate of the corresponding component. The main rule analysis is reported for COMPAS,
-where the hotspot structure is clearest and retained components are sufficiently large for
-meaningful rule extraction.
+Rules are evaluated using support, purity, recall, and lift. Let $A$ denote the
+set of observations satisfying a rule, and let $H$ denote the relevant positive
+target set: the full HH set for global rules, or one connected HH component for
+component-level rules. Support is defined as $|A|$, purity as
+\[
+\frac{|A \cap H|}{|A|},
+\]
+recall as
+\[
+\frac{|A \cap H|}{|H|},
+\]
+and lift as
+\[
+\frac{|A \cap H|/|A|}{|H|/N_{\mathrm{test}}}.
+\]
+Thus, lift compares the rule purity with the base rate of the target set.
+
+For global HH rules, $H$ is the full HH set, so purity corresponds to
+$P(\mathrm{HH}\mid\mathrm{rule\ region})$. For component-level rules, $H$ is the
+corresponding connected component, so purity corresponds to
+$P(\mathrm{component}\mid\mathrm{rule\ region})$. The main rule analysis is reported for
+COMPAS, where the hotspot structure is clearest and retained components are sufficiently
+large for meaningful rule extraction.
 
 \subsection{Chapter Summary}
 \label{sec:framework-summary}
@@ -657,6 +692,9 @@ analysis is descriptive rather than causal: hotspots identify where predictive m
 concentrates, but do not by themselves explain the data-generating mechanisms behind
 that disagreement. Fourth, the framework is developed for binary probabilistic
 classification and would require adaptation for regression or multiclass settings.
+
+Table~\ref{tab:framework-method-result-map} summarizes the main analysis goals,
+methods, and corresponding result sections.
 
 \begin{table}[htbp]
 \centering

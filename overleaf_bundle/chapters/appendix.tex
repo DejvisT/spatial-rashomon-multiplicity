@@ -94,8 +94,7 @@ weaker: validation Brier score is rank 1 in 7 of 15 combinations, and its mean i
 decreases to $0.290$. At the same time, the strongest non-performance hyperparameter has
 a higher mean importance in the Rashomon set ($0.498$) than in the full pool ($0.285$).
 
-These results suggest that the Rashomon restriction reduces, but does not eliminate, the
-role of performance differences. Disagreement inside the near-optimal set is therefore not
+These results suggest that the Rashomon restriction reduces the role of performance differences without eliminating it. Disagreement inside the near-optimal set is therefore not
 simply a byproduct of poorly performing models. However, validation Brier score remains
 important in several dataset--family combinations, especially for GBM, MLP, and parts of
 kNN. The meta-model analysis is therefore interpreted as a performance-control
@@ -112,6 +111,9 @@ predictor of $V_m$.}
 \end{table}
 
 \section{Additional Rule-Extraction Results}
+Tables~\ref{tab:rules_compas_top_global} and
+\ref{tab:rules_compas_features_global} report additional global HH rule results for
+COMPAS.
 
 \begin{table}[htbp]
 \centering
@@ -135,8 +137,9 @@ predictor of $V_m$.}
 \section{Additional Synthetic Validation and FDR Sensitivity}
 \label{app:synthetic-fdr}
 
-To assess whether the synthetic validation results depend on the multiple-testing
-threshold used for LISA, we vary the false-discovery-rate level over
+This appendix provides two supplementary checks for the synthetic experiments. First, it
+reports an additional three-islands validation design. Second, it examines whether the
+synthetic validation results depend on the LISA false-discovery-rate threshold by varying
 $\alpha \in \{0.01, 0.05, 0.10, 0.20\}$.
 
 \subsection*{Additional three-islands validation}
@@ -151,6 +154,10 @@ islands ($n=1500$ in total), and an additional set of $100$ outliers. The outlie
 constructed in two groups: low-multiplicity outliers placed in regions with stable class
 probability, and high-multiplicity outliers placed in small ambiguous regions. This makes
 it explicit which outliers should and should not be detected as hotspots.
+
+Figure~\ref{fig:app-synthetic-three-islands-setup} shows the three-islands data-generating
+setup, and Figure~\ref{fig:app-synthetic-three-islands-variance-lisa} shows the resulting
+predictive variance and LISA HH hotspots.
 
 \begin{figure}[htbp]
     \centering
@@ -185,7 +192,7 @@ $93$ to $110$, while the Jaccard overlap with the ground-truth island remains be
 and $0.786$. This reflects the expected precision--recall trade-off: precision decreases from
 $0.9785$ at $\alpha = 0.01$ to $0.9182$ at $\alpha = 0.20$, whereas recall increases from
 $0.7583$ to $0.8417$. Across all tested $\alpha$ values, the detected HH region remains a
-single connected component, matching the geometry of the true island.
+single connected component, matching the geometry of the true island. Figure~\ref{fig:app-synthetic-fdr-single} shows the corresponding FDR sensitivity curve.
 
 \begin{figure}[htbp]
     \centering
@@ -205,7 +212,7 @@ results are identical at $\alpha=0.10$ and change only marginally at $\alpha=0.2
 the HH count increases to $269$, precision decreases slightly to $0.9591$, recall remains
 $0.8776$, and Jaccard overlap decreases slightly to $0.8459$. Across all tested thresholds,
 the number of connected components remains four, reflecting the three island hotspots
-plus one additional outlier-driven hotspot component.
+plus one additional outlier-driven hotspot component. Figure~\ref{fig:app-synthetic-fdr-three} shows the FDR sensitivity curve for the three-islands design.
 
 \begin{figure}[htbp]
     \centering
@@ -223,7 +230,7 @@ the structural exception regions. At the default threshold $\alpha=0.05$, recall
 to $1.0000$, while precision decreases to $0.5581$ because the HH mask expands beyond
 the compact exception regions. This indicates that the structural exceptions form the
 high-confidence core of the detected hotspot signal, while looser thresholds include
-additional nearby or boundary-adjacent observations.
+additional nearby or boundary-adjacent observations. Figure~\ref{fig:app-structural-fdr} shows the corresponding FDR sensitivity curve.
 
 \begin{figure}[htbp]
     \centering
@@ -279,7 +286,10 @@ sides of the classification threshold.
 
 Let $\tau = 0.5$ be the decision threshold. For each observation $i$, define
 \[
-q_i = \frac{1}{K}\sum_{m=1}^{K} \mathbf{1}[\hat{p}_{mi} \geq \tau]
+q_i =
+\frac{1}{K}
+\sum_{m=1}^{K}
+\mathds{1}\!\left\{\hat p_{mi} \ge \tau\right\}
 \]
 as the fraction of models in the top-$K$ Rashomon approximation that predict the
 positive class. The conflict ratio is then
@@ -303,7 +313,7 @@ overall conflict magnitude, while still showing positive conflict-based spatial 
 
 \begin{table}[htbp]
 \centering
-\caption{Conflict metrics by dataset (mean $\pm$ std over 10 runs, global top-$K$ ($K=25$),
+\caption{Conflict metrics by dataset (mean $\pm$ standard deviation over 10 runs, global top-$K$ ($K=25$),
 dataset-specific $k$).}
 \label{tab:app-conflict-metrics}
 \small
@@ -332,9 +342,12 @@ using the 90th percentile of predictive variance and conflict ratio within each 
 yields four regimes: jointly high variance and conflict, high variance only, high conflict
 only, and jointly low disagreement.
 
+Table~\ref{tab:app-conflict-quadrants} summarizes the resulting quadrant breakdown for
+COMPAS.
+
 \begin{table}[htbp]
 \centering
-\caption{Quadrant breakdown for COMPAS (mean $\pm$ std over 10 runs, global top-$K$ ($K=25$)). Thresholds are the 90th percentile of variance and conflict per run.}
+\caption{Quadrant breakdown for COMPAS (mean $\pm$ standard deviation over 10 runs, global top-$K$ ($K=25$)). Thresholds are the 90th percentile of variance and conflict per run.}
 \label{tab:app-conflict-quadrants}
 \resizebox{\textwidth}{!}{%
 \input{presentation_assets/tab/quadrant_compas}
@@ -389,13 +402,14 @@ Lower values of $m_i$ indicate observations closer to the ensemble decision boun
 The one-sided test uses the alternative hypothesis that HH observations have lower
 margins than non-HH observations.
 
-The Mann--Whitney U tests support the same interpretation as the main
-variance--margin summary. On Adult, the alternative hypothesis that HH observations
-have lower margins than non-HH observations is significant in all runs
-(mean $p \approx 3.5 \times 10^{-22}$). On German Credit, the effect is weaker but still
-present, with significance in $57\%$ of runs. On COMPAS, the test is significant in only
-$30\%$ of runs and the mean $p$-value is $0.59$, providing no evidence that HH
-observations systematically lie closer to the decision boundary.
+The Mann--Whitney U tests support the same interpretation as the main variance--margin
+summary. On Adult, the alternative hypothesis that HH observations have lower margins
+than non-HH observations is significant in all runs, with mean \(p \approx 5.1 \times
+10^{-60}\). On German Credit, the effect is weaker but still present, with significance in
+5 of 7 valid runs and mean \(p \approx 0.08\). The reduced number of valid runs reflects
+the small number of HH observations on this dataset. On COMPAS, the test is significant
+in only 4 of 10 runs and the mean \(p\)-value is approximately \(0.53\), providing no
+consistent evidence that HH observations systematically lie closer to the decision boundary.
 
 Overall, the additional tests support the interpretation from
 Section~\ref{sec:results-boundary-proximity}. On Adult and German Credit,
@@ -420,7 +434,7 @@ variability, so these raw differences should be interpreted cautiously.
 
 \begin{table}[H]
 \centering
-\caption{COMPAS: HH rates by subgroup (mean $\pm$ std across 10 seeds). Larger groups
+\caption{COMPAS: HH rates by subgroup (mean $\pm$ standard deviation across 10 seeds). Larger groups
 are more reliable.}
 \label{tab:app-fairness}
 \small
@@ -441,7 +455,6 @@ larger than expected under this null. For sex, the observed disparity is essenti
 ($0.00015$), with $p \approx 0.98$, providing no evidence of sex-based HH exposure
 disparity.
 
-This suggests that multiplicity exposure on COMPAS may be unevenly distributed across
-racial groups. However, the result should be interpreted as an exploratory subgroup
+However, the result should be interpreted as an exploratory subgroup auditing signal rather than as a causal fairness conclusion. However, the result should be interpreted as an exploratory subgroup
 auditing signal rather than as a causal fairness conclusion. The analysis is observational,
 and some race categories contain relatively few observations.

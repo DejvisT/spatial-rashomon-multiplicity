@@ -10,10 +10,7 @@ deployed model is often only one choice among several similarly well\hyp{}perfor
 alternatives. Even when a machine-learning workflow ultimately returns one final model,
 other choices of model family, hyperparameters, or random seed may lead to models with
 nearly identical predictive performance but different outputs for the same individual.
-This chapter reviews the literature most directly connected to that observation and uses
-it to motivate the perspective taken in this thesis: predictive multiplicity should be
-studied not only as a global property of a dataset or model class, but also as a localized
-phenomenon in feature space.
+This chapter reviews the literature most directly connected to that observation. It motivates the perspective taken in this thesis: predictive multiplicity should be studied both as a global property of a dataset or model class and as a localized phenomenon in feature space.
 
 % -------------------------------------------------------------------
 \subsection{Rashomon Sets and Predictive Multiplicity}
@@ -167,7 +164,7 @@ predictive multiplicity arises.
 
 After asking how predictive multiplicity can be measured and localized, a further question
 is why it arises and why it matters. One source is model selection itself. If several models
-perform similarly well, then choosing one final model is not only a technical step, but can
+perform similarly well, choosing one final model becomes a substantive design decision that can
 affect individual predictions. \cite{black_model_2022} and \cite{rudin_amazing_2024}
 emphasize this point: when many good models are available, model choice should be seen
 as a substantive design decision, because different acceptable models may differ in other
@@ -220,10 +217,12 @@ observation-level differences form coherent regions in feature space.
 
 This thesis addresses this gap by treating prediction instability as a spatial signal. It uses
 observation-wise predictive variance to identify where near-optimal models disagree, and
-then analyzes whether high-disagreement observations cluster locally. The goal is therefore not only to measure how much predictive
-multiplicity exists, but also to locate where it occurs, assess how stable these regions
+then analyzes whether high-disagreement observations cluster locally. The goal is therefore to measure how much predictive
+multiplicity exists, locate where it occurs, assess how stable these regions
 are, and examine which modeling choices are associated with them.
 
 In this way, the thesis connects predictive multiplicity with a regional view of model
 reliability: some parts of the feature space may be more sensitive to model choice than
-others, even when all considered models perform similarly well overall.
+others, even when all considered models perform similarly well overall. The resulting
+framework can therefore be interpreted as a regional reliability diagnostic for identifying
+where model choice becomes decision-relevant.
