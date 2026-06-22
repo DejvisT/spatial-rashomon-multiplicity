@@ -34,7 +34,7 @@ from analysis.hp_results import (
 
 @dataclass
 class HPAnalysisConfig:
-    """Single place for notebook-tunable settings (Section 5.7)."""
+    """Single place for notebook-tunable settings for the family and hyperparameter analysis."""
 
     results_dir: Path
     table_dir: Path

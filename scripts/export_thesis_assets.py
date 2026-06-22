@@ -1237,107 +1237,6 @@ def write_topk_brier_gap_tex(K: int = 25):
     print("Wrote", TAB_DIR / "topk_brier_gap_summary.tex")
 
 
-def write_dataset_characteristics_tex():
-    """Write dataset characteristics table for the appendix.
-
-    The table reports total N, train/validation/test sizes, positive rate, and
-    transformed feature dimensionality after the thesis preprocessing pipeline.
-    """
-    from data import load_dataset, make_preprocessor, make_split
-
-    def _first_split_path(dataset: str) -> Path | None:
-        ds_dir = RESULTS_DIR / dataset
-        if not ds_dir.exists():
-            return None
-
-        def _seed_key(path: Path) -> int:
-            try:
-                return int(path.name.split("=")[1])
-            except Exception:
-                return 10**9
-
-        for run_dir in sorted(ds_dir.glob("seed=*"), key=_seed_key):
-            split_path = run_dir / "split.npz"
-            if split_path.is_file():
-                return split_path
-        return None
-
-    rows = []
-
-    for dataset in SUPPORTED_DATASETS:
-        try:
-            X, y, feature_info = load_dataset(dataset)
-        except Exception as exc:
-            print(f"Could not load dataset {dataset}; skipping dataset characteristics. Error: {exc}")
-            continue
-
-        y_arr = np.asarray(y).astype(int)
-        n_total = len(y_arr)
-        positive_rate = float(np.mean(y_arr))
-
-        split_path = _first_split_path(dataset)
-        if split_path is not None:
-            split_npz = np.load(split_path)
-            train_idx = np.asarray(split_npz["train"], dtype=int)
-            val_idx = np.asarray(split_npz["val"], dtype=int)
-            test_idx = np.asarray(split_npz["test"], dtype=int)
-        else:
-            split = make_split(
-                n_samples=n_total,
-                test_size=0.2,
-                val_size=0.2,
-                seed=0,
-                stratify=y_arr,
-            )
-            train_idx = np.asarray(split["train"], dtype=int)
-            val_idx = np.asarray(split["val"], dtype=int)
-            test_idx = np.asarray(split["test"], dtype=int)
-
-        preprocessor = make_preprocessor(feature_info, scale_numeric=True)
-        preprocessor.fit(X.iloc[train_idx], y_arr[train_idx])
-        transformed_dim = int(preprocessor.transform(X.iloc[test_idx[:1]]).shape[1])
-
-        rows.append({
-            "dataset": display_dataset_name(dataset),
-            "n_total": n_total,
-            "n_train": len(train_idx),
-            "n_val": len(val_idx),
-            "n_test": len(test_idx),
-            "positive_rate": positive_rate,
-            "transformed_dim": transformed_dim,
-        })
-
-    if not rows:
-        print("No dataset characteristics written.")
-        return
-
-    out = []
-    out.append(r"\begin{tabular}{lrrrrrr}")
-    out.append(r"\hline")
-    out.append(
-        r"Dataset & Total $N$ & Train & Validation & Test & Positive rate & Transformed dim. \\"
-    )
-    out.append(r"\hline")
-
-    for r in rows:
-        out.append(
-            f"{r['dataset']} & "
-            f"{r['n_total']} & "
-            f"{r['n_train']} & "
-            f"{r['n_val']} & "
-            f"{r['n_test']} & "
-            f"{100 * r['positive_rate']:.1f}\\% & "
-            f"{r['transformed_dim']} \\\\"
-        )
-
-    out.append(r"\hline")
-    out.append(r"\end{tabular}")
-
-    out_path = TAB_DIR / "dataset_characteristics.tex"
-    out_path.write_text("\n".join(out), encoding="utf-8")
-    print("Wrote", out_path)
-
-
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Export thesis assets")
@@ -1354,7 +1253,6 @@ def main():
     args = parser.parse_args()
 
     write_dataset_summary_tex()
-    write_dataset_characteristics_tex()
     write_topk_brier_gap_tex()
     write_family_summary_tex()
     write_null_significance_tex()

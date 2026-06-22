@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import List, Dict, Any, Tuple
+from typing import List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -29,7 +29,7 @@ def compute_margin_and_wilcoxon(
     """Compute margin vs variance analysis and Mann-Whitney U test.
 
     Returns:
-        Tuple of (margin_df, wilcoxon_df) with same columns as notebook.
+        Tuple of (margin_df, mannwhitney_df) with same columns as notebook.
     """
     margin_rows = []
     wilcoxon_rows = []
@@ -47,7 +47,7 @@ def compute_margin_and_wilcoxon(
                 hv_mask = v >= q90
                 X_test = get_transformed_test_features(run_dir, dataset)
                 sp = spatial_analysis(
-                    v, X_test, k=K_NN_BY_DATASET[dataset], permutations=999
+                    v, X_test, k=K_NN_BY_DATASET[dataset], permutations=999,
                 )
                 hh_mask = sp["HH_mask"]
                 r_pearson, p_pearson = stats.pearsonr(v, margin)

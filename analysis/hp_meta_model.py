@@ -42,10 +42,6 @@ N_GRID_2D = 10
 MAX_BACKGROUND_PDP = 100
 
 
-def _safe_filename_part(s: str) -> str:
-    return re.sub(r"[^\w.\-]+", "_", str(s))
-
-
 def _safe_obj_to_str(v: Any) -> Any:
     if v is None:
         return None
@@ -298,19 +294,6 @@ def leave_one_seed_out_scores(
         mae_list.append(float(mean_absolute_error(y_te, pred)))
     n_seeds_report = int(pd.Series(seeds).nunique()) if seeds is not None and len(seeds) == len(y) else 0
     return scheme, r2_list, rmse_list, mae_list, len(r2_list), n_seeds_report
-
-
-def _bootstrap_resample_group(grp: pd.DataFrame, seed_col: str, rng: np.random.Generator) -> pd.DataFrame:
-    if seed_col not in grp.columns:
-        idx = rng.choice(np.arange(len(grp)), size=len(grp), replace=True)
-        return grp.iloc[idx].reset_index(drop=True)
-    seeds_u = grp[seed_col].dropna().unique()
-    if len(seeds_u) >= MIN_SEEDS_LOSO:
-        draw = rng.choice(seeds_u, size=len(seeds_u), replace=True)
-        parts = [grp[grp[seed_col] == s] for s in draw]
-        return pd.concat(parts, ignore_index=True) if parts else grp.iloc[0:0]
-    idx = rng.choice(np.arange(len(grp)), size=len(grp), replace=True)
-    return grp.iloc[idx].reset_index(drop=True)
 
 
 def meta_model_target_specs(meta_df: pd.DataFrame) -> List[Tuple[str, str]]:

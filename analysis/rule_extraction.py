@@ -1,15 +1,8 @@
 """
 Interpretable rule extraction for HH (High-High) hotspot components.
 
-Module provides:
-1. Global HH-vs-non-HH rule extraction on raw/readable features
-2. Component-level one-vs-rest rules for connected HH components
-3. OOB bootstrap evaluation for rule stability
-4. Permutation tests for statistical significance
-5. Feature frequency summaries
-6. Output table generation
-
-All rules are learned on raw (non-scaled) features for interpretability.
+Provides global and component-level decision-tree rules on raw features,
+plus multi-seed aggregation helpers for the thesis notebooks.
 Spatial analysis (LISA, connectivity) uses transformed features.
 """
 
@@ -35,13 +28,18 @@ if str(_ROOT / "src") not in sys.path:
     sys.path.insert(0, str(_ROOT / "src"))
 
 from data import load_dataset  # noqa: E402
-from analysis.run_analysis import load_split, run_spatial  # noqa: E402
+from analysis.run_analysis import run_spatial  # noqa: E402
 
 # =====================================================================
 # Helper functions for rule extraction
 # =====================================================================
 
-def load_seed_data(run_dir: Path, dataset_name: str, K: int = 25, seed: int = 42, min_component_size: int = 20) -> dict:
+def load_seed_data(
+    run_dir: Path,
+    dataset_name: str,
+    K: int = 25,
+    min_component_size: int = 20,
+) -> dict:
     """
     Load all data for a seed:
     - raw test features (for rule learning)
@@ -60,10 +58,9 @@ def load_seed_data(run_dir: Path, dataset_name: str, K: int = 25, seed: int = 42
     n_test = len(X_raw)
     
     # Load spatial result
-    split = load_split(run_dir)
     X_transformed = get_transformed_test_features(run_dir, dataset_name)
     k_nn = default_k_nn(dataset_name)
-    spatial = run_spatial(run_dir, X_transformed, K=K, k=k_nn, seed=seed)
+    spatial = run_spatial(run_dir, X_transformed, K=K, k=k_nn)
     
     HH_mask = spatial["HH_mask"]
     W = spatial.get("W")
@@ -408,7 +405,6 @@ def compute_global_rules_all(
                 run_dir,
                 dataset_name,
                 K=K,
-                seed=seed,
                 min_component_size=min_component_size,
             )
         except Exception as e:
@@ -487,7 +483,6 @@ def compute_component_rules_all(
                 run_dir,
                 dataset_name,
                 K=K,
-                seed=seed,
                 min_component_size=min_component_size,
             )
         except Exception as e:
@@ -704,12 +699,8 @@ def _features_used_as_list(features: Any) -> List[str]:
 
 def rule_feature_frequency_across_seeds(
     rules_summary: pd.DataFrame,
-    known_feature_names: Optional[List[str]] = None,
-    min_purity: float = 0.5,
 ) -> pd.DataFrame:
-    """
-    Compute feature frequency across seeds and rules.
-    """
+    """Compute feature frequency across seeds and rules."""
     if "features_used" not in rules_summary.columns or len(rules_summary) == 0:
         return pd.DataFrame()
     

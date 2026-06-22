@@ -309,6 +309,7 @@ def spatial_analysis(
         W,
         transformation="r",
         permutations=permutations,
+        seed=seed,
     )
     # PySAL quadrant: 1=HH, 2=LH, 3=LL, 4=HL
     p_sim = np.asarray(lm.p_sim).flatten()
@@ -383,6 +384,7 @@ def quadrant_analysis(
             "mean_var_p": float(np.mean(var_p[mask])) if cnt > 0 else np.nan,
             "mean_conflict": float(np.mean(conflict[mask])) if cnt > 0 else np.nan,
         }
+        rows.append(row)
 
     return {
         "var_thresh": vt,
@@ -493,6 +495,7 @@ def null_experiment(
             v_perm, W,
             transformation="r",
             permutations=lisa_permutations,
+            seed=lisa_seed,
         )
         p_sim = np.asarray(lm.p_sim).flatten()
         q = np.asarray(lm.q).flatten()

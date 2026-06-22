@@ -108,21 +108,6 @@ def _subset_observations(P: np.ndarray, obs_mask: Optional[np.ndarray]) -> np.nd
     return P[:, obs_mask.astype(int)]
 
 
-def _choose_loss_col(meta: pd.DataFrame, loss_col: Optional[str] = None) -> str:
-    """Pick an appropriate validation loss column for profiling."""
-    if loss_col is not None:
-        if loss_col not in meta.columns:
-            raise ValueError(f"loss_col='{loss_col}' not found in meta columns")
-        return loss_col
-    for c in ("val_brier", "val_loss", "val_error", "loss", "score"):
-        if c in meta.columns:
-            return c
-    raise ValueError(
-        "Could not infer a validation loss column. Expected one of "
-        "val_brier / val_loss / val_error / loss / score."
-    )
-
-
 def _resolve_hp_column(meta: pd.DataFrame, hp_name_or_col: str) -> Optional[str]:
     """
     Resolve a hyperparameter name to the column name in meta.

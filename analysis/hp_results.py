@@ -43,12 +43,13 @@ def compute_lisa_hh_mask(
     *,
     k_nn: Optional[int] = None,
     permutations: int = 999,
+    seed: int = 42,
 ) -> Tuple[np.ndarray, int]:
     """HH mask from pointwise variance on ``P_sel``; shape (n_test,), dtype bool."""
     k = int(k_nn if k_nn is not None else K_NN_BY_DATASET.get(dataset, 30))
     X_test = get_transformed_test_features(run_dir, dataset)
     v = pointwise_variance(P_sel, ddof=0)
-    sp = spatial_analysis(v, X_test, k=k, permutations=permutations)
+    sp = spatial_analysis(v, X_test, k=k, permutations=permutations, seed=seed)
     hh = np.asarray(sp["HH_mask"], dtype=bool)
     return hh, int(hh.sum())
 
@@ -62,6 +63,7 @@ def per_seed_analysis_tables(
     rashomon_k_each: int = 25,
     min_hh_obs: int = 5,
     permutations: int = 999,
+    spatial_seed: int = 42,
     grouping_info: Optional[Dict[str, Dict[str, Tuple[str, Optional[List[float]]]]]] = None,
 ) -> Dict[str, pd.DataFrame]:
     """
@@ -88,7 +90,10 @@ def per_seed_analysis_tables(
     P_sel = P_test[pool_idx]
 
     hh_mask, n_hh = compute_lisa_hh_mask(
-        run_dir, dataset, P_sel, k_nn=K_NN_BY_DATASET.get(dataset), permutations=permutations
+        run_dir, dataset, P_sel,
+        k_nn=K_NN_BY_DATASET.get(dataset),
+        permutations=permutations,
+        seed=spatial_seed,
     )
     non_mask = ~hh_mask
     n_non = int(non_mask.sum())
@@ -607,25 +612,11 @@ def plot_hotspot_hp_delta_grid(
         plt.close(fig)
 
 
-__all__ = [
-    "POOL_TYPE_RASHOMON",
-    "aggregate_decomposition_hp",
-    "aggregate_family_importance_long",
-    "aggregate_hotspot_delta",
-    "compute_lisa_hh_mask",
-    "hotspot_delta_decomp",
-    "per_seed_analysis_tables",
-    "plot_decomp_hp_grid_rashomon",
-    "plot_family_importance_bars",
-    "plot_hotspot_hp_delta_grid",
-    "run_dataset_all_seeds",
-]
-
-
 def plot_family_importance_compare_bars(
     fam_agg: pd.DataFrame,
     *,
     fig_path: Optional[Path] = None,
+    show: bool = True,
 ) -> None:
     import matplotlib.pyplot as plt
     import numpy as np
@@ -672,4 +663,23 @@ def plot_family_importance_compare_bars(
     fig.tight_layout()
     if fig_path is not None:
         fig.savefig(fig_path, bbox_inches="tight")
-    plt.show()
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
+
+
+__all__ = [
+    "POOL_TYPE_RASHOMON",
+    "aggregate_decomposition_hp",
+    "aggregate_family_importance_long",
+    "aggregate_hotspot_delta",
+    "compute_lisa_hh_mask",
+    "hotspot_delta_decomp",
+    "per_seed_analysis_tables",
+    "plot_decomp_hp_grid_rashomon",
+    "plot_family_importance_bars",
+    "plot_family_importance_compare_bars",
+    "plot_hotspot_hp_delta_grid",
+    "run_dataset_all_seeds",
+]

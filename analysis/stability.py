@@ -133,21 +133,6 @@ def jaccard_index(mask_a: np.ndarray, mask_b: np.ndarray) -> float:
     return intersection / union
 
 
-def set_jaccard(set_a, set_b) -> float:
-    """Jaccard index between two Python sets or set-like collections."""
-    a = set(set_a)
-    b = set(set_b)
-
-    if len(a) == 0 and len(b) == 0:
-        return 1.0
-
-    union = len(a | b)
-    if union == 0:
-        return 0.0
-
-    return len(a & b) / union
-
-
 def hh_jaccard_matrix(
     hh_masks: List[np.ndarray],
 ) -> np.ndarray:
@@ -162,30 +147,6 @@ def hh_jaccard_matrix(
             J[i, j] = jaccard_index(hh_masks[i], hh_masks[j])
 
     return J
-
-
-# ---------------------------------------------------------------------
-# Component-level stability
-# ---------------------------------------------------------------------
-
-def component_sizes(
-    components: Dict[int, np.ndarray],
-) -> np.ndarray:
-    """
-    Return sizes of hotspot components.
-    """
-    return np.array([len(v) for v in components.values()])
-
-
-def largest_component_size(
-    components: Dict[int, np.ndarray],
-) -> int:
-    """
-    Size of the largest HH component.
-    """
-    if len(components) == 0:
-        return 0
-    return max(len(v) for v in components.values())
 
 
 # ---------------------------------------------------------------------

@@ -12,7 +12,15 @@ from libpysal.weights import KNN as PySAL_KNN
 from libpysal.weights import W as PySAL_W
 from esda.moran import Moran, Moran_Local
 
-from analysis.run_analysis import fdr_benjamini_hochberg
+from analysis.knn_defaults import K_NN_BY_DATASET
+from analysis.preprocessing import get_transformed_test_features
+from analysis.run_analysis import (
+    fdr_benjamini_hochberg,
+    load_P_test,
+    pointwise_variance,
+    select_rashomon_global,
+    spatial_analysis,
+)
 
 
 def build_cosine_knn_weights(X: np.ndarray, k: int = 30) -> PySAL_W:
@@ -89,25 +97,14 @@ def spatial_with_custom_W(
 
 
 def compute_alt_graph(
-    results_dir,
-    datasets,
-    seeds,
-    K,
-    cache_dir,
-    cache_version,
-):
+    results_dir: Path | str,
+    datasets: list[str],
+    seeds: list[int],
+    K: int,
+) -> pd.DataFrame:
     """Compare Moran's I across alternative graph construction methods."""
     results_dir = Path(results_dir)
 
-    from analysis.run_analysis import (
-        load_P_test,
-        select_rashomon_global,
-        pointwise_variance,
-        spatial_analysis,
-    )
-    from analysis.preprocessing import get_transformed_test_features
-    from analysis.knn_defaults import K_NN_BY_DATASET
-    
     alt_rows = []
     for dataset in datasets:
         for seed in seeds:

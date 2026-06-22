@@ -17,6 +17,8 @@ def run_one_k_sensitivity(
     dataset_name: str,
     K: int,
     k_nn: int,
+    *,
+    seed: int = 42,
 ) -> dict | None:
     """Compute multiplicity and spatial metrics for one run and one Rashomon-set size.
 
@@ -32,7 +34,7 @@ def run_one_k_sensitivity(
     X_test = get_transformed_test_features(run_dir, dataset_name)
 
     mult = run_multiplicity(run_dir, K=K_actual)
-    spatial = run_spatial(run_dir, X_test, K=K_actual, k=k_nn)
+    spatial = run_spatial(run_dir, X_test, K=K_actual, k=k_nn, seed=seed)
 
     return {
         "mean_variance": mult["mean_variance"],
@@ -84,7 +86,14 @@ def compute_k_sensitivity(
     return pd.DataFrame(rows)
 
 
-def run_one_knn_sensitivity(run_dir: Path, dataset_name: str, K: int, k_nn: int) -> Dict[str, Any]:
+def run_one_knn_sensitivity(
+    run_dir: Path,
+    dataset_name: str,
+    K: int,
+    k_nn: int,
+    *,
+    seed: int = 42,
+) -> Dict[str, Any]:
     """Compute kNN-sensitivity metrics for one run directory.
 
     Returns a dict with the same keys/columns as the original notebook.
@@ -93,7 +102,7 @@ def run_one_knn_sensitivity(run_dir: Path, dataset_name: str, K: int, k_nn: int)
     K_actual = min(K, n_cand)
     mult = run_multiplicity(run_dir, K=K_actual)
     X_test = get_transformed_test_features(run_dir, dataset_name)
-    spatial = run_spatial(run_dir, X_test, K=K_actual, k=k_nn)
+    spatial = run_spatial(run_dir, X_test, K=K_actual, k=k_nn, seed=seed)
 
     W = spatial["W"]
     W_sparse = W.to_sparse() if hasattr(W, "to_sparse") else W.sparse
@@ -158,13 +167,15 @@ def run_one_knn_masks(
     X_test: np.ndarray,
     K: int,
     k_nn: int,
+    *,
+    seed: int = 42,
 ) -> np.ndarray:
     """Return boolean HH mask for one run and one kNN value."""
     run_dir = Path(run_dir)
     n_cand = len(load_meta(run_dir))
     K_actual = min(K, n_cand)
 
-    spatial = run_spatial(run_dir, X_test, K=K_actual, k=k_nn)
+    spatial = run_spatial(run_dir, X_test, K=K_actual, k=k_nn, seed=seed)
     return np.asarray(spatial["HH_mask"], dtype=bool)
 
 

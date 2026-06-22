@@ -60,8 +60,11 @@ def compute_fairness_and_perm(
     min_seeds_per_group: int = 5,
     n_perm: int = 2000,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """Compute fairness analysis and permutation test for COMPAS protected attributes."""
-    X_raw, y_raw, _ = load_dataset("compas")
+    """Compute fairness analysis and permutation test for COMPAS protected attributes.
+
+    ``datasets`` is accepted for notebook API compatibility; analysis is COMPAS-only.
+    """
+    X_raw, _, _ = load_dataset("compas")
     
     fairness_rows = []
     fairness_cache = {}
@@ -76,7 +79,9 @@ def compute_fairness_and_perm(
             P_sel = P_test[idx]
             v = pointwise_variance(P_sel)
             X_test_proc = get_transformed_test_features(run_dir, "compas")
-            sp = spatial_analysis(v, X_test_proc, k=K_NN_BY_DATASET["compas"], permutations=999)
+            sp = spatial_analysis(
+                v, X_test_proc, k=K_NN_BY_DATASET["compas"], permutations=999,
+            )
             hh_mask = sp["HH_mask"]
             fairness_cache[seed] = (hh_mask, X_test_raw_i)
             for group_col in ["race", "sex"]:
@@ -188,11 +193,8 @@ def _get_non_protected_cols_for_run(run_dir: Path) -> Tuple[List[int], List[str]
 
 def compute_excl_protected(
     results_dir: Path,
-    datasets: List[str],
     seeds: List[int],
     K: int,
-    cache_dir: Path,
-    cache_version: str,
 ) -> pd.DataFrame:
     """Compute spatial analysis excluding race/sex features (COMPAS)."""
     excl_rows = []
@@ -214,13 +216,17 @@ def compute_excl_protected(
                     f"Feature mismatch: transformed has {X_test_full.shape[1]} cols, "
                     f"preprocessor reports {len(feat_names)}"
                 )
-            sp_full = spatial_analysis(v, X_test_full, k=K_NN_BY_DATASET["compas"], permutations=999)
+            sp_full = spatial_analysis(
+                v, X_test_full, k=K_NN_BY_DATASET["compas"], permutations=999,
+            )
             X_no_prot = X_test_full[:, non_prot_cols]
             W_np = PySAL_KNN.from_array(X_no_prot, k=K_NN_BY_DATASET["compas"]).symmetrize(inplace=False)
             W_np.transform = "r"
             np.random.seed(42)
             moran_np = Moran(v, W_np, permutations=999)
-            lm_np = Moran_Local(v, W_np, transformation="r", permutations=999, seed=42)
+            lm_np = Moran_Local(
+                v, W_np, transformation="r", permutations=999, seed=42,
+            )
             p_sim_np = np.asarray(lm_np.p_sim).flatten()
             q_np = np.asarray(lm_np.q).flatten()
             sig_np = fdr_benjamini_hochberg(p_sim_np, alpha=0.05)

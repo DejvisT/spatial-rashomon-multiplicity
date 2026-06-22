@@ -10,7 +10,6 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from narwhals import col
 import numpy as np
 import pandas as pd
 
@@ -272,8 +271,8 @@ def _run_single(
     out["_pointwise_conflict"] = mult["pointwise_conflict"]
 
     qa = quadrant_analysis(
-    mult["pointwise_variance"],
-    mult["pointwise_conflict"],
+        mult["pointwise_variance"],
+        mult["pointwise_conflict"],
     )
     out["_quadrant_summary"] = qa["summary"]
     out["quadrant_var_thresh"] = qa["var_thresh"]
