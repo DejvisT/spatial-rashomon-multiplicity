@@ -35,6 +35,35 @@ DATASET_PLOT_COLORS = {
 
 SUPPORTED_DATASETS = ("compas", "german", "adult")
 
+# Matplotlib sizes for thesis-facing figures (labels 13, title 14, ticks/legend 11).
+THESIS_TITLE_SIZE = 14
+THESIS_LABEL_SIZE = 13
+THESIS_TICK_LEGEND_SIZE = 11
+
+
+def apply_thesis_plot_style() -> None:
+    """Set matplotlib rcParams for thesis figure exports."""
+    import matplotlib as mpl
+
+    mpl.rcParams.update(
+        {
+            "font.size": THESIS_TICK_LEGEND_SIZE,
+            "axes.titlesize": THESIS_TITLE_SIZE,
+            "axes.labelsize": THESIS_LABEL_SIZE,
+            "xtick.labelsize": THESIS_TICK_LEGEND_SIZE,
+            "ytick.labelsize": THESIS_TICK_LEGEND_SIZE,
+            "legend.fontsize": THESIS_TICK_LEGEND_SIZE,
+            "figure.titlesize": THESIS_TITLE_SIZE,
+        }
+    )
+
+
+def style_colorbar(cbar, *, label: str | None = None) -> None:
+    """Apply thesis label/tick sizes to a colorbar."""
+    if label is not None:
+        cbar.set_label(label, fontsize=THESIS_LABEL_SIZE)
+    cbar.ax.tick_params(labelsize=THESIS_TICK_LEGEND_SIZE)
+
 
 def _dataset_key(dataset: str) -> str:
     key = str(dataset).strip().lower().replace(" ", "_")

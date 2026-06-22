@@ -417,8 +417,9 @@ def plot_family_importance_bars(
     """One row of panels: one subplot per dataset; stacked bars show between- vs within-family share."""
     import matplotlib.pyplot as plt
 
-    from thesis_layout import display_dataset_name
+    from thesis_layout import apply_thesis_plot_style, display_dataset_name
 
+    apply_thesis_plot_style()
     if fam_agg.empty:
         return
 
@@ -489,7 +490,7 @@ def plot_family_importance_bars(
 
     handles, labels = axes[0][0].get_legend_handles_labels()
     fig.legend(handles, labels, loc="upper center", bbox_to_anchor=(0.5, 1.02), ncol=2, frameon=False)
-    fig.suptitle("Between- vs within-family decomposition (mean over seeds)", fontsize=12, y=1.08)
+    fig.suptitle("Between- vs within-family decomposition (mean over seeds)", y=1.08)
     fig.tight_layout(rect=[0, 0, 1, 0.90])
 
     if fig_path is not None:
@@ -512,8 +513,9 @@ def plot_decomp_hp_grid_rashomon(
     """
     import matplotlib.pyplot as plt
 
-    from thesis_layout import display_dataset_name
+    from thesis_layout import apply_thesis_plot_style, display_dataset_name
 
+    apply_thesis_plot_style()
     col = "hp" if "hp" in df_agg.columns else "hyperparameter"
     d_all = df_agg.copy()
     if "pool_type" in d_all.columns:
@@ -536,17 +538,13 @@ def plot_decomp_hp_grid_rashomon(
             y = np.arange(len(sub))
             ax.barh(y, sub["mean_importance"], xerr=sub["std_importance"], capsize=1.5, color="darkseagreen")
             ax.set_yticks(y)
-            ax.set_yticklabels(sub[col].astype(str), fontsize=7)
+            ax.set_yticklabels(sub[col].astype(str))
             ax.invert_yaxis()
-            ax.tick_params(axis="x", labelsize=7)
             if i == 0:
-                ax.set_title(display_dataset_name(ds), fontsize=9)
+                ax.set_title(display_dataset_name(ds))
             if j == 0:
-                ax.set_ylabel(str(fam), fontsize=9)
-    fig.suptitle(
-        "Within-family HP decomposition ($V_m$-based grouping), Rashomon",
-        fontsize=11,
-    )
+                ax.set_ylabel(str(fam))
+    fig.suptitle("Within-family HP decomposition ($V_m$-based grouping), Rashomon")
     fig.tight_layout()
     if fig_path is not None:
         fig.savefig(fig_path, bbox_inches="tight")
@@ -568,8 +566,9 @@ def plot_hotspot_hp_delta_grid(
     """Single figure: HH − all decomposition deltas, rows = families, cols = datasets."""
     import matplotlib.pyplot as plt
 
-    from thesis_layout import display_dataset_name
+    from thesis_layout import apply_thesis_plot_style, display_dataset_name
 
+    apply_thesis_plot_style()
     if delta_agg.empty:
         return
     d_all = delta_agg.copy()
@@ -591,15 +590,14 @@ def plot_hotspot_hp_delta_grid(
             y = np.arange(len(sub))
             ax.barh(y, sub["mean_delta"], xerr=sub["std_delta"], capsize=1.5, color="coral")
             ax.set_yticks(y)
-            ax.set_yticklabels(sub["hp"].astype(str), fontsize=7)
+            ax.set_yticklabels(sub["hp"].astype(str))
             ax.invert_yaxis()
             ax.axvline(0, color="gray", lw=0.6)
-            ax.tick_params(axis="x", labelsize=7)
             if i == 0:
-                ax.set_title(display_dataset_name(ds), fontsize=9)
+                ax.set_title(display_dataset_name(ds))
             if j == 0:
-                ax.set_ylabel(str(fam), fontsize=9)
-    fig.suptitle("Hotspot vs all: Δ HP importance (HH − all), Rashomon", fontsize=11)
+                ax.set_ylabel(str(fam))
+    fig.suptitle("Hotspot vs all: Δ HP importance (HH − all), Rashomon")
     fig.tight_layout()
     if fig_path is not None:
         fig.savefig(fig_path, bbox_inches="tight")
@@ -632,8 +630,9 @@ def plot_family_importance_compare_bars(
     import matplotlib.pyplot as plt
     import numpy as np
 
-    from thesis_layout import display_dataset_name
+    from thesis_layout import apply_thesis_plot_style, display_dataset_name
 
+    apply_thesis_plot_style()
     if fam_agg.empty or "pool_type" not in fam_agg.columns:
         return
 
