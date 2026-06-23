@@ -188,10 +188,10 @@ arbitrary false positives.
 \paragraph{Single-island design.}
 In the single-island setting, the results are stable across the
 tested thresholds. As $\alpha$ increases, the number of HH points rises moderately from
-$93$ to $110$, while the Jaccard overlap with the ground-truth island remains between 0.746
-and $0.786$. This reflects the expected precision--recall trade-off: precision decreases from
-$0.9785$ at $\alpha = 0.01$ to $0.9182$ at $\alpha = 0.20$, whereas recall increases from
-$0.7583$ to $0.8417$. Across all tested $\alpha$ values, the detected HH region remains a
+$90$ to $110$, while the Jaccard overlap with the ground-truth island remains between $0.721$
+and $0.787$. This reflects the expected precision--recall trade-off: precision decreases from
+$0.9778$ at $\alpha = 0.01$ to $0.9182$ at $\alpha = 0.20$, whereas recall increases from
+$0.7333$ to $0.8417$. Across all tested $\alpha$ values, the detected HH region remains a
 single connected component, matching the geometry of the true island. Figure~\ref{fig:app-synthetic-fdr-single} shows the corresponding FDR sensitivity curve.
 
 \begin{figure}[htbp]
@@ -204,15 +204,14 @@ single connected component, matching the geometry of the true island. Figure~\re
 
 \paragraph{Three-islands design.}
 In the three-islands setting, the conclusions are also stable across thresholds. At the
-strictest threshold $\alpha=0.01$, the method detects $265$ HH points with precision
-$0.9623$, recall $0.8673$, and Jaccard overlap $0.8388$. Increasing the threshold to
+strictest threshold $\alpha=0.01$, the method detects $267$ HH points with precision
+$0.9625$, recall $0.8742$, and Jaccard overlap $0.8454$. Increasing the threshold to
 $\alpha=0.05$ raises the HH count slightly to $268$ and improves recall to $0.8776$, with
 Jaccard overlap increasing to $0.8487$ while precision remains essentially unchanged. The
 results are identical at $\alpha=0.10$ and change only marginally at $\alpha=0.20$, where
 the HH count increases to $269$, precision decreases slightly to $0.9591$, recall remains
-$0.8776$, and Jaccard overlap decreases slightly to $0.8459$. Across all tested thresholds,
-the number of connected components remains four, reflecting the three island hotspots
-plus one additional outlier-driven hotspot component. Figure~\ref{fig:app-synthetic-fdr-three} shows the FDR sensitivity curve for the three-islands design.
+$0.8776$, and Jaccard overlap decreases slightly to $0.8459$. Across all tested thresholds, the number of retained connected components remains three,
+corresponding to the three main ambiguous island regions. Figure~\ref{fig:app-synthetic-fdr-three} shows the FDR sensitivity curve for the three-islands design.
 
 \begin{figure}[htbp]
     \centering
@@ -225,9 +224,9 @@ plus one additional outlier-driven hotspot component. Figure~\ref{fig:app-synthe
 \paragraph{Structural non-boundary design.}
 For the structural non-boundary design, the FDR sensitivity reveals a clear
 core-expansion pattern. At the strictest threshold $\alpha=0.01$, the HH mask is highly
-selective, with precision $0.9344$, recall $0.9500$, and Jaccard overlap $0.8906$ against
+selective, with precision $0.9500$, recall $0.9500$, and Jaccard overlap $0.9048$ against
 the structural exception regions. At the default threshold $\alpha=0.05$, recall increases
-to $1.0000$, while precision decreases to $0.5581$ because the HH mask expands beyond
+to $1.0000$, while precision decreases to $0.6417$ because the HH mask expands beyond
 the compact exception regions. This indicates that the structural exceptions form the
 high-confidence core of the detected hotspot signal, while looser thresholds include
 additional nearby or boundary-adjacent observations. Figure~\ref{fig:app-structural-fdr} shows the corresponding FDR sensitivity curve.
@@ -324,10 +323,10 @@ dataset-specific $k$).}
 \label{app:conflict-overlap}
 
 The overlap between variance-based and conflict-based HH hotspots is limited across all
-datasets. On COMPAS, the Jaccard similarity is $0.078 \pm 0.057$, indicating that the
+datasets. On COMPAS, the Jaccard similarity is $0.082 \pm 0.059$, indicating that the
 two metrics identify largely different observations as hotspots. Adult shows somewhat
-higher but still limited overlap ($0.184 \pm 0.052$). On German Credit, the mean overlap
-is $0.118 \pm 0.312$, but this estimate is unstable because both hotspot sets are often
+higher but still limited overlap ($0.185 \pm 0.045$). On German Credit, the mean overlap
+is $0.145 \pm 0.309$, but this estimate is unstable because both hotspot sets are often
 very small.
 
 This confirms that predictive variance and conflict ratio capture related but distinct
@@ -404,9 +403,9 @@ margins than non-HH observations.
 
 The Mann--Whitney U tests support the same interpretation as the main variance--margin
 summary. On Adult, the alternative hypothesis that HH observations have lower margins
-than non-HH observations is significant in all runs, with mean \(p \approx 5.1 \times
-10^{-60}\). On German Credit, the effect is weaker but still present, with significance in
-5 of 7 valid runs and mean \(p \approx 0.08\). The reduced number of valid runs reflects
+than non-HH observations is significant in all runs, with mean \(p \approx 3.3 \times
+10^{-65}\). On German Credit, the effect is weaker but still present, with significance in
+6 of 7 valid runs and mean \(p \approx 0.08\). The reduced number of valid runs reflects
 the small number of HH observations on this dataset. On COMPAS, the test is significant
 in only 4 of 10 runs and the mean \(p\)-value is approximately \(0.53\), providing no
 consistent evidence that HH observations systematically lie closer to the decision boundary.
@@ -449,11 +448,11 @@ permutation null distribution. To reduce instability from very small groups, we 
 per-run subgroup minimum-size filtering and require minimum cross-run support before
 interpreting a subgroup.
 
-For race, the observed disparity is about \(0.108\), compared with a permutation-null
-mean of \(0.0146\) and a 95\% null interval of approximately \([0.0039, 0.0311]\). The
+For race, the observed disparity is about \(0.1115\), compared with a permutation-null
+mean of \(0.0146\) and a 95\% null interval of approximately \([0.0037, 0.0311]\). The
 resulting \(p\)-value is \(p \approx 0.0005\), indicating that race-based HH exposure
 differences are larger than expected under this null. For sex, the observed disparity is
-small (\(0.0044\)), with \(p \approx 0.46\), providing no evidence of sex-based HH exposure
+small (\(0.0050\)), with \(p \approx 0.40\), providing no evidence of sex-based HH exposure
 disparity.
 
 However, the result should be interpreted as an exploratory subgroup auditing signal

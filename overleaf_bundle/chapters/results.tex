@@ -218,8 +218,9 @@ constructed. By contrast, Moran's $I$ decreases as $k$ grows, reflecting the smo
 effect of larger neighborhoods. On COMPAS, Moran's $I$ falls from roughly $0.29$ at
 small $k$ to about $0.12$ at $k=100$. At the same time, HH counts tend to increase with
 larger neighborhoods on COMPAS and Adult, because broader neighborhoods can merge
-local structure into larger statistically significant regions. German Credit shows the same
-direction of effect, though at a much smaller absolute scale.
+local structure into larger statistically significant regions. German Credit shows a noisier pattern because the number of HH observations is very
+small; its HH-count curve rises at smaller $k$ and then declines, so it should not be read
+as a monotone effect.
 
 Crucially, the clustering signal remains positive throughout the examined range. Thus, while the precise extent of detected hotspots depends on the neighborhood definition, the existence of spatial structure does not. The chosen defaults ($k=30$ for COMPAS and German Credit, $k=60$ for Adult) therefore represent a reasonable compromise between locality and graph stability rather than a necessary condition for observing positive spatial clustering.
 
@@ -711,11 +712,11 @@ to some nearby and boundary-adjacent points at the default FDR threshold.}
 
 The observed variance field is spatially structured. Moran's $I$ is $0.1999$, and the
 prediction-permutation null yields an empirical $p$-value of $0.0099$. At the default FDR
-level $\alpha=0.05$, LISA identifies $215$ HH points and recovers all $120$ structural
-exception test points. This corresponds to precision $0.5581$, recall $1.0000$, and
-Jaccard overlap $0.5581$. Thus, the intended exception regions are fully contained in
+level $\alpha=0.05$, LISA identifies $187$ HH points and recovers all $120$ structural
+exception test points. This corresponds to precision $0.6417$, recall $1.0000$, and
+Jaccard overlap $0.6417$. Thus, the intended exception regions are fully contained in
 the HH set, although the HH mask also expands to nearby and boundary-adjacent points.
-In particular, $42$ HH points lie in the ordinary boundary strip.
+In particular, $28$ HH points lie in the ordinary boundary strip.
 
 The decision-boundary diagnostic shows that this hotspot structure is not simply a
 boundary-proximity effect. Figure~\ref{fig:structural-exceptions-margin} compares
@@ -788,7 +789,7 @@ Among the real-data experiments, COMPAS provides the clearest interpretable stru
 \label{fig:rules_support_purity}
 \end{figure}
 
-The component-level analysis gives a stronger regional interpretation. Across retained COMPAS hotspot components, shallow-tree rules often identify compact subregions with high enrichment. In the current analysis, 17 retained HH components across 8 seeds yield 36 component-level rules. Considering the highest-purity rule for each component, the median component size is 31 observations, the median purity is 0.53, the median recall is 0.96, and the median lift is 26.7. Thus, individual hotspot components are often more cleanly describable than the full global HH set.
+The component-level analysis gives a stronger regional interpretation. Across retained COMPAS hotspot components, shallow-tree rules often identify compact subregions with high enrichment. In the current analysis, 16 retained HH components across 10 seeds yield 55 component-level rules. Considering the highest-purity rule for each component, the median component size is 46 observations, the median purity is 0.72, the median recall is 0.82, and the median lift is 20.9. Thus, individual hotspot components are often more cleanly describable than the full global HH set.
 
 Table~\ref{tab:component_rules_compas} reports representative component-level rules. The strongest rules mostly involve age and prior offence count. For example, rules based on high values of \texttt{priors\_count}, sometimes combined with higher age thresholds, identify compact regions with very high lift relative to the component base rate. A purity of 1.0 means that all observations satisfying the rule belong to the corresponding component, while recall below 1.0 indicates that the rule captures only a subset of the component, typically a clean core rather than the full region.
 
