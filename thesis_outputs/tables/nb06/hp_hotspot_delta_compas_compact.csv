@@ -1,6 +1,6 @@
 Family,Most increased in HH,Most decreased in HH,n_seeds
-GBM,"subsample (mean_delta=0.0205, n_seeds=10)","max_depth (mean_delta=-0.0140, n_seeds=10)",10
-LogReg,none,"l1_ratio (mean_delta=-0.0035, n_seeds=10)",10
-MLP,"learning_rate_init (mean_delta=0.0421, n_seeds=10)","hidden_layer_sizes (mean_delta=-0.0019, n_seeds=10)",10
-RF,"min_samples_split (mean_delta=0.0068, n_seeds=10)","max_depth (mean_delta=-0.0454, n_seeds=10)",10
-kNN,"p (mean_delta=0.0062, n_seeds=10)","weights (mean_delta=-0.0482, n_seeds=6)",10
+GBM,"subsample (mean_delta=0.0211, n_seeds=10)","max_depth (mean_delta=-0.0144, n_seeds=10)",10
+LogReg,none,"l1_ratio (mean_delta=-0.0037, n_seeds=10)",10
+MLP,"learning_rate_init (mean_delta=0.0407, n_seeds=10)","hidden_layer_sizes (mean_delta=-0.0011, n_seeds=10)",10
+RF,"min_samples_split (mean_delta=0.0076, n_seeds=10)","max_depth (mean_delta=-0.0467, n_seeds=10)",10
+kNN,"p (mean_delta=0.0063, n_seeds=10)","weights (mean_delta=-0.0477, n_seeds=6)",10

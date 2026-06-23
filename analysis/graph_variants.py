@@ -56,7 +56,7 @@ def build_pca_knn_weights(
     X = np.asarray(X, dtype=float)
     n_components = min(n_components, X.shape[1], X.shape[0])
 
-    pca = PCA(n_components=n_components)
+    pca = PCA(n_components=n_components, svd_solver="full")
     X_pca = pca.fit_transform(X)
 
     W = PySAL_KNN.from_array(X_pca, k=k)

@@ -1,4 +1,4 @@
-.venv/
+.venv*/
 __pycache__/
 results/*/seed*
 results_fixed_test/

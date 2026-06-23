@@ -28,7 +28,7 @@ if str(_ROOT / "src") not in sys.path:
     sys.path.insert(0, str(_ROOT / "src"))
 
 from data import load_dataset  # noqa: E402
-from analysis.run_analysis import run_spatial  # noqa: E402
+from analysis.run_analysis import load_split, run_spatial  # noqa: E402
 
 # =====================================================================
 # Helper functions for rule extraction
