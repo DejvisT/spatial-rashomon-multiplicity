@@ -236,7 +236,8 @@ probability spread, and can be decomposed naturally in the later family- and
 hyperparameter-level analyses.
 
 In addition to pointwise predictive variance, the results report aggregate multiplicity
-summaries. Mean variance averages $v_i$ across test observations. We report a probability-space analogue of ambiguity, defined as the test-set average of
+summaries. Mean variance averages $v_i$ across test observations. We report a probability-space
+analogue of ambiguity, defined as the test-set average of
 the pointwise prediction range across Rashomon models,
 \[
 \frac{1}{N_{\mathrm{test}}}
@@ -336,7 +337,8 @@ Global Moran's $I$ summarizes the overall degree of spatial clustering, but it d
 show where clustering occurs. For this reason, we also use Local Indicators of Spatial
 Association (LISA), introduced by \citet{anselin1995local}. LISA decomposes spatial
 association into observation-level statistics and identifies observations that contribute to
-local clusters. Local Moran's $I$ is the specific LISA statistic used in this thesis; LISA denotes the broader class of local spatial association measures.
+local clusters. Local Moran's $I$ is the specific LISA statistic used in this thesis; LISA 
+denotes the broader class of local spatial association measures.
 
 In the PySAL implementation (Python Spatial Analysis Library; \citealp{pysal2007}),
 the input variable is standardized before local Moran statistics are computed. Let
@@ -401,7 +403,8 @@ The LISA classification identifies individual HH observations. To obtain larger 
 regions, the symmetrized $k$NN graph is restricted to HH observations only and connected
 components are extracted. A connected component is a set of HH observations connected
 by paths in the graph. Each component is interpreted as a contiguous high-multiplicity
-region in feature space. Unless stated otherwise, components smaller than five HH observations are discarded to avoid treating isolated fragments as substantive hotspot regions.
+region in feature space. Unless stated otherwise, components smaller than five HH observations
+are discarded to avoid treating isolated fragments as substantive hotspot regions.
 
 For the standard spatial-statistics computations, PySAL's value-permutation procedures
 are applied to the already-computed predictive-variance field on the fixed feature-space
@@ -429,7 +432,8 @@ $m$ independently, the vector $(\hat{p}_{m1},\dots,\hat{p}_{mN_{\mathrm{test}}})
 across observations. This within-model permutation preserves each model's marginal
 distribution of predictions, but destroys systematic alignment between predictions and
 the feature-space graph. Predictive variance is then recomputed from the permuted
-prediction matrix, and global Moran's $I$ is recalculated. Any spatial clustering in the recomputed variance field is therefore interpreted relative to
+prediction matrix, and global Moran's $I$ is recalculated. Any spatial clustering in the recomputed
+variance field is therefore interpreted relative to
 a null in which predictions retain their model-specific marginal distributions but are no
 longer attached to their original feature-space locations.
 
@@ -456,7 +460,8 @@ on the fixed graph. The prediction-matrix null instead intervenes one step earli
 destroys the alignment between each model's predictions and the feature-space locations,
 then recomputes the predictive-variance field. It therefore has power against alternatives
 in which model disagreement is systematically tied to regions of feature space. Because
-this null deliberately removes the feature-space alignment of the predictions, the recomputed variance field should no longer preserve systematic feature-space alignment, apart from finite-sample variation. This also
+this null deliberately removes the feature-space alignment of the predictions, the recomputed
+variance field should no longer preserve systematic feature-space alignment, apart from finite-sample variation. This also
 explains why datasets with strong observed structure can reach the minimum attainable
 empirical $p$-value of $1/(R+1)$.
 
@@ -467,7 +472,8 @@ Several additional analyses test whether the observed spatial structure is robus
 methodologically stable, and recoverable under controlled conditions.
 
 \paragraph{Sensitivity to Rashomon set size.}
-The default global Rashomon approximation uses $K=25$. Sensitivity to this choice is examined by varying the Rashomon set size over
+The default global Rashomon approximation uses $K=25$. Sensitivity to this choice is examined
+by varying the Rashomon set size over
 \[
 K \in \{5, 10, 15, 20, 25, 30, 35, 40, 45, 50\}
 \]
@@ -484,7 +490,10 @@ counts depend on the graph definition.
 \label{sec:exp-calibration}
 To test whether the spatial hotspot structure is mainly driven by probability
 miscalibration, we apply Platt scaling and isotonic regression to the predictions of each
-model in the global Rashomon set. For Platt scaling, a logistic regression is fitted on validation-set predicted probabilities and validation labels; for isotonic calibration, an isotonic regression mapping is fitted on the same validation predictions and labels. The resulting mapping is then applied to that model's test-set predictions.
+model in the global Rashomon set. For Platt scaling, a logistic regression is fitted on 
+validation-set predicted probabilities and validation labels; for isotonic calibration, 
+an isotonic regression mapping is fitted on the same validation predictions and labels. 
+The resulting mapping is then applied to that model's test-set predictions.
 
 We record changes in mean variance, Moran's $I$, HH/LL masks, connected components,
 and the Jaccard similarity between hotspot masks before and after calibration. Calibration
@@ -802,8 +811,19 @@ concentrates, but do not by themselves explain the data-generating mechanisms be
 that disagreement. Fourth, the framework is developed for binary probabilistic
 classification and would require adaptation for regression or multiclass settings.
 
-Table~\ref{tab:framework-method-result-map} summarizes the main analysis goals,
-methods, and corresponding result sections.
+Figure~\ref{fig:analysis-pipeline} gives a visual overview of the empirical
+analysis pipeline, from candidate model construction to hotspot detection,
+robustness checks, and interpretation. Table~\ref{tab:framework-method-result-map}
+then summarizes the main analysis goals, methods, and corresponding result sections.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.95\textwidth]{presentation_assets/analysis_pipeline_overview.png}
+    \caption{Overview of the empirical analysis pipeline from the candidate model pool
+    to spatial hotspot detection, robustness checks, and interpretation.}
+    \label{fig:analysis-pipeline}
+\end{figure}
+
 
 \begin{table}[H]
 \centering

@@ -1,9 +1,12 @@
 Supervised machine learning (ML) models are increasingly used to support decisions in
 domains such as healthcare, finance, and criminal justice. Their appeal lies in strong
 predictive performance, yet high average performance does not guarantee that individual
-predictions are stable or trustworthy. In modern ML pipelines, many distinct models can achieve nearly identical performance while producing substantially different predictions for particular observations. Classical evaluation metrics such as
-accuracy, AUC (Area Under the Curve), or Brier score summarize overall model quality, but they provide no
-insight into whether a specific prediction is robust across equally acceptable models.
+predictions are stable or trustworthy. In modern ML pipelines, many distinct models can 
+achieve nearly identical performance while producing substantially different predictions 
+for particular observations. Classical evaluation metrics such as
+accuracy, AUC (Area Under the Curve), or Brier score summarize overall model quality, 
+but they provide no insight into whether a specific prediction is robust across equally 
+acceptable models.
 
 This phenomenon is known as \emph{predictive multiplicity}: multiple models that are
 essentially indistinguishable in overall performance can still disagree in meaningful ways
@@ -13,19 +16,23 @@ alternatives. In high-stakes settings, this raises a natural question: are all p
 from a well-performing model equally trustworthy, or are some individuals especially
 exposed to model-dependent instability?
 
-Each observation can be represented as a point in feature space. This makes it possible to analyze disagreement both at the level of individual observations and through the neighborhoods in which those observations occur. We therefore ask how much near-optimal models disagree on average, whether this disagreement is concentrated in specific regions of the feature space, whether such regions are stable,
-and which modeling choices are associated with them. To answer these questions, we propose a
-framework that combines observation-wise predictive variance with tools from spatial
-statistics to detect, localize, and interpret regions of concentrated instability.
+Each observation can be represented as a point in feature space. This makes it possible to
+analyze disagreement both at the level of individual observations and through the neighborhoods
+in which those observations occur. We therefore ask how much near-optimal models disagree on 
+average, whether this disagreement is concentrated in specific regions of the feature space,
+whether such regions are stable, and which modeling choices are associated with them. 
+To answer these questions, we propose a framework that combines observation-wise predictive
+variance with tools from spatial statistics to detect, localize, and interpret regions of
+concentrated instability.
 
 \subsection{Motivation}
 
 For illustration, consider an automated risk assessment system used to support decisions about individual
 cases. For one person, the deployed model predicts a risk score of 0.29 and therefore
-classifies the case as low risk. During an audit, however, the analyst also inspects other models that achieve nearly the same validation
-performance. For the same person, these alternative models produce risk scores ranging
-from 0.22 to 0.54. The final classification may therefore depend on which near-optimal
-model happened to be selected.
+classifies the case as low risk. During an audit, however, the analyst also inspects other models that 
+achieve nearly the same validation performance. For the same person, these alternative models
+produce risk scores ranging from 0.22 to 0.54. The final classification may therefore depend
+on which near-optimal model happened to be selected.
 
 This example illustrates why aggregate performance alone is not enough in high-stakes
 settings. A model may perform well on average, while some individuals remain highly
@@ -37,8 +44,8 @@ The same audit can also be extended beyond a single individual. If many nearby c
 feature space show similarly high prediction instability, then the problem is not an
 isolated exception but a localized region of model-dependent decisions. Such a region may
 correspond to a subpopulation for which predictions are systematically less robust. This
-raises the practical need to identify where these regions occur and to understand whether they are mainly associated with broad model-family choices or with
-hyperparameter variation within families.
+raises the practical need to identify where these regions occur and to understand whether 
+they are mainly associated with broad model-family choices or with hyperparameter variation within families.
 
 This audit perspective motivates the thesis: predictive multiplicity should be measured,
 localized, tested for spatial structure, and related to the modeling choices that generate it.

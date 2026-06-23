@@ -1,7 +1,3 @@
-% ===================================================================
-% Background and Related Work — revised to focus on literature that
-% directly motivates the thesis contribution.
-% ===================================================================
 
 Predictive multiplicity connects three lines of work: Rashomon sets, metrics for
 disagreement among near\hyp{}optimal models, and the consequences of such disagreement
@@ -17,11 +13,11 @@ This chapter reviews the literature most directly connected to that observation.
 % -------------------------------------------------------------------
 
 The modern formulation of multiplicity is rooted in the \emph{Rashomon effect},
-introduced by \cite{breiman_statistical_2001}. The Rashomon effect describes the situation in which many distinct models achieve
-similarly good predictive performance, while relying on different functional forms,
-variables, or relationships in the data. In other words, there may be no single
-uniquely best explanation of the data-generating relationship. This perspective is also
-used by \cite{fisher2019all}, who argue that conclusions drawn from one fitted model
+introduced by \cite{breiman_statistical_2001}. The Rashomon effect describes the situation 
+in which many distinct models achieve similarly good predictive performance, while relying
+on different functional forms, variables, or relationships in the data. In other words, there
+may be no single uniquely best explanation of the data-generating relationship. This perspective
+is also used by \cite{fisher2019all}, who argue that conclusions drawn from one fitted model
 can be incomplete when other well-performing models rely on different variables or
 relationships.
 
@@ -35,7 +31,9 @@ class. The corresponding \emph{Rashomon set} is
 It contains all models whose loss is within a tolerance $\varepsilon$ of the best model.
 This shifts attention from a single selected model to a set of near-optimal alternatives.
 
-Empirically, this thesis approximates Rashomon sets by finite top-$K$ candidate pools ranked by validation Brier score; conclusions therefore concern this operational approximation rather than the full tolerance-defined Rashomon set.
+Empirically, this thesis approximates Rashomon sets by finite top-$K$ candidate pools ranked 
+by validation Brier score; conclusions therefore concern this operational approximation rather
+than the full tolerance-defined Rashomon set.
 
 Recent Rashomon-set research has emphasized that the size and structure of
 $\mathcal{R}_\varepsilon$ can have substantial practical consequences.
@@ -76,7 +74,9 @@ which modeling choices are associated with it.
 The first generation of predictive-multiplicity metrics operates in label space.
 \cite{marx_predictive_2020} propose \emph{ambiguity}, which measures how often a sample
 can receive conflicting labels within the Rashomon set, and \emph{discrepancy}, which
-quantifies the maximal extent of such disagreement. These measures made predictive multiplicity operational, but they reduce model outputs to binary decisions based on a fixed threshold (e.g., 0.5), thereby ignoring differences in predicted probabilities when models agree on the final label.
+quantifies the maximal extent of such disagreement. These measures made predictive multiplicity
+operational, but they reduce model outputs to binary decisions based on a fixed threshold (e.g., 0.5), 
+thereby ignoring differences in predicted probabilities when models agree on the final label.
 
 A second line of work extends multiplicity to probability space.
 \cite{watson-daniels_predictive_2023} develop a framework for predictive multiplicity in
@@ -91,7 +91,8 @@ Closely related, \cite{hsu_rashomon_nodate} propose \emph{Rashomon Capacity}, an
 information-theoretic measure of predictive multiplicity in probabilistic classification.
 The measure is defined at the level of an individual observation and captures how much
 the possible predicted scores for that observation vary across models in the Rashomon set.
-\cite{hsu_rashomongb_2024} extend this line in the context of gradient boosting, introducing RashomonGB as a practical method for inspecting and mitigating predictive multiplicity in boosted models.
+\cite{hsu_rashomongb_2024} extend this line in the context of gradient boosting, introducing
+RashomonGB as a practical method for inspecting and mitigating predictive multiplicity in boosted models.
 
 At the per-observation level, one particularly useful hard-disagreement measure is the
 \emph{conflict ratio}, which records the fraction of models on the minority side of a
@@ -144,10 +145,10 @@ not directly analyze whether observations with high disagreement form statistica
 significant, spatially contiguous regions in feature space.
 
 Recent work by \citet{haghighat_resolving_2026} also considers local regions around
-test points, but with a mitigation rather than diagnostic goal: their local patching and reconciliation methods aim
-to reduce disagreement among Rashomon-set models. In contrast, this thesis treats local
-structure as the object of diagnosis, testing whether predictive variance is spatially
-autocorrelated in feature space and whether high-multiplicity regions recur as graph-based
+test points, but with a mitigation rather than diagnostic goal: their local patching and 
+reconciliation methods aim to reduce disagreement among Rashomon-set models. In contrast, this
+thesis treats local structure as the object of diagnosis, testing whether predictive variance is
+spatially autocorrelated in feature space and whether high-multiplicity regions recur as graph-based
 hotspots.
 
 That question matters for interpretation. Once disagreement is shown to cluster, the
@@ -217,8 +218,8 @@ observation-level differences form coherent regions in feature space.
 
 This thesis addresses this gap by treating prediction instability as a spatial signal. It uses
 observation-wise predictive variance to identify where near-optimal models disagree, and
-then analyzes whether high-disagreement observations cluster locally. The goal is therefore to measure how much predictive
-multiplicity exists, locate where it occurs, assess how stable these regions
+then analyzes whether high-disagreement observations cluster locally. The goal is therefore to 
+measure how much predictive multiplicity exists, locate where it occurs, assess how stable these regions
 are, and examine which modeling choices are associated with them.
 
 In this way, the thesis connects predictive multiplicity with a regional view of model

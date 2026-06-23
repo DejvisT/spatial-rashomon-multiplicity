@@ -1,4 +1,6 @@
-This chapter interprets the empirical results beyond metric reporting, connects them back to the research questions, and discusses the practical and methodological implications of treating predictive multiplicity as a spatially structured phenomenon.
+This chapter interprets the empirical results beyond metric reporting, connects them back 
+to the research questions, and discusses the practical and methodological implications of 
+treating predictive multiplicity as a spatially structured phenomenon.
 
 \subsection{From Global Multiplicity to Local Risk}
 
@@ -11,14 +13,30 @@ individuals are most exposed to it. By combining observation-wise predictive var
 with Moran's \(I\) and LISA, this thesis turns predictive multiplicity into a regional
 reliability diagnostic: it identifies where model choice becomes especially relevant.
 
-This changes the practical interpretation of predictive reliability. Under a single deployed model, two individuals may receive similarly confident predicted
-probabilities. Their predictions, however, need not be equally reliable. One individual may lie in a stable region where near-optimal models agree closely, while the other may lie in a hotspot where equally accurate models disagree substantially. In that case, the second prediction is operationally less reliable even when its reported score appears equally confident. The key point is therefore the combination of how uncertain a prediction is and how sensitive it is to the choice among near-optimal models.
+This changes the practical interpretation of predictive reliability. Under a single deployed
+model, two individuals may receive similarly confident predicted probabilities. Their 
+predictions, however, need not be equally reliable. One individual may lie in a stable region
+where near-optimal models agree closely, while the other may lie in a hotspot where equally
+accurate models disagree substantially. In that case, the second prediction is operationally
+less reliable even when its reported score appears equally confident. The key point is therefore
+the combination of how uncertain a prediction is and how sensitive it is to the choice among 
+near-optimal models.
 
 \textbf{Hotspots form regions, not isolated points.}
-The connected-component analysis shows that HH observations often form contiguous graph regions rather than isolated outliers. This matters in practice because regional structure is more actionable than isolated unstable predictions: it enables subgroup-level auditing, rule extraction, and targeted monitoring.
+The connected-component analysis shows that HH observations often form contiguous graph regions
+rather than isolated outliers. This matters in practice because regional structure is more
+actionable than isolated unstable predictions: it enables subgroup-level auditing, rule
+extraction, and targeted monitoring.
 
 \paragraph{Localized multiplicity is different from standard uncertainty reporting.}
-It is also important to distinguish the present framework from more standard uncertainty analyses. Ensemble variance, Bayesian posterior uncertainty, or repeated-training variability usually quantify uncertainty around one modeling pipeline or one stochastic training process. Rashomon multiplicity asks a different question: how much do equally acceptable models disagree, and where does that disagreement concentrate? A point can therefore be confidently predicted by each model individually and still be multiplicity-sensitive if acceptable models disagree systematically with one another. The hotspot analysis adds a local diagnostic layer that conventional uncertainty summaries do not provide.
+It is also important to distinguish the present framework from more standard uncertainty
+analyses. Ensemble variance, Bayesian posterior uncertainty, or repeated-training variability
+usually quantify uncertainty around one modeling pipeline or one stochastic training process.
+Rashomon multiplicity asks a different question: how much do equally acceptable models disagree,
+and where does that disagreement concentrate? A point can therefore be confidently predicted by
+each model individually and still be multiplicity-sensitive if acceptable models disagree 
+systematically with one another. The hotspot analysis adds a local diagnostic layer that
+conventional uncertainty summaries do not provide.
 
 \subsection{Research Questions Revisited}
 
@@ -71,12 +89,20 @@ suggest a prospective reliability-screening workflow that differs from standard
 \begin{enumerate}
     \item train and retain a near-optimal set of models rather than only one selected winner;
     \item compute pointwise multiplicity metrics and hotspot maps on held-out data;
-    \item treat predictions in hotspot regions differently, for example by attaching caution labels, triggering human review, or using abstention policies in high-stakes settings.
+    \item treat predictions in hotspot regions differently, for example by attaching caution
+    labels, triggering human review, or using abstention policies in high-stakes settings.
 \end{enumerate}
 
-The practical contribution is therefore a way to separate stable predictions from predictions that are sensitive to model choice. In high-stakes applications, this distinction is operationally relevant. A system should not treat a prediction in a stable region and a prediction in a hotspot as equally trustworthy simply because both come with similar point estimates.
+The practical contribution is therefore a way to separate stable predictions from predictions
+that are sensitive to model choice. In high-stakes applications, this distinction is operationally
+relevant. A system should not treat a prediction in a stable region and a prediction in a hotspot
+as equally trustworthy simply because both come with similar point estimates.
 
-A useful way to interpret the proposed workflow is as a reliability screening mechanism. Predictions in stable regions may proceed through the standard pipeline. Predictions in localized hotspots should be interpreted more cautiously because the selected model represents only one of several equally accurate alternatives that may not agree on the same observation. The precise intervention will depend on the application domain, but the general principle
+A useful way to interpret the proposed workflow is as a reliability screening mechanism. 
+Predictions in stable regions may proceed through the standard pipeline. Predictions in 
+localized hotspots should be interpreted more cautiously because the selected model represents
+only one of several equally accurate alternatives that may not agree on the same observation. 
+The precise intervention will depend on the application domain, but the general principle
 is that multiplicity hotspots identify cases where model choice itself may become
 decision-relevant.
 
@@ -95,24 +121,42 @@ boundary proximity is associated with part of the multiplicity pattern on Adult 
 but not on COMPAS. This supports the broader point that spatial multiplicity need not be
 identical to ordinary classification ambiguity.
 
-This distinction matters because it clarifies what kind of phenomenon the proposed pipeline is detecting. It is useful to separate three perspectives:
+This distinction matters because it clarifies what kind of phenomenon the proposed pipeline is detecting.
+It is useful to separate three perspectives:
 \begin{itemize}
     \item \textbf{aleatoric or data ambiguity}, arising from intrinsic class overlap;
     \item \textbf{epistemic or model uncertainty}, arising from limited data or imperfect estimation;
-    \item \textbf{Rashomon multiplicity}, arising because many behaviorally different models remain equally acceptable under the chosen performance criterion.
+    \item \textbf{Rashomon multiplicity}, arising because many behaviorally different models remain 
+    equally acceptable under the chosen performance criterion.
 \end{itemize}
-The present framework primarily targets the third category. It is therefore best understood not as a replacement for uncertainty quantification, but as a complementary diagnostic that asks whether predictions depend strongly on which acceptable model happens to be selected.
+The present framework primarily targets the third category. It is therefore best understood not as 
+a replacement for uncertainty quantification, but as a complementary diagnostic that asks whether 
+predictions depend strongly on which acceptable model happens to be selected.
 
-A second reflection concerns when the method is most informative. If Moran's $I$ is near zero and hotspot regions do not emerge, then multiplicity may still be present, but it is diffuse rather than localized. In that case, global disagreement summaries may be more informative than spatial subgroup descriptions. Conversely, if an extremely large share of the dataset becomes hotspot-like, this would indicate broad instability rather than a small set of localized risk regions. The method is therefore especially valuable in the intermediate regime identified in this thesis: disagreement exists, but it is concentrated enough to support localization, descriptive characterization, and targeted review.
+A second reflection concerns when the method is most informative. If Moran's $I$ is near zero and 
+hotspot regions do not emerge, then multiplicity may still be present, but it is diffuse rather 
+than localized. In that case, global disagreement summaries may be more informative than spatial 
+subgroup descriptions. Conversely, if an extremely large share of the dataset becomes hotspot-like,
+this would indicate broad instability rather than a small set of localized risk regions. The 
+method is therefore especially valuable in the intermediate regime identified in this thesis: 
+disagreement exists, but it is concentrated enough to support localization, descriptive 
+characterization, and targeted review.
 
 \subsection{Limitations and Threats to Validity}
 
 Despite the empirical support for the proposed framework, several limitations remain.
 
 \begin{itemize}
-    \item \textbf{Finite approximation of the Rashomon set.} The top-$K$ candidate approach approximates a potentially much larger and more continuous set of acceptable models. The observed multiplicity structure therefore depends on the candidate families and hyperparameter spaces explored in the experiments.
+    \item \textbf{Finite approximation of the Rashomon set.} The top-$K$ candidate approach 
+    approximates a potentially much larger and more continuous set of acceptable models. The 
+    observed multiplicity structure therefore depends on the candidate families and hyperparameter
+    spaces explored in the experiments.
 
-    \item \textbf{Descriptive hyperparameter attribution.} The within-family hyperparameter importance analysis depends on the sampled candidate pool and on the grouping scheme used for hyperparameters. In particular, high-cardinality numeric hyperparameters are discretized into tertiles, so the resulting importance scores should be interpreted as descriptive group-level associations rather than causal effects of individual hyperparameter changes.
+    \item \textbf{Descriptive hyperparameter attribution.} The within-family hyperparameter
+    importance analysis depends on the sampled candidate pool and on the grouping scheme used 
+    for hyperparameters. In particular, high-cardinality numeric hyperparameters are discretized
+    into tertiles, so the resulting importance scores should be interpreted as descriptive 
+    group-level associations rather than causal effects of individual hyperparameter changes.
     
     \item \textbf{Dependence on the graph construction.} Robustness checks show
     persistent positive Moran's $I$ on COMPAS and Adult under alternative graphs,
@@ -128,7 +172,13 @@ Despite the empirical support for the proposed framework, several limitations re
     Adult. Robustness should be interpreted as persistence of positive spatial clustering
     rather than stability of exact hotspot regions on this dataset.
     
-    \item \textbf{Boundary instability of local hotspot labels.} Exact HH membership is unstable across seeds, even when broader hotspot regions recur. This means the method is better suited to identifying unstable areas than to declaring a single observation intrinsically and permanently hotspot-like.
+    \item \textbf{Boundary instability of local hotspot labels.} Exact HH membership is 
+    unstable across seeds, even when broader hotspot regions recur. This means the method
+    is better suited to identifying unstable areas than to declaring a single observation 
+    intrinsically and permanently hotspot-like.
     
-    \item \textbf{External validity.} The experiments cover three benchmark datasets and synthetic validation tasks. The practical usefulness of multiplicity hotspot analysis should be further tested on larger, domain-specific, and operational datasets before drawing broad deployment conclusions.
+    \item \textbf{External validity.} The experiments cover three benchmark datasets and 
+    synthetic validation tasks. The practical usefulness of multiplicity hotspot analysis 
+    should be further tested on larger, domain-specific, and operational datasets before 
+    drawing broad deployment conclusions.
 \end{itemize}

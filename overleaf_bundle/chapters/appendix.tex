@@ -89,12 +89,14 @@ by performance differences.
 Table~\ref{tab:app-hp-meta-pool-summary} compares the Rashomon set with the full
 candidate pool. In the full pool, validation Brier score is the strongest predictor in 11 of
 15 dataset--family combinations, with an average importance of $0.596$. This indicates
-that, when all trained candidates are included, validation performance differences account for a large share of model-level disagreement. Within the Rashomon set, this effect is
+that, when all trained candidates are included, validation performance differences account 
+for a large share of model-level disagreement. Within the Rashomon set, this effect is
 weaker: validation Brier score is rank 1 in 7 of 15 combinations, and its mean importance
 decreases to $0.290$. At the same time, the strongest non-performance hyperparameter has
 a higher mean importance in the Rashomon set ($0.498$) than in the full pool ($0.285$).
 
-These results suggest that the Rashomon restriction reduces the role of performance differences without eliminating it. Disagreement inside the near-optimal set is therefore not
+These results suggest that the Rashomon restriction reduces the role of performance differences
+without eliminating it. Disagreement inside the near-optimal set is therefore not
 simply a byproduct of poorly performing models. However, validation Brier score remains
 important in several dataset--family combinations, especially for GBM, MLP, and parts of
 kNN. The meta-model analysis is therefore interpreted as a performance-control
@@ -119,7 +121,7 @@ COMPAS.
 \centering
 \caption{Representative global HH rules on COMPAS.}
 \label{tab:rules_compas_top_global}
-\resizebox{\textwidth}{!}{%
+\resizebox{\textwidth}{!}{
 \input{presentation_assets/tab/interpretable_rules_top_compas.tex}
 }
 \end{table}
@@ -192,7 +194,8 @@ $90$ to $110$, while the Jaccard overlap with the ground-truth island remains be
 and $0.787$. This reflects the expected precision--recall trade-off: precision decreases from
 $0.9778$ at $\alpha = 0.01$ to $0.9182$ at $\alpha = 0.20$, whereas recall increases from
 $0.7333$ to $0.8417$. Across all tested $\alpha$ values, the detected HH region remains a
-single connected component, matching the geometry of the true island. Figure~\ref{fig:app-synthetic-fdr-single} shows the corresponding FDR sensitivity curve.
+single connected component, matching the geometry of the true island. 
+Figure~\ref{fig:app-synthetic-fdr-single} shows the corresponding FDR sensitivity curve.
 
 \begin{figure}[htbp]
     \centering
@@ -210,8 +213,10 @@ $\alpha=0.05$ raises the HH count slightly to $268$ and improves recall to $0.87
 Jaccard overlap increasing to $0.8487$ while precision remains essentially unchanged. The
 results are identical at $\alpha=0.10$ and change only marginally at $\alpha=0.20$, where
 the HH count increases to $269$, precision decreases slightly to $0.9591$, recall remains
-$0.8776$, and Jaccard overlap decreases slightly to $0.8459$. Across all tested thresholds, the number of retained connected components remains three,
-corresponding to the three main ambiguous island regions. Figure~\ref{fig:app-synthetic-fdr-three} shows the FDR sensitivity curve for the three-islands design.
+$0.8776$, and Jaccard overlap decreases slightly to $0.8459$. Across all tested thresholds, 
+the number of retained connected components remains three,
+corresponding to the three main ambiguous island regions. 
+Figure~\ref{fig:app-synthetic-fdr-three} shows the FDR sensitivity curve for the three-islands design.
 
 \begin{figure}[htbp]
     \centering
@@ -229,7 +234,8 @@ the structural exception regions. At the default threshold $\alpha=0.05$, recall
 to $1.0000$, while precision decreases to $0.6417$ because the HH mask expands beyond
 the compact exception regions. This indicates that the structural exceptions form the
 high-confidence core of the detected hotspot signal, while looser thresholds include
-additional nearby or boundary-adjacent observations. Figure~\ref{fig:app-structural-fdr} shows the corresponding FDR sensitivity curve.
+additional nearby or boundary-adjacent observations. Figure~\ref{fig:app-structural-fdr} 
+shows the corresponding FDR sensitivity curve.
 
 \begin{figure}[htbp]
     \centering
@@ -346,9 +352,10 @@ COMPAS.
 
 \begin{table}[htbp]
 \centering
-\caption{Quadrant breakdown for COMPAS (mean $\pm$ standard deviation over 10 runs, global top-$K$ ($K=25$)). Thresholds are the 90th percentile of variance and conflict per run.}
+\caption{Quadrant breakdown for COMPAS (mean $\pm$ standard deviation over 10 runs, 
+global top-$K$ ($K=25$)). Thresholds are the 90th percentile of variance and conflict per run.}
 \label{tab:app-conflict-quadrants}
-\resizebox{\textwidth}{!}{%
+\resizebox{\textwidth}{!}{
 \input{presentation_assets/tab/quadrant_compas}
 }
 \end{table}

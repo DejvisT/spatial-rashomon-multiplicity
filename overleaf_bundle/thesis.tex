@@ -1,7 +1,5 @@
 \documentclass[12pt]{article}
 
-% All figures and generated tables live in presentation_assets/ to keep Overleaf portability.
-
 \usepackage[]{graphicx}
 \graphicspath{{presentation_assets/fig/}}
 \usepackage[]{color}
@@ -87,7 +85,7 @@ Ludwig-Maximilians-Universität München
 \vfill
 
 \large
-Munich, June 29\textsuperscript{th}, 2026
+Munich, June 25\textsuperscript{th}, 2026
       
 \vfill
 
@@ -121,8 +119,8 @@ This thesis introduces a spatial analysis framework for predictive multiplicity.
 compute observation-wise predictive variance across finite top-$K$ Rashomon
 approximations selected by validation Brier score and analyze its structure using
 spatial statistics, including global Moran's $I$ and Local Indicators of Spatial
-Association (LISA). This enables the detection, localization, and statistical assessment of multiplicity hotspots, which are regions in feature space where predictions are particularly model-dependent. We further decompose predictive variance into between-family and within-family hyperparameter components and analyze how these descriptive sources of
-variation differ across the feature space.
+Association (LISA). This enables the detection, localization, and statistical assessment of multiplicity hotspots, which are regions in feature space where predictions are particularly model-dependent. We further decompose predictive variance into between-family and within-family components
+and analyze grouped hyperparameter associations.
 
 Experiments on three benchmark datasets with five model families show that, under the
 tested benchmark settings and the prediction-permutation null, predictive multiplicity is
@@ -144,12 +142,7 @@ decision systems.
 \newpage
 \tableofcontents
 
-%%%% if you would want to include material overview
-%%%% use one of the following in addition
-% \newpage
-% \listoffigures
-% \newpage
-% \listoftables
+
 \newpage
 
 % CHAPTERS ---------------------------------------------------------------------
@@ -193,7 +186,7 @@ decision systems.
     
 \pagenumbering{Roman}
 
-\setcounter{page}{5} % CHANGE
+
 
 \appendix
 \input{chapters/appendix}
@@ -271,8 +264,10 @@ preparation of this thesis, I used generative AI tools as supporting aids.
 I used OpenAI ChatGPT for linguistic and structural support, including suggestions
 for improving sentence clarity, shortening or reorganizing paragraphs, refining
 section transitions, and checking whether the argumentation of individual sections
-was coherent. Suggested
-formulations were manually reviewed, edited, and adapted by me.
+was coherent. I also used ChatGPT to support the visual design of selected
+overview diagrams; the underlying content, structure, and intended message of
+these diagrams were specified by me. Suggested formulations and visual outputs
+were manually reviewed, edited, and adapted by me.
 
 I also used ChatGPT as a programming and debugging assistant during the development
 of the experimental pipeline. In particular, it supported the explanation of error
