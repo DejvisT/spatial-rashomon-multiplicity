@@ -73,12 +73,12 @@ which modeling choices are associated with it.
 \label{sec:metrics-review}
 % -------------------------------------------------------------------
 
-The first generation of predictive-multiplicity metrics operates in \emph{label space}.
+The first generation of predictive-multiplicity metrics operates in label space.
 \cite{marx_predictive_2020} propose \emph{ambiguity}, which measures how often a sample
 can receive conflicting labels within the Rashomon set, and \emph{discrepancy}, which
 quantifies the maximal extent of such disagreement. These measures made predictive multiplicity operational, but they reduce model outputs to binary decisions based on a fixed threshold (e.g., 0.5), thereby ignoring differences in predicted probabilities when models agree on the final label.
 
-A second line of work extends multiplicity to \emph{probability space}.
+A second line of work extends multiplicity to probability space.
 \cite{watson-daniels_predictive_2023} develop a framework for predictive multiplicity in
 probabilistic classification, introducing score-based measures that capture the variation
 of risk estimates across near-optimal models rather than only label flips. Their analysis
@@ -103,7 +103,7 @@ requirements in high-stakes settings under the EU AI Act.
 The existing literature therefore offers several ways to quantify multiplicity globally
 and per instance, in both label space and probability space. What remains much less
 developed is how to move from pointwise disagreement scores to an analysis of whether
-disagreement forms coherent \emph{regions} in feature space.
+disagreement forms coherent regions in feature space.
 
 
 \subsection{Localizing Instability in Feature Space}
@@ -126,7 +126,7 @@ cluster together.
 
 In their original setting, these tools operate on geographic data with an explicit spatial
 adjacency structure. In this thesis, the same logic is transferred to
-\emph{feature space}: observations become nodes in a $k$-nearest-neighbor graph, and
+feature space: observations become nodes in a $k$-nearest-neighbor graph, and
 observation-wise multiplicity scores become the variable whose spatial organization is
 tested. Conceptually, this turns predictive multiplicity from a collection of isolated
 pointwise values into a structured signal that can be analyzed for clustering, significance,
@@ -144,7 +144,7 @@ not directly analyze whether observations with high disagreement form statistica
 significant, spatially contiguous regions in feature space.
 
 Recent work by \citet{haghighat_resolving_2026} also considers local regions around
-test points, but with a different goal: their local patching and reconciliation methods aim
+test points, but with a mitigation rather than diagnostic goal: their local patching and reconciliation methods aim
 to reduce disagreement among Rashomon-set models. In contrast, this thesis treats local
 structure as the object of diagnosis, testing whether predictive variance is spatially
 autocorrelated in feature space and whether high-multiplicity regions recur as graph-based
@@ -152,7 +152,7 @@ hotspots.
 
 That question matters for interpretation. Once disagreement is shown to cluster, the
 relevant object is no longer only an unstable individual prediction, but an unstable
-\emph{subpopulation}. This shifts the focus from isolated observations to coherent
+subpopulation. This shifts the focus from isolated observations to coherent
 regions of the feature space, enabling a more structured analysis of where and how
 predictive multiplicity arises.
 
@@ -203,7 +203,7 @@ be made visible to deployers.
 These works clarify why multiplicity matters and which modeling choices may create it.
 However, they mostly operate at the level of whole datasets, whole model classes, or
 individual cases taken one at a time. They do not yet ask whether family effects and
-hyperparameter effects become especially strong in \emph{specific parts} of feature space.
+hyperparameter effects become especially strong in specific parts of feature space.
 
 
 % -------------------------------------------------------------------

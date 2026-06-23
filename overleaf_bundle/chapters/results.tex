@@ -28,7 +28,7 @@ disagreement with clearer localized hotspot structure.
 
 The three datasets differ clearly in both the magnitude and the spatial organization of predictive multiplicity. COMPAS exhibits the strongest spatial clustering, with the largest mean Moran's $I$ ($0.210 \pm 0.081$). German Credit shows weaker spatial clustering ($0.088 \pm 0.039$), but the largest overall disagreement magnitude. Adult displays comparatively low disagreement magnitude and the weakest Moran's $I$ ($0.075 \pm 0.022$), though its clustering signal remains positive across runs.
 
-The HH hotspot counts provide additional context, but should be interpreted with care. In absolute terms, Adult contains the largest number of HH observations ($631.0$ on average), followed by COMPAS ($128.4$), while German Credit contains very few HH points ($5.4$ on average). However, these counts are not directly comparable across datasets because both dataset size and the dataset-specific neighborhood parameter $k$ differ. For this reason, Moran's $I$ is more informative than raw HH counts for comparing
+The HH hotspot counts provide additional context, but should be interpreted with care. In absolute terms, Adult contains the largest number of HH observations ($630.3$ on average), followed by COMPAS ($129.7$), while German Credit contains very few HH points ($6.0$ on average). However, these counts are not directly comparable across datasets because both dataset size and the dataset-specific neighborhood parameter $k$ differ. For this reason, Moran's $I$ is more informative than raw HH counts for comparing
 spatial concentration across datasets. Under this interpretation, COMPAS shows the clearest localized hotspot structure, whereas Adult is better characterized by broader and more diffuse regions of instability.
 
 \begin{table}[htbp]
@@ -110,7 +110,7 @@ Let $f_i$ denote the fraction of random seeds (out of 10) in which test point $i
 
 At the point level, stability is limited. Only about $3.2\%$ of the fixed test set satisfies $f_i \geq 0.8$, and only about $6.1\%$ satisfies $f_i \geq 0.5$. More broadly, the total \emph{HH support}---the set of observations classified as HH in at least one seed---covers about $21.6\%$ of the fixed test set. Within this support, HH membership is typically infrequent: the mean frequency is $0.36$, the median is $0.20$, and about $56.3\%$ of support points lie in the lowest frequency bucket $(0, 0.2]$. Defining a recurrent \emph{HH core} as points with $f_i \geq 0.5$, the core-to-support ratio is about $28.3\%$, indicating that only a minority of ever-detected HH points recur in at least half of the runs.
 
-The main conclusion is therefore that \textbf{individual observations are not stably labeled as hotspots}. Exact HH membership varies substantially across seeds. At the same time, this variability is not spatially diffuse: higher-$f_i$ values remain concentrated in one part of the PCA plane rather than being scattered uniformly. Thus, even though pointwise hotspot assignment is unstable, the broader location of multiplicity remains informative.
+The main conclusion is therefore that individual observations are not stably labeled as hotspots. Exact HH membership varies substantially across seeds. At the same time, this variability is not spatially diffuse: higher-$f_i$ values remain concentrated in one part of the PCA plane rather than being scattered uniformly. Thus, even though pointwise hotspot assignment is unstable, the broader location of multiplicity remains informative.
 
 \begin{figure}[htbp]
 \centering
@@ -192,7 +192,7 @@ grows as the Rashomon set widens, while the spatial pattern changes less than th
 scale of disagreement. For German Credit, hotspot-count comparisons remain less stable
 because the number of HH observations is very small.
 
-The main implication is that larger Rashomon sets primarily add \emph{more} disagreement, not a fundamentally different \emph{structure} of disagreement. This supports the use of $K=25$ as a pragmatic default: it is large enough to capture the
+The main implication is that larger Rashomon sets primarily add more disagreement, not a fundamentally different structure of disagreement. This supports the use of $K=25$ as a pragmatic default: it is large enough to capture the
 main observed spatial organization of predictive multiplicity, while avoiding a much larger
 model set for which the qualitative pattern changes only modestly in the sensitivity
 analysis.
@@ -221,7 +221,7 @@ larger neighborhoods on COMPAS and Adult, because broader neighborhoods can merg
 local structure into larger statistically significant regions. German Credit shows the same
 direction of effect, though at a much smaller absolute scale.
 
-Crucially, the clustering signal remains positive throughout the examined range. Thus, while the precise extent of detected hotspots depends on the neighborhood definition, the existence of spatial structure does not. The chosen defaults ($k=30$ for COMPAS and German Credit, $k=60$ for Adult) thereforerepresent a reasonable compromise between locality and graph stability rather than a necessary condition for observing positive spatial clustering.
+Crucially, the clustering signal remains positive throughout the examined range. Thus, while the precise extent of detected hotspots depends on the neighborhood definition, the existence of spatial structure does not. The chosen defaults ($k=30$ for COMPAS and German Credit, $k=60$ for Adult) therefore represent a reasonable compromise between locality and graph stability rather than a necessary condition for observing positive spatial clustering.
 
 \begin{figure}[htbp]
 \centering
@@ -308,7 +308,7 @@ the strongest localized spatial structure, German Credit shows a weaker signal w
 HH observations, and Adult shows broader but more diffuse hotspot regions.
 
 Across these robustness checks, a consistent pattern emerges. Analytical choices can
-affect the \emph{magnitude} of disagreement, the size of detected hotspot regions, and the
+affect the magnitude of disagreement, the size of detected hotspot regions, and the
 exact HH assignments, but they do not remove the positive spatial clustering signal. The qualitative finding that predictive multiplicity shows positive spatial clustering
 therefore persists across the tested variations in Rashomon set size, neighborhood size,
 calibration, and graph construction. The magnitude of this signal and the resulting HH

@@ -12,13 +12,13 @@ with Moran's \(I\) and LISA, this thesis turns predictive multiplicity into a re
 reliability diagnostic: it identifies where model choice becomes especially relevant.
 
 This changes the practical interpretation of predictive reliability. Under a single deployed model, two individuals may receive similarly confident predicted
-probabilities. Their predictions, however, need not be equally reliable. One individual may lie in a stable region where near-optimal models agree closely, while the other may lie in a hotspot where equally accurate models disagree substantially. In that case, the second prediction is operationally less reliable even when its reported score appears equally confident. The key point is therefore the combination of \emph{how uncertain} a prediction is and \emph{how sensitive it is to the choice among near-optimal models}.
+probabilities. Their predictions, however, need not be equally reliable. One individual may lie in a stable region where near-optimal models agree closely, while the other may lie in a hotspot where equally accurate models disagree substantially. In that case, the second prediction is operationally less reliable even when its reported score appears equally confident. The key point is therefore the combination of how uncertain a prediction is and how sensitive it is to the choice among near-optimal models.
 
 \textbf{Hotspots form regions, not isolated points.}
 The connected-component analysis shows that HH observations often form contiguous graph regions rather than isolated outliers. This matters in practice because regional structure is more actionable than isolated unstable predictions: it enables subgroup-level auditing, rule extraction, and targeted monitoring.
 
 \paragraph{Localized multiplicity is different from standard uncertainty reporting.}
-It is also important to distinguish the present framework from more standard uncertainty analyses. Ensemble variance, Bayesian posterior uncertainty, or repeated-training variability usually quantify uncertainty around one modeling pipeline or one stochastic training process. Rashomon multiplicity asks a different question: \emph{how much do equally acceptable models disagree, and where does that disagreement concentrate?} A point can therefore be confidently predicted by each model individually and still be multiplicity-sensitive if acceptable models disagree systematically with one another. The hotspot analysis adds a local diagnostic layer that conventional uncertainty summaries do not provide.
+It is also important to distinguish the present framework from more standard uncertainty analyses. Ensemble variance, Bayesian posterior uncertainty, or repeated-training variability usually quantify uncertainty around one modeling pipeline or one stochastic training process. Rashomon multiplicity asks a different question: how much do equally acceptable models disagree, and where does that disagreement concentrate? A point can therefore be confidently predicted by each model individually and still be multiplicity-sensitive if acceptable models disagree systematically with one another. The hotspot analysis adds a local diagnostic layer that conventional uncertainty summaries do not provide.
 
 \subsection{Research Questions Revisited}
 
@@ -74,9 +74,9 @@ suggest a prospective reliability-screening workflow that differs from standard
     \item treat predictions in hotspot regions differently, for example by attaching caution labels, triggering human review, or using abstention policies in high-stakes settings.
 \end{enumerate}
 
-The practical contribution is therefore a way to separate \emph{stable predictions} from \emph{predictions that are sensitive to model choice}. In high-stakes applications, this distinction is operationally relevant. A system should not treat a prediction in a stable region and a prediction in a hotspot as equally trustworthy simply because both come with similar point estimates.
+The practical contribution is therefore a way to separate stable predictions from predictions that are sensitive to model choice. In high-stakes applications, this distinction is operationally relevant. A system should not treat a prediction in a stable region and a prediction in a hotspot as equally trustworthy simply because both come with similar point estimates.
 
-A useful way to interpret the proposed workflow is as a \emph{reliability screening mechanism}. Predictions in stable regions may proceed through the standard pipeline. Predictions in localized hotspots should be interpreted more cautiously because the selected model represents only one of several equally accurate alternatives that may not agree on the same observation. The precise intervention will depend on the application domain, but the general principle
+A useful way to interpret the proposed workflow is as a reliability screening mechanism. Predictions in stable regions may proceed through the standard pipeline. Predictions in localized hotspots should be interpreted more cautiously because the selected model represents only one of several equally accurate alternatives that may not agree on the same observation. The precise intervention will depend on the application domain, but the general principle
 is that multiplicity hotspots identify cases where model choice itself may become
 decision-relevant.
 
@@ -128,7 +128,7 @@ Despite the empirical support for the proposed framework, several limitations re
     Adult. Robustness should be interpreted as persistence of positive spatial clustering
     rather than stability of exact hotspot regions on this dataset.
     
-    \item \textbf{Boundary instability of local hotspot labels.} Exact HH membership is unstable across seeds, even when broader hotspot regions recur. This means the method is better suited to identifying unstable \emph{areas} than to declaring a single observation intrinsically and permanently hotspot-like.
+    \item \textbf{Boundary instability of local hotspot labels.} Exact HH membership is unstable across seeds, even when broader hotspot regions recur. This means the method is better suited to identifying unstable areas than to declaring a single observation intrinsically and permanently hotspot-like.
     
     \item \textbf{External validity.} The experiments cover three benchmark datasets and synthetic validation tasks. The practical usefulness of multiplicity hotspot analysis should be further tested on larger, domain-specific, and operational datasets before drawing broad deployment conclusions.
 \end{itemize}

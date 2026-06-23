@@ -253,9 +253,9 @@ curves for German Credit and Adult.
 \begin{figure}[htbp]
     \centering
     {\small\textbf{(a)} German Credit}\\[-0.2em]
-    \includegraphics[width=0.82\textwidth]{sensitivity_K_variance_german.pdf}\\[0.6em]
+    \includegraphics[width=1\textwidth]{sensitivity_K_variance_german.pdf}\\[0.6em]
     {\small\textbf{(b)} Adult}\\[-0.2em]
-    \includegraphics[width=0.82\textwidth]{sensitivity_K_variance_adult.pdf}
+    \includegraphics[width=1\textwidth]{sensitivity_K_variance_adult.pdf}
     \caption{Sensitivity to Rashomon set size $K$ for German Credit and Adult
     (mean $\pm$ standard deviation over runs). Panels show mean predictive variance,
     Moran's $I$, and variance-based HH count.}
@@ -265,9 +265,9 @@ curves for German Credit and Adult.
 \begin{figure}[htbp]
     \centering
     {\small\textbf{(a)} German Credit}\\[-0.2em]
-    \includegraphics[width=0.55\textwidth]{sensitivity_kNN_variance_german.pdf}\\[0.6em]
+    \includegraphics[width=0.75\textwidth]{sensitivity_kNN_variance_german.pdf}\\[0.6em]
     {\small\textbf{(b)} Adult}\\[-0.2em]
-    \includegraphics[width=0.55\textwidth]{sensitivity_kNN_variance_adult.pdf}
+    \includegraphics[width=0.75\textwidth]{sensitivity_kNN_variance_adult.pdf}
     \caption{Sensitivity to kNN neighborhood size $k$ for German Credit and Adult
     (mean $\pm$ standard deviation over runs). Panels show Moran's $I$ and
     variance-based HH count.}
@@ -442,19 +442,20 @@ are more reliable.}
 \end{table}
 
 To test whether subgroup exposure differences are larger than expected by chance, we use
-a stratified permutation test. Group labels are shuffled within each run, run-level exposure
-rates are recomputed, and the aggregated inter-group disparity, defined as the max--min
-HH rate across eligible groups, is compared with its permutation null distribution. To
-reduce instability from very small groups, we apply per-run subgroup minimum-size
-filtering and require minimum cross-run support before interpreting a subgroup.
+a stratified permutation test with \(B=2000\) permutations. Group labels are shuffled
+within each run, run-level exposure rates are recomputed, and the aggregated inter-group
+disparity, defined as the max--min HH rate across eligible groups, is compared with its
+permutation null distribution. To reduce instability from very small groups, we apply
+per-run subgroup minimum-size filtering and require minimum cross-run support before
+interpreting a subgroup.
 
-For race, the observed disparity is about $0.094$, compared with a permutation-null mean
-of $0.012$ and a 95\% null interval of approximately $[0.003, 0.026]$. The resulting
-$p$-value is $p \approx 0.0005$, indicating that race-based HH exposure differences are
-larger than expected under this null. For sex, the observed disparity is essentially zero
-($0.00015$), with $p \approx 0.98$, providing no evidence of sex-based HH exposure
+For race, the observed disparity is about \(0.108\), compared with a permutation-null
+mean of \(0.0146\) and a 95\% null interval of approximately \([0.0039, 0.0311]\). The
+resulting \(p\)-value is \(p \approx 0.0005\), indicating that race-based HH exposure
+differences are larger than expected under this null. For sex, the observed disparity is
+small (\(0.0044\)), with \(p \approx 0.46\), providing no evidence of sex-based HH exposure
 disparity.
 
-However, the result should be interpreted as an exploratory subgroup auditing signal rather than as a causal fairness conclusion. However, the result should be interpreted as an exploratory subgroup
-auditing signal rather than as a causal fairness conclusion. The analysis is observational,
-and some race categories contain relatively few observations.
+However, the result should be interpreted as an exploratory subgroup auditing signal
+rather than as a causal fairness conclusion. The analysis is observational, and some race
+categories contain relatively few observations.

@@ -17,6 +17,10 @@
 \usepackage{url}
 \usepackage{array}
 \usepackage{ragged2e}
+\usepackage[all]{nowidow}
+\clubpenalty=10000
+\widowpenalty=10000
+\displaywidowpenalty=10000
 
 \newcommand{\mytitle}{Variance-Based Analysis of Predictive Multiplicity in Rashomon Sets}
 \newcommand{\myname}{Dejvis Toptani}
@@ -117,10 +121,7 @@ This thesis introduces a spatial analysis framework for predictive multiplicity.
 compute observation-wise predictive variance across finite top-$K$ Rashomon
 approximations selected by validation Brier score and analyze its structure using
 spatial statistics, including global Moran's $I$ and Local Indicators of Spatial
-Association (LISA). This enables the detection, localization, and statistical assessment
-of multiplicity hotspots---regions in feature space where predictions are particularly
-model-dependent. We further decompose predictive variance into between-family and
-within-family hyperparameter components and analyze how these descriptive sources of
+Association (LISA). This enables the detection, localization, and statistical assessment of multiplicity hotspots, which are regions in feature space where predictions are particularly model-dependent. We further decompose predictive variance into between-family and within-family hyperparameter components and analyze how these descriptive sources of
 variation differ across the feature space.
 
 Experiments on three benchmark datasets with five model families show that, under the

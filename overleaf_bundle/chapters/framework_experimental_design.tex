@@ -42,7 +42,7 @@ Let \((x_i,y_i)_{i=1}^N\) denote a supervised binary classification dataset, whe
 target. After preprocessing, the feature matrix is represented in a numeric space. Let $\mathcal{F}$ denote a finite pool of
 trained probabilistic classifiers, potentially spanning multiple model families and
 hyperparameter configurations. Each model $f \in \mathcal{F}$ outputs predicted
-probabilities $\hat{p}_{fi} \in [0,1]$ for observations $i=1,\dots,N$.
+probabilities $\hat{p}_f(x_i) \in [0,1]$ for observations $i=1,\dots,N$.
 
 \paragraph{Datasets.}
 Experiments are conducted on three real-world benchmark datasets from different
@@ -188,11 +188,15 @@ analyses.
 For each run, all models in the selected Rashomon approximation are applied to the
 held-out test set. This yields a prediction matrix
 \[
-P \in \mathbb{R}^{K \times N_{\mathrm{test}}},
+P \in \mathbb{R}^{K \times N_{\text{test}}},
 \]
-where \(K\) is the number of retained models and \(N_{\mathrm{test}}\) is the number of
-test observations. The entry \(\hat p_{mi}\) denotes the predicted probability assigned
-to test observation \(i\) by retained model \(m\), for \(m=1,\ldots,K\).
+where \(K\) is the number of retained models and \(N_{\text{test}}\) is the number of test observations.
+After selecting the retained models \(\mathcal{R}_K = \{f_{(1)}, \ldots, f_{(K)}\}\), we index them by
+\(m = 1,\ldots,K\) and write
+\[
+\hat{p}_{mi} := \hat{p}_{f_{(m)}}(x_i)
+\]
+for the predicted probability assigned to test observation \(i\) by retained model \(m\).
 
 The primary observation-wise multiplicity metric is predictive variance. For each test
 observation \(i\), let
@@ -242,7 +246,7 @@ the pointwise prediction range across Rashomon models,
 -
 \min_{m=1,\dots,K} \hat{p}_{mi}
 \right).
-\]. The disagreement rate is the fraction of
+\] The disagreement rate is the fraction of
 test observations for which model predictions differ by more than $\delta=0.05$.
 Discrepancy is the maximum, over model pairs, of the mean absolute prediction
 difference. A supplementary decision-level analysis based on the conflict ratio is reported
@@ -452,8 +456,7 @@ on the fixed graph. The prediction-matrix null instead intervenes one step earli
 destroys the alignment between each model's predictions and the feature-space locations,
 then recomputes the predictive-variance field. It therefore has power against alternatives
 in which model disagreement is systematically tied to regions of feature space. Because
-this null deliberately removes the feature-space alignment of the predictions, the
-recomputed variance field is expected to be close to spatially unstructured. This also
+this null deliberately removes the feature-space alignment of the predictions, the recomputed variance field should no longer preserve systematic feature-space alignment, apart from finite-sample variation. This also
 explains why datasets with strong observed structure can reach the minimum attainable
 empirical $p$-value of $1/(R+1)$.
 
@@ -481,10 +484,7 @@ counts depend on the graph definition.
 \label{sec:exp-calibration}
 To test whether the spatial hotspot structure is mainly driven by probability
 miscalibration, we apply Platt scaling and isotonic regression to the predictions of each
-model in the global Rashomon set. For each model, a logistic regression is fitted on
-validation-set predicted probabilities and validation labels, and the resulting mapping is
-applied to that model's test-set predictions. The predictive-variance and spatial pipeline
-is then rerun on both uncalibrated and calibrated test predictions.
+model in the global Rashomon set. For Platt scaling, a logistic regression is fitted on validation-set predicted probabilities and validation labels; for isotonic calibration, an isotonic regression mapping is fitted on the same validation predictions and labels. The resulting mapping is then applied to that model's test-set predictions.
 
 We record changes in mean variance, Moran's $I$, HH/LL masks, connected components,
 and the Jaccard similarity between hotspot masks before and after calibration. Calibration
@@ -528,55 +528,87 @@ such analyses are descriptive rather than causal: they quantify how disagreement
 with model family and hyperparameter choices within the sampled candidate pool.
 
 \paragraph{Global and per-family Rashomon sets.}
-The global construction selects the top-$K=25$ models from the full candidate pool,
-combining all model families. The per-family construction selects the top-$K=25$ models
-separately within each family. Comparing these constructions shows whether pooling
-across families hides family-specific multiplicity patterns.
+The global construction selects the top-\(K=25\) models from the full candidate pool,
+denoted \(\mathcal{R}_K\), combining all model families. The per-family construction
+selects the top-\(K=25\) models separately within each family, denoted
+\(\mathcal{R}^{(g)}_K\) for family \(g\). Comparing these constructions shows whether
+pooling across families hides family-specific multiplicity patterns.
 
 \paragraph{Family importance.}
 Predictive variance is decomposed into a between-family component and a within-family
-component. Let $\mathcal{G}$ denote the set of model families and
-$\mathcal{R}^{(g)}_K$ the top-$K$ model set for family $g\in\mathcal{G}$. For observation
-$i$, let $\hat{p}^{(g)}_{mi}$ be the predicted probability from model
-$m\in\mathcal{R}^{(g)}_K$. The mean prediction of family $g$ is
+component. Let \(\mathcal{G}\) denote the set of model families. For each family
+\(g \in \mathcal{G}\), let
 \[
-\bar{p}^{(g)}_i = \frac{1}{K}\sum_{m\in\mathcal{R}^{(g)}_K}\hat{p}^{(g)}_{mi},
+\mathcal{R}^{(g)}_K =
+\{f_{(1)}^{(g)}, \ldots, f_{(K)}^{(g)}\}
+\]
+denote the top-\(K\) models within that family. For observation \(i\), we write
+\[
+\hat{p}_{mi}^{(g)} := \hat{p}_{f_{(m)}^{(g)}}(x_i),
+\qquad m = 1,\ldots,K,
+\]
+for the predicted probability assigned to observation \(i\) by the \(m\)-th retained model
+of family \(g\). The mean prediction of family \(g\) is
+\[
+\bar{p}^{(g)}_i =
+\frac{1}{K}
+\sum_{m=1}^{K}
+\hat{p}^{(g)}_{mi},
 \]
 and the overall mean prediction across family-specific model sets is
 \[
-\bar{p}_{i} = \frac{1}{|\mathcal{G}|}\sum_{g\in\mathcal{G}}\bar{p}^{(g)}_i.
+\bar{p}_{i} =
+\frac{1}{|\mathcal{G}|}
+\sum_{g\in \mathcal{G}}
+\bar{p}^{(g)}_i.
 \]
-For a set of observations $S$, such as all test observations, HH observations, or non-HH
-observations, the between-family component is
+
+For a set of observations \(\mathcal{S}\), such as all test observations, HH observations,
+or non-HH observations, the between-family component is
 \[
-\mathrm{Var}_{\mathrm{between}}(S)
+\mathrm{Var}_{\mathrm{between}}(\mathcal{S})
 =
-\frac{1}{|S|}\sum_{i\in S}
-\frac{1}{|\mathcal{G}|}\sum_{g\in\mathcal{G}}
-(\bar{p}^{(g)}_{i}-\bar{p}_{i})^2.
+\frac{1}{|\mathcal{S}|}
+\sum_{i\in \mathcal{S}}
+\frac{1}{|\mathcal{G}|}
+\sum_{g\in \mathcal{G}}
+\left(\bar{p}^{(g)}_{i}-\bar{p}_{i}\right)^2 .
 \]
 The total predictive variance across all family-specific model sets is
 \[
-\mathrm{Var}_{\mathrm{total}}(S)
+\mathrm{Var}_{\mathrm{total}}(\mathcal{S})
 =
-\frac{1}{|S|}\sum_{i\in S}
-\frac{1}{|\mathcal{G}|K}\sum_{g\in\mathcal{G}}
-\sum_{m\in\mathcal{R}^{(g)}_K}(\hat{p}^{(g)}_{mi}-\bar{p}_{i})^2.
+\frac{1}{|\mathcal{S}|}
+\sum_{i\in \mathcal{S}}
+\frac{1}{|\mathcal{G}|K}
+\sum_{g\in \mathcal{G}}
+\sum_{m=1}^{K}
+\left(\hat{p}^{(g)}_{mi}-\bar{p}_{i}\right)^2 .
+\]
+The corresponding within-family component is
+\[
+\mathrm{Var}_{\mathrm{within}}(\mathcal{S})
+=
+\mathrm{Var}_{\mathrm{total}}(\mathcal{S})
+-
+\mathrm{Var}_{\mathrm{between}}(\mathcal{S}).
 \]
 Family importance is defined as
 \[
-\mathrm{FI}(S) =
-\frac{\mathrm{Var}_{\mathrm{between}}(S)}{\mathrm{Var}_{\mathrm{total}}(S)}.
+\mathrm{FI}(\mathcal{S}) =
+\frac{\mathrm{Var}_{\mathrm{between}}(\mathcal{S})}
+{\mathrm{Var}_{\mathrm{total}}(\mathcal{S})}.
 \]
 A value close to one means that most observed predictive variance is attributable to
-differences between model-family mean predictions. A lower value means that a larger share remains within families,
-for example because of hyperparameter variation. Because each family contributes the
-same number of models, this decomposition gives equal weight to each model family.
+differences between model-family mean predictions. A lower value means that a larger
+share remains within families, for example because of hyperparameter variation. Because
+each family contributes the same number of models, this decomposition gives equal weight
+to each model family.
 
 This construction is intentionally balanced across families and is therefore not identical
-to the global top-$K$ Rashomon set used to compute the main predictive-variance field
+to the global top-\(K\) Rashomon set used to compute the main predictive-variance field
 and the LISA HH labels. In the hotspot-specific family-importance analysis, HH membership
-is first defined from the global top-$K$ variance field, and the family decomposition is then
+is first defined from the global top-\(K\) variance field, and the family decomposition is then
 evaluated on those same observations using the balanced per-family model sets. The
 resulting values should therefore be read as a descriptive comparison of regions, not as a
 within-set decomposition of the exact variance field that produced the HH labels.
@@ -588,42 +620,124 @@ This is useful for comparing families, but it should not be interpreted as the m
 share that would arise under every possible Rashomon-set sampling scheme.
 
 \paragraph{Within-family hyperparameter importance.}
-After separating the between-family component, the analysis asks which grouped hyperparameter values are associated with disagreement within a given model family. For family $g$, let $\bar{p}^{(g)}_i$ be
-the mean prediction across models in $\mathcal{R}^{(g)}_K$:
-\[
-\bar{p}^{(g)}_i = \frac{1}{K}\sum_{m\in\mathcal{R}^{(g)}_K}\hat{p}^{(g)}_{mi}.
-\]
-For each model $m\in\mathcal{R}^{(g)}_K$, its model-level disagreement contribution is
+After separating the between-family component, the analysis asks which grouped
+hyperparameter values are associated with disagreement within a given model family.
+Using the same family mean prediction \(\bar{p}^{(g)}_i\) as above, the model-level
+disagreement contribution of retained model \(m=1,\ldots,K\) is
 \[
 V^{(g)}_m =
 \frac{1}{N_{\mathrm{test}}}\sum_{i=1}^{N_{\mathrm{test}}}
 \left(\hat{p}^{(g)}_{mi}-\bar{p}^{(g)}_i\right)^2.
 \]
-Thus, $V^{(g)}_m$ measures how strongly model $m$ deviates from the average prediction
+Thus, \(V^{(g)}_m\) measures how strongly model \(m\) deviates from the average prediction
 of its own family.
 
-For each hyperparameter $h$ within family $g$, models are grouped according to the
+For each hyperparameter \(h\) within family \(g\), models are grouped according to the
 observed value or range of that hyperparameter. Categorical hyperparameters and numeric
 hyperparameters with at most four distinct values are grouped by exact value. Numeric
 hyperparameters with more than four distinct values are discretized into three quantile
 bins. If the resulting groups have insufficient support, or fewer than two valid groups
-remain, the hyperparameter is excluded for that seed. A one-way variance decomposition
-of $V^{(g)}_m$ across the groups of hyperparameter $h$ yields a between-group component
-$\mathrm{Var}^{(g)}_{\mathrm{between}}(h)$ and a total component
-$\mathrm{Var}^{(g)}_{\mathrm{total}}$. Hyperparameter importance is
+remain, the hyperparameter is excluded for that seed.
+
+Let \(\mathcal{B}^{(g)}_h\) denote the set of groups induced by hyperparameter
+\(h\) within family \(g\). For example, these groups may correspond to exact
+categorical values or to quantile bins for numeric hyperparameters. Let
+\(M_b \subseteq \{1,\ldots,K\}\) denote the retained model indices belonging to
+group \(b \in \mathcal{B}^{(g)}_h\), and let \(n_b = |M_b|\). The mean
+model-level disagreement within group \(b\) is
+\[
+\bar V_b^{(g)}
+=
+\frac{1}{n_b}
+\sum_{m\in M_b}
+V_m^{(g)},
+\]
+and the overall mean model-level disagreement within family \(g\) is
+\[
+\bar V^{(g)}
+=
+\frac{1}{K}
+\sum_{m=1}^{K}
+V_m^{(g)}.
+\]
+The total variation in model-level disagreement is
+\[
+\mathrm{Var}^{(g)}_{\mathrm{total}}
+=
+\frac{1}{K}
+\sum_{m=1}^{K}
+\left(
+V_m^{(g)}-\bar V^{(g)}
+\right)^2.
+\]
+The between-group component can first be written as a sum over retained models,
+where \(b(m)\) denotes the group of hyperparameter \(h\) to which model \(m\)
+belongs:
+\[
+\frac{1}{K}
+\sum_{m=1}^{K}
+\left(
+\bar V_{b(m)}^{(g)}-\bar V^{(g)}
+\right)^2.
+\]
+Since all models in the same group \(b\) share the same group mean
+\(\bar V_b^{(g)}\), the identical term
+\((\bar V_b^{(g)}-\bar V^{(g)})^2\) appears once for each of the \(n_b\)
+models in that group. Therefore, the sum over models can be rewritten as a
+weighted sum over groups:
+\[
+\frac{1}{K}
+\sum_{m=1}^{K}
+\left(
+\bar V_{b(m)}^{(g)}-\bar V^{(g)}
+\right)^2
+=
+\frac{1}{K}
+\sum_{b\in \mathcal{B}^{(g)}_h}
+n_b
+\left(
+\bar V_b^{(g)}-\bar V^{(g)}
+\right)^2.
+\]
+The right-hand side is the between-group component,
+\[
+\mathrm{Var}^{(g)}_{\mathrm{between}}(h)
+=
+\frac{1}{K}
+\sum_{b\in \mathcal{B}^{(g)}_h}
+n_b
+\left(
+\bar V_b^{(g)}-\bar V^{(g)}
+\right)^2.
+\]
+Hyperparameter importance is then
 \[
 \rho^{(g)}(h)
 =
 \frac{\mathrm{Var}^{(g)}_{\mathrm{between}}(h)}
 {\mathrm{Var}^{(g)}_{\mathrm{total}}}.
 \]
-Results are aggregated over families and random seeds by mean importance, standard
-deviation, and the number of valid seeds.
+If \(\mathrm{Var}^{(g)}_{\mathrm{total}}=0\), the corresponding hyperparameter
+importance is undefined and excluded from aggregation. Results are aggregated over
+families and random seeds by mean importance, standard deviation, and the number of
+valid seeds.
 
 \paragraph{Hotspot-specific hyperparameter shifts.}
-To assess whether these descriptive hyperparameter associations differ inside multiplicity hotspots, the same
-$V_m$-based importance calculation is repeated on HH observations. For each
-hyperparameter, the hotspot-specific importance is compared with its global importance:
+To assess whether these descriptive hyperparameter associations differ inside multiplicity
+hotspots, the same \(V_m\)-based importance calculation is repeated on HH observations.
+If \(\mathcal{H}\) denotes the HH set for the current run, defined from the global
+top-\(K\) variance field, the hotspot-specific model-level disagreement contribution is
+\[
+V^{(g)}_{m,\mathrm{HH}}
+=
+\frac{1}{|\mathcal{H}|}
+\sum_{i\in\mathcal{H}}
+\left(\hat{p}^{(g)}_{mi}-\bar{p}^{(g)}_i\right)^2 .
+\]
+The quantity \(\rho^{(g)}_{\mathrm{HH}}(h)\) is computed from
+\(V^{(g)}_{m,\mathrm{HH}}\) using the same group-wise decomposition as above, while
+\(\rho^{(g)}_{\mathrm{all}}(h)\) uses all test observations. For each hyperparameter, the
+hotspot-specific importance is compared with its global importance:
 \[
 \Delta\rho^{(g)}(h)
 =
@@ -631,10 +745,11 @@ hyperparameter, the hotspot-specific importance is compared with its global impo
 -
 \rho^{(g)}_{\mathrm{all}}(h).
 \]
-Positive values indicate that grouped values of hyperparameter $h$ account for a larger
-share of within-family disagreement inside HH regions for family $g$. Because HH subsets can be small, especially on German Credit, these estimates
-are interpreted descriptively and reported with seed coverage where relevant. An auxiliary
-performance-control meta-model diagnostic is reported in Appendix~\ref{app:meta-model-diagnostic}.
+Positive values indicate that grouped values of hyperparameter \(h\) account for a larger
+share of within-family disagreement inside HH regions for family \(g\). Because HH subsets
+can be small, especially on German Credit, these estimates are interpreted descriptively
+and reported with seed coverage where relevant. An auxiliary performance-control
+meta-model diagnostic is reported in Appendix~\ref{app:meta-model-diagnostic}.
 
 \paragraph{Interpretable rule extraction.}
 To characterize high-multiplicity regions in terms of original features, shallow decision
@@ -650,10 +765,11 @@ positive class and all other test observations are the negative class. Component
 therefore aim to describe compact high-multiplicity regions rather than the full HH set at
 once.
 
-Rules are evaluated using support, purity, recall, and lift. Let $A$ denote the
-set of observations satisfying a rule, and let $H$ denote the relevant positive
-target set: the full HH set for global rules, or one connected HH component for
-component-level rules. Support is defined as $|A|$, purity as
+Rules are evaluated using support, purity, recall, and lift. Let \(T\) denote the test set,
+let \(A \subseteq T\) denote the set of observations satisfying a rule, and let
+\(H \subseteq T\) denote the relevant positive target set: the full HH set for global rules,
+or one connected HH component for component-level rules. Support is defined as \(|A|\),
+purity as
 \[
 \frac{|A \cap H|}{|A|},
 \]
@@ -663,14 +779,14 @@ recall as
 \]
 and lift as
 \[
-\frac{|A \cap H|/|A|}{|H|/N_{\mathrm{test}}}.
+\frac{|A \cap H|/|A|}{|H|/|T|}.
 \]
 Thus, lift compares the rule purity with the base rate of the target set.
 
-For global HH rules, $H$ is the full HH set, so purity corresponds to
-$P(\mathrm{HH}\mid\mathrm{rule\ region})$. For component-level rules, $H$ is the
+For global HH rules, \(H\) is the full HH set, so purity corresponds to
+\(P(\mathrm{HH}\mid\mathrm{rule\ region})\). For component-level rules, \(H\) is the
 corresponding connected component, so purity corresponds to
-$P(\mathrm{component}\mid\mathrm{rule\ region})$. The main rule analysis is reported for
+\(P(\mathrm{component}\mid\mathrm{rule\ region})\). The main rule analysis is reported for
 COMPAS, where the hotspot structure is clearest and retained components are sufficiently
 large for meaningful rule extraction.
 
@@ -689,7 +805,7 @@ classification and would require adaptation for regression or multiclass setting
 Table~\ref{tab:framework-method-result-map} summarizes the main analysis goals,
 methods, and corresponding result sections.
 
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
 \small
 \caption{Overview of the main analysis goals, methods, and corresponding result sections.}

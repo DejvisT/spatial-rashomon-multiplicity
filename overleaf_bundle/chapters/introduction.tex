@@ -13,14 +13,14 @@ alternatives. In high-stakes settings, this raises a natural question: are all p
 from a well-performing model equally trustworthy, or are some individuals especially
 exposed to model-dependent instability?
 
-Each observation can be represented as a point in feature space. This makes it possible to analyze disagreement both at the level of individual observations and through the neighborhoods in which those observations occur. We therefore ask \emph{how much} near-optimal models disagree on average, whether this disagreement is concentrated in specific regions of the feature space, whether such regions are stable,
+Each observation can be represented as a point in feature space. This makes it possible to analyze disagreement both at the level of individual observations and through the neighborhoods in which those observations occur. We therefore ask how much near-optimal models disagree on average, whether this disagreement is concentrated in specific regions of the feature space, whether such regions are stable,
 and which modeling choices are associated with them. To answer these questions, we propose a
 framework that combines observation-wise predictive variance with tools from spatial
 statistics to detect, localize, and interpret regions of concentrated instability.
 
 \subsection{Motivation}
 
-Consider an automated risk assessment system used to support decisions about individual
+For illustration, consider an automated risk assessment system used to support decisions about individual
 cases. For one person, the deployed model predicts a risk score of 0.29 and therefore
 classifies the case as low risk. During an audit, however, the analyst also inspects other models that achieve nearly the same validation
 performance. For the same person, these alternative models produce risk scores ranging
