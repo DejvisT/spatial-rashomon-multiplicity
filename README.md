@@ -53,6 +53,28 @@ If you want to execute notebooks from the command line, also install Jupyter:
 pip install jupyter nbconvert ipykernel
 ```
 
+## Pre-computed artifacts (optional download)
+
+Training all benchmark runs locally is time-consuming. Pre-computed artifacts are available via [LRZ Sync+Share](https://syncandshare.lrz.de/getlink/fiKs14bmixnPFPx5Mfem5i/) (password: `multiplicity`).
+
+After downloading, place the folders as follows in the repository root:
+
+```text
+rashomon-multiplicity/
+├── results/              # from the shared link → repository root
+├── results_fixed_test/   # from the shared link → repository root
+└── thesis_outputs/
+    └── cache/            # the shared `cache` folder → thesis_outputs/cache/
+```
+
+The shared archive contains:
+
+- **`results/`** — main training artifacts (`P_test.npy`, `meta.csv`, splits, etc.) for COMPAS, German Credit, Adult, and the three synthetic designs used in notebook 08
+- **`results_fixed_test/`** — fixed-test training artifacts for cross-seed hotspot stability (notebook 03)
+- **`cache/`** — notebook parquet caches (under `thesis_outputs/cache/` in the repo) so notebooks can skip expensive recomputation when `FORCE_RECOMPUTE = False`
+
+With these in place you can skip sections 1–2 below and run the notebooks directly. To regenerate everything from scratch, omit the download and run the training scripts instead.
+
 ## How to run the analysis
 
 ### 1. Train the main candidate model pools
@@ -109,23 +131,7 @@ results_fixed_test/german/seed=0 ... seed=9
 results_fixed_test/adult/seed=0  ... seed=9
 ```
 
-### 3. Optional quick command-line aggregate check
-
-The notebooks recompute or consume the analysis outputs they need, but you can run a quick command-line aggregate check with:
-
-```bash
-python analysis/experiment_runner.py --results_dir results --K 25 --R_null 100
-```
-
-For one dataset only:
-
-```bash
-python analysis/experiment_runner.py --results_dir results --dataset compas --K 25 --R_null 100
-```
-
-This is optional. The main thesis outputs are generated through the notebooks.
-
-### 4. Run the thesis notebooks
+### 3. Run the thesis notebooks
 
 Run the notebooks in numeric order:
 
@@ -172,7 +178,7 @@ jupyter nbconvert --to notebook --execute notebooks/10_robustness_and_fairness.i
 
 For Notebook 03, command-line execution only runs the dataset currently configured inside the notebook. To regenerate all Notebook 03 outputs, change the configured dataset and rerun it once for each dataset.
 
-### 5. Export thesis assets
+### 4. Export thesis assets
 
 The notebooks write thesis-facing figures and tables into `thesis_outputs/`. After rerunning notebooks, export the LaTeX-ready thesis assets with:
 
@@ -201,10 +207,10 @@ results/                    # main training artifacts
 results_fixed_test/          # fixed-test artifacts for stability analysis
 thesis_outputs/figures/      # thesis-facing figures
 thesis_outputs/tables/       # thesis-facing CSV/LaTeX tables
+thesis_outputs/cache/        # optional notebook parquet caches (see pre-computed download)
 overleaf_bundle/             # Overleaf-ready thesis bundle and exported assets
 ```
 
-The repository intentionally does not need to keep every intermediate diagnostic figure or CSV. The final outputs should be compact enough to inspect manually.
 
 ## Project structure
 
@@ -215,9 +221,10 @@ The repository intentionally does not need to keep every intermediate diagnostic
 | `notebooks/` | Thesis analysis notebooks `01`-`10` |
 | `data/` | Local raw data files, mainly COMPAS |
 | `scripts/` | Thesis asset export scripts |
-| `results/` | Main training artifacts; usually generated locally |
+| `results/` | Main training artifacts; usually generated locally or downloaded from Sync+Share |
 | `results_fixed_test/` | Fixed-test training artifacts for cross-seed hotspot stability |
 | `thesis_outputs/` | Generated figures and tables used by the thesis |
+| `thesis_outputs/cache/` | Notebook parquet caches (`notebooks/` subfolder inside `cache/`) |
 | `overleaf_bundle/` | Overleaf-compatible thesis bundle and exported presentation assets |
 | `run_training_pipeline.py` | Main candidate-training script |
 | `run_training_pipeline_fixed_test.py` | Fixed-test candidate-training script |
@@ -237,11 +244,3 @@ The repository intentionally does not need to keep every intermediate diagnostic
 | 09 | `09_interpretable_rules.ipynb` | Global and component-level rule extraction for high-multiplicity regions |
 | 10 | `10_robustness_and_fairness.ipynb` | Alternative graph construction, decision-boundary proximity, and subgroup exposure diagnostics |
 
-## Notes for rerunning
-
-- The training step is the expensive part. The notebooks mostly consume the saved prediction matrices and metadata.
-- The training scripts skip existing runs when `P_test.npy` and `meta.csv` are already present.
-- To force a clean rerun, move or delete the corresponding `results/<dataset>/seed=<n>/` or `results_fixed_test/<dataset>/seed=<n>/` directories first.
-- Use `--save_models` only if you need saved sklearn pipeline objects; it greatly increases disk usage.
-- Notebook 03 should be rerun once per dataset if you want all fixed-test spatial-pattern outputs to be refreshed.
-- After rerunning notebooks, run `python scripts/export_thesis_assets.py` to refresh the Overleaf-ready figures and tables.

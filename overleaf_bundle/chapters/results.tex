@@ -216,9 +216,9 @@ To move beyond individual HH points, we extract connected components of HH nodes
 $k$NN graph used for LISA, discarding components smaller than 5 points. This analysis asks 
 whether detected HH observations form coherent graph regions or merely appear as isolated points.
 
-Table~\ref{tab:hh_component_summary} summarizes the component statistics across runs. On COMPAS,
-HH points typically form about $3$--$4$ connected components per run, with one dominant component 
-whose maximum size averages about $62.5$ test points (median $62$). Hotspots therefore appear as 
+Table~\ref{tab:hh_component_summary} summarizes the component statistics across runs. On COMPAS, HH points typically form about 3--4 connected components per run,
+with one dominant component whose maximum size averages about 62.5 test points
+and has a median size of 62.5. Hotspots therefore appear as 
 a small number of contiguous regions rather than as isolated singletons.
 
 \begin{table}[htbp]
@@ -751,11 +751,11 @@ Gaussian regions, and the HH mask closely follows this structure.
     \label{fig:synthetic_variance_lisa}
 \end{figure}
 
-This spatial concentration is also reflected in the global autocorrelation statistic. The
-observed Moran's $I$ is $0.2536$, indicating clear positive spatial clustering of predictive
-variance. Under the prediction-permutation null, the null mean is $-0.0024$ with standard
-deviation $0.0098$, and the one-sided empirical $p$-value is $0.0099$. Thus, the observed
-clustering is far larger than expected when predictions are detached from feature-space
+The observed Moran's $I$ is $0.2463$, indicating clear positive spatial
+clustering of predictive variance. Under the prediction-permutation null,
+the null mean is $-0.0022$ with standard deviation $0.0101$, and the
+one-sided empirical $p$-value is $0.0099$. 
+Thus, the observed clustering is far larger than expected when predictions are detached from feature-space
 locations.
 
 At the local level, LISA identifies $105$ HH points at the default FDR level
