@@ -55,12 +55,14 @@ pip install jupyter nbconvert ipykernel
 
 ## Pre-computed artifacts (optional download)
 
+The submitted repository contains the source code, notebooks, thesis-facing generated tables/figures, and summary outputs. Full per-seed training artifacts are not included in the repository because of size; they can be regenerated with the training scripts or downloaded from the linked archive.
+
 Training all benchmark runs locally is time-consuming. Pre-computed artifacts are available via [LRZ Sync+Share](https://syncandshare.lrz.de/getlink/fiKs14bmixnPFPx5Mfem5i/) (password: `multiplicity`).
 
 After downloading, place the folders as follows in the repository root:
 
 ```text
-rashomon-multiplicity/
+spatial-rashomon-multiplicity/
 ├── results/              # from the shared link → repository root
 ├── results_fixed_test/   # from the shared link → repository root
 └── thesis_outputs/
